@@ -24,7 +24,7 @@
 ;; --
 
 (defpackage No-case-string
-  (implementation (-> Ordered-type)
+  (implementation ()
     (deftype <t> <str>)
     (defun compare ((s1 <str>) (s2 <str>) -> <int>)
       (strcmp (tolower s1) (tolower s2)))))
