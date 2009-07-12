@@ -33,8 +33,8 @@
     (defun call/ec (<function> -> <object>))
     ;; Syntax transformers
     (defsyntax defsyntax (<signature> <function>))
-    (defsyntax let-syntax (transformer-bindings <form>) -> <object>)
-    (defsyntax let*-syntax (transformer-bindings <form>) -> <object>)
+    (defsyntax let-syntax (transformer-bindings <form> -> <object>))
+    (defsyntax let*-syntax (transformer-bindings <form> -> <object>))
     ;; Syntax objects
     (defun datum->syntax-object (<environment> <form> -> <form>))
     (defun elt (<list> <number> -> <form>))
