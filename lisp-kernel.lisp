@@ -69,9 +69,9 @@
     ;; Packages
     (deftype <package>)
     (defsyntax defpackage (<symbol> <package-or-functor-application>))
-    (defsyntax interface (<signature> <declarations> -> <package>))
     (defsyntax implementation (<signature> <definitions> -> <package>))
-    (defsyntax let-package (package-binding <form> -> <object>))
+    (defsyntax import (&key package))
+    (defsyntax interface (<signature> <declarations> -> <package>))
     ;; UNIX
     (defsyntax c (<string> -> <object>))
   )
