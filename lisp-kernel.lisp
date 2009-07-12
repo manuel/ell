@@ -1,18 +1,18 @@
 (defpackage Lisp-Kernel ()
   (interface
     ;; Built-in types and objects
-    (defclass <object>)
-    (defclass <type> <: <object>)
-    (defclass <class> <: <type>)
-    (defclass <mixin> <: <type>)
-    (defclass <null> <: <object>)
+    (deftype <object>)
+    (deftype <type> <: <object>)
+    (deftype <class> <: <type>)
+    (deftype <mixin> <: <type>)
+    (deftype <null> <: <object>)
     (defvar nil)
-    (defclass <boolean> <: <object>)
+    (deftype <boolean> <: <object>)
     (defvar true)
     (defvar false)
-    (defclass <form> <: <object>)
-    (defclass <symbol> <: <form>)
-    (defclass <list> <: <form>)
+    (deftype <form> <: <object>)
+    (deftype <symbol> <: <form>)
+    (deftype <list> <: <form>)
     ;; Variables
     (defsyntax defparameter (<symbol> <object>))
     (defsyntax setq (<symbol> <object>))
@@ -64,7 +64,7 @@
     ;; Conditions
     (defsyntax let-handler (handler-binding <form> -> <object>))
     (signal (<condition> -> <object>))
-    ;; Evaluation and Compilation
+    ;; Evaluation
     (defun eval (<form> -> <object>))
     ;; Packages
     (deftype <package>)
