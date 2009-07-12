@@ -70,6 +70,7 @@
     (defsyntax defpackage (<symbol> <package-or-functor-application>))
     (defsyntax interface (<signature> <declarations>) -> <package>)
     (defsyntax implementation (<signature> <definitions>) -> <package>)
+    (defsyntax let-package (package-bindings <form>) -> <object>)
     ;; UNIX
     (defsyntax c (<string>) -> <object>)
   )

@@ -32,8 +32,8 @@
 
 (defpackage My
   (implementation ()
-    (import S = No-case-string-set)
-    (let set = (S::make)
-      (S::add set "foo"))))
+    (let-package S = No-case-string-set
+      (let set = (S::make)
+        (S::add set "foo")))))
 
 ;; Now I just need to figure out how to compile this.
