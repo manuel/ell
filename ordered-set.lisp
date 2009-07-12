@@ -36,7 +36,7 @@
 
 (defpackage My
   (implementation ()
-    (use S = CI-String-Set)
+    (defpackage S CI-String-Set)
     (let set = (S::make)
       (S::add set "foo"))))
 
