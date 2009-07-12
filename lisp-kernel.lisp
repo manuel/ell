@@ -33,7 +33,7 @@
     (defsyntax defsyntax (<signature> <function>))
     (defsyntax let-syntax (transformer-bindings <form> -> <object>))
     (defsyntax let*-syntax (transformer-bindings <form> -> <object>))
-    (defsyntax eval-for-syntax (<form>))
+    (defsyntax for-syntax (<form>))
     ;; Syntax objects
     (defun first (<list> -> <form>))
     (defun rest (<list> -> <form>))

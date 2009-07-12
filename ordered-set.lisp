@@ -20,7 +20,7 @@
 (defpackage Abstract-Set ((Elt Ordered-Type) -> (Set <elt> = Elt::<t>))
   Set-Impl)
 
-;; --
+;;;
 
 (defpackage CI-String ()
   (implementation
@@ -32,7 +32,7 @@
 (defpackage CI-String-Set ()
   (Abstract-Set CI-String))
 
-;; --
+;;;
 
 (defpackage My ()
   (implementation
@@ -40,6 +40,19 @@
     (let set = (S::make)
       (S::add set "foo"))))
 
-;; Now I just need to figure out how to compile this.
+;; defunctorizes to
+
+(defpackage My ()
+  (implementation
+    (let set = (Set-Impl##CI-String::make)
+      (Set-Impl##CI-String::add set "foo"))))
+
+(defpackage Set-Impl##CI-String ()
+  (implementation
+    (defclass <t> (elements <list> init: (list)))
+    (deftype <elt> CI-String::<t>)
+    (defun make (-> <t>) (make-t))
+    (defun add (<t> <elt>) (... (strcmp (tolower elt) (tolower ...)) ...)))) ; inlining
+   
 
 ;; http://caml.inria.fr/pub/docs/manual-ocaml/manual004.html
