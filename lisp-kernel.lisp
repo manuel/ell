@@ -1,4 +1,4 @@
-(defpackage Lisp-kernel
+(defpackage Lisp-Kernel
   (interface ()
     ;; Built-in types and objects
     (defclass <object>)
