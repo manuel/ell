@@ -55,7 +55,7 @@
     (defun make-mixin (<symbol> &key mutable-super-mixins-p &rest super-mixins -> <mixin>))
     (defun remove-mixin (<type> <mixin>))
     ;; Objects
-    (defun call-applicable-method (<object> <symbol> &rest args &keys key-args -> <object>))
+    (defun call-applicable-method (<object> <symbol> &rest args &all-keys key-args -> <object>))
     (defun set-slot-value (<object> <symbol> <object>))
     (defun slot-value (<object> <symbol> -> <symbol>))
     (defun type-of (<object> -> <type>))
