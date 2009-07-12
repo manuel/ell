@@ -1,5 +1,5 @@
-(defpackage Lisp-Kernel
-  (interface ()
+(defpackage Lisp-Kernel ()
+  (interface
     ;; Built-in types and objects
     (defclass <object>)
     (defclass <type> <: <object>)
