@@ -71,7 +71,7 @@
     (defsyntax defpackage (<symbol> <package-or-functor-application>))
     (defsyntax implementation (<signature> <definitions> -> <package>))
     (defsyntax interface (<signature> <declarations> -> <package>))
-    (defsyntax use-package (&key package))
+    (defsyntax use (&key package))
     ;; UNIX
     (defsyntax c (<string> -> <object>))
   )
