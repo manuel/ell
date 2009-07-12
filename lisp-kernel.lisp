@@ -68,9 +68,10 @@
     (defsyntax eval-when-compile (<form>))
     ;; Packages
     (deftype <package>)
-    (defsyntax defpackage (<symbol> <package-or-functor-application>))
-    (defsyntax implementation (<signature> <definitions> -> <package>))
-    (defsyntax interface (<signature> <declarations> -> <package>))
+    (defsyntax defpackage (<symbol> <signature> <package>))
+    (defsyntax implementation (<definitions> -> <package>))
+    (defsyntax interface (<declarations> -> <package>))
+    (defsyntax use (&key package-binding))
     ;; UNIX
     (defsyntax c (<string> -> <object>))
   )
