@@ -13,9 +13,9 @@
 (defpackage Set-Impl ((Elt Ordered-Type))
   (implementation
     (defclass <t> (elements <list> init: (list)))
-    (deftype <elt> Elt)
+    (deftype <elt> Elt::<t>)
     (defun make (-> <t>) (make-t))
-    (defun add (<t> <elt>) (add (.elements t) elt)))) ; blah
+    (defun add (<t> <elt>) (... (Elt::compare elt ...) ...))))
 
 (defpackage Abstract-Set ((Elt Ordered-Type) -> (Set <elt> = Elt::<t>))
   Set-Impl)
@@ -26,6 +26,7 @@
   (implementation
     (deftype <t> <str>)
     (defun compare ((s1 <str>) (s2 <str>) -> <int>)
+      (declare inline)
       (strcmp (tolower s1) (tolower s2)))))
 
 (defpackage CI-String-Set ()

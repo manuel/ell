@@ -5,27 +5,25 @@
     (defclass <type> <: <object>)
     (defclass <class> <: <type>)
     (defclass <mixin> <: <type>)
+    (defclass <null> <: <object>)
+    (defvar nil)
+    (defclass <boolean> <: <object>)
+    (defvar true)
+    (defvar false)
     (defclass <form> <: <object>)
     (defclass <symbol> <: <form>)
     (defclass <list> <: <form>)
-    (defclass <boolean> <: <object>)
-    (defclass <true> <: <boolean>)
-    (defclass <false> <: <boolean>)
-    (defvar true)
-    (defvar false)
-    (defclass <null> <: <object>)
-    (defvar nil)
     ;; Variables
     (defsyntax defparameter (<symbol> <object>))
     (defsyntax setq (<symbol> <object>))
     (defun boundp (<symbol> -> <boolean>))
     ;; Functions
+    (defsyntax lambda (<signature> <form> -> <function>))
     (defsyntax defun (<symbol> <function>))
     (defsyntax function (<symbol> -> <function>))
-    (defsyntax lambda (<signature> <form> -> <function>))
     (defun apply (<function> &rest args &all-keys key-args -> <object>))
-    (defun fboundp (<symbol> -> <boolean>))
     (defun funcall (<function> args key-args))
+    (defun fboundp (<symbol> -> <boolean>))
     ;; Control
     (defsyntax if (<boolean> <form> <form> -> <object>))
     (defsyntax progn (&body forms -> <object>))
@@ -35,43 +33,45 @@
     (defsyntax defsyntax (<signature> <function>))
     (defsyntax let-syntax (transformer-bindings <form> -> <object>))
     (defsyntax let*-syntax (transformer-bindings <form> -> <object>))
+    (defsyntax eval-for-syntax (<form>))
     ;; Syntax objects
-    (defun datum->syntax-object (<environment> <form> -> <form>))
-    (defun elt (<list> <number> -> <form>))
     (defun first (<list> -> <form>))
-    (defun quasisyntax (<form> -> <form>))
     (defun rest (<list> -> <form>))
+    (defun elt (<list> <number> -> <form>))
     (defun syntax (<form> -> <form>))
+    (defun quasisyntax (<form> -> <form>))
+    (defun datum->syntax-object (<environment> <form> -> <form>))
+    ;; Types and Objects
+    (defun set-method (<type> <symbol> <function>))
+    (defun call-method (<object> <symbol> &rest args &all-keys key-args -> <object>))
+    (defun slot-value (<object> <symbol> -> <symbol>))
+    (defun set-slot-value (<object> <symbol> <object>))
+    (defun class-of (<object> -> <class>))
     ;; Classes
     (defun make-class (<symbol>
-                       &key super-class mutable-super-class-p mutable-super-mixins-p mutable-slot-specs-p
+                       &key super-class super-class-mutable-p 
+                            mixins mixins-mutable-p 
+                            slot-specs-mutable-p
                        &rest slot-specs 
-                       -> <class>)
-    (defun set-method (<class> <symbol> <function>))
-    (defun set-slot-specs (<class> &rest slot-specs))
+                       -> <class>))
+    (defun super-class (<class> -> <class>))
     (defun set-super-class (<class> <class>))
+    (defun set-slot-specs (<class> &rest slot-specs))
     ;; Mixins
+    (defun make-mixin (<symbol> &key mutable-mixins-p &rest mixins -> <mixin>))
     (defun add-mixin (<type> <mixin>))
-    (defun make-mixin (<symbol> &key mutable-super-mixins-p &rest super-mixins -> <mixin>))
     (defun remove-mixin (<type> <mixin>))
-    ;; Objects
-    (defun call-applicable-method (<object> <symbol> &rest args &all-keys key-args -> <object>))
-    (defun set-slot-value (<object> <symbol> <object>))
-    (defun slot-value (<object> <symbol> -> <symbol>))
-    (defun type-of (<object> -> <type>))
     ;; Conditions
     (defsyntax let-handler (handler-binding <form> -> <object>))
     (signal (<condition> -> <object>))
     ;; Evaluation and Compilation
-    (defsyntax define-compiler-macro (<symbol> <function>))
     (defun eval (<form> -> <object>))
-    (defsyntax eval-when-compile (<form>))
     ;; Packages
     (deftype <package>)
     (defsyntax defpackage (<symbol> <signature> <package>))
     (defsyntax implementation (<definitions> -> <package>))
     (defsyntax interface (<declarations> -> <package>))
-    (defsyntax use (&key package-binding))
+    (defsyntax use (&all-keys package-bindings))
     ;; UNIX
     (defsyntax c (<string> -> <object>))
   )
