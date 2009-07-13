@@ -63,7 +63,7 @@
     (defun remove-mixin (<type> <mixin>))
     ;; Conditions
     (defsyntax let-handler (handler-binding <form> -> <object>))
-    (signal (<condition> -> <object>))
+    (defun signal (<condition> -> <object>))
     ;; Evaluation
     (defun eval (<form> -> <object>))
     ;; Packages
