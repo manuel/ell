@@ -40,7 +40,7 @@
     (let set = (S::make)
       (S::add set "foo"))))
 
-;; defunctorized to:
+;; defunctorize
 
 (defpackage My ()
   (implementation
@@ -54,19 +54,21 @@
     (defun make (-> <t>) (make-t))
     (defun add (<t> <elt>) (... (strcmp (tolower elt) (tolower ...)) ...)))) ; inlining
 
-;; demodularized to:
+;; demodularize
 
-(let My//set = (Set-Impl##CI-String//make)
-  (Set-Impl##CI-String//add My//set "foo"))
+(let My::set = (Set-Impl##CI-String::make)
+  (Set-Impl##CI-String::add My::set "foo"))
 
-(defclass Set-Impl##CI-String//<t> (elements <list> init: (list)))
-(deftype Set-Impl##CI-String//<elt> CI-String//<t>)
-(defun Set-Impl##CI-String//make (-> Set-Impl##CI-String//<t>) (Set-Impl##CI-String//make-t))
-(defun Set-Impl##CI-String//add (Set-Impl##CI-String//<t> (elt Set-Impl##CI-String//<elt>))
+(defclass Set-Impl##CI-String::<t> (elements <list> init: (list)))
+(deftype Set-Impl##CI-String::<elt> CI-String::<t>)
+(defun Set-Impl##CI-String::make (-> Set-Impl##CI-String::<t>) (Set-Impl##CI-String::make-t))
+(defun Set-Impl##CI-String::add (Set-Impl##CI-String::<t> Set-Impl##CI-String::<elt>)
   (... (strcmp (tolower elt) (tolower ...)) ...))
    
-(deftype CI-String//<t> <str>)
-(defun CI-String//compare ((s1 <str>) (s2 <str>) -> <int>)
+(deftype CI-String::<t> <str>)
+(defun CI-String::compare ((s1 <str>) (s2 <str>) -> <int>)
+  (declare inline)
   (strcmp (tolower s1) (tolower s2)))
+
 
 ;; http://caml.inria.fr/pub/docs/manual-ocaml/manual004.html
