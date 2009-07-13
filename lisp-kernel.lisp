@@ -1,78 +1,80 @@
 (defpackage Lisp-Kernel ()
   (interface
-    ;; Built-in types and objects
-    (deftype <object>)
-    (deftype <type> <: <object>)
-    (deftype <class> <: <type>)
-    (deftype <mixin> <: <type>)
-    (deftype <null> <: <object>)
+    ;; Built-in classes and objects
+    (defclass <object>)
+    (defclass <class>)
+    (defclass <function>)
+    (defclass <generic> <: <function>)
+    (defclass <method> <: <function>)
+    (defclass <package>)
+    (defclass <form>)
+    (defclass <symbol> <: <form>)
+    (defclass <list> <: <form>)
+    (defclass <null>)
+    (defclass <boolean>)
     (defvar nil)
-    (deftype <boolean> <: <object>)
     (defvar true)
     (defvar false)
-    (deftype <form> <: <object>)
-    (deftype <symbol> <: <form>)
-    (deftype <list> <: <form>)
     ;; Variables
-    (defsyntax defparameter (<symbol> <object>))
-    (defsyntax setq (<symbol> <object>))
+    (defmacro defparameter (<symbol> <object>))
+    (defmacro setq (<symbol> <object>))
     (defun boundp (<symbol> -> <boolean>))
     ;; Functions
-    (defsyntax lambda (<signature> <form> -> <function>))
-    (defsyntax defun (<symbol> <function>))
-    (defsyntax function (<symbol> -> <function>))
+    (defmacro lambda (<signature> <form> -> <function>))
+    (defmacro defun (<symbol> <function>))
+    (defmacro function (<symbol> -> <function>))
     (defun apply (<function> &rest args &all-keys key-args -> <object>))
     (defun funcall (<function> args key-args))
     (defun fboundp (<symbol> -> <boolean>))
     ;; Control
-    (defsyntax if (<boolean> <form> <form> -> <object>))
-    (defsyntax progn (&body forms -> <object>))
-    (defsyntax unwind-protect (<form> <form> -> <object>))
-    (defun call/ec (<function> -> <object>))
-    ;; Syntax transformers
-    (defsyntax defsyntax (<signature> <function>))
-    (defsyntax let-syntax (transformer-bindings <form> -> <object>))
-    (defsyntax let*-syntax (transformer-bindings <form> -> <object>))
-    (defsyntax for-syntax (<form>))
+    (defmacro if (<boolean> <form> <form> -> <object>))
+    (defmacro progn (&body forms -> <object>))
+    (defmacro unwind-protect (<form> <form> -> <object>))
+    (defun call-with-escape-continuation (<function> -> <object>))
+    ;; Syntax transformers and reflective tower
+    (defmacro defmacro (<signature> <function>))
+    (defmacro macrolet (transformer-bindings <form> -> <object>))
+    (defmacro eval-when-compile (<form>))
     ;; Syntax objects
     (defun first (<list> -> <form>))
-    (defun rest (<list> -> <form>))
+    (defun rest (<list> -> <list>))
     (defun elt (<list> <number> -> <form>))
-    (defun syntax (<form> -> <form>))
-    (defun quasisyntax (<form> -> <form>))
+    (defun quote (<form> -> <form>))
+    (defun quasiquote (<form> -> <form>))
     (defun datum->syntax-object (<environment> <form> -> <form>))
     ;; Types and Objects
-    (defun set-method (<type> <symbol> <function>))
     (defun call-method (<object> <symbol> &rest args &all-keys key-args -> <object>))
     (defun slot-value (<object> <symbol> -> <symbol>))
     (defun set-slot-value (<object> <symbol> <object>))
     (defun class-of (<object> -> <class>))
     ;; Classes
-    (defun make-class (<symbol>
-                       &key super-class super-class-mutable-p 
-                            mixins mixins-mutable-p 
-                            slot-specs-mutable-p
-                       &rest slot-specs 
-                       -> <class>))
-    (defun super-class (<class> -> <class>))
-    (defun set-super-class (<class> <class>))
+    (defmacro make-class ((<symbol> &rest super-classes) &rest slot-specs
+                           &key super-classes-mutable-p 
+                                slot-specs-mutable-p
+                                methods-mutable-p
+                           -> <class>))
+    (defun set-super-classes (<class> &rest super-classes))
     (defun set-slot-specs (<class> &rest slot-specs))
-    ;; Mixins
-    (defun make-mixin (<symbol> &key mutable-mixins-p &rest mixins -> <mixin>))
-    (defun add-mixin (<type> <mixin>))
-    (defun remove-mixin (<type> <mixin>))
+    (defun set-method (<class> <symbol> <function>))
     ;; Conditions
-    (defsyntax let-handler (handler-binding <form> -> <object>))
+    (defmacro handler-bind (handler-bindings <form> -> <object>))
     (defun signal (<condition> -> <object>))
     ;; Evaluation
     (defun eval (<form> -> <object>))
     ;; Packages
-    (deftype <package>)
-    (defsyntax defpackage (<symbol> <signature> <package>))
-    (defsyntax implementation (<definitions> -> <package>))
-    (defsyntax interface (<declarations> -> <package>))
-    (defsyntax use (&all-keys package-bindings))
+    (defmacro defpackage (<symbol> <signature> <package>))
+    (defmacro use (&all-keys package-bindings))
+    (defmacro interface (<declarations> -> <package>))
+    (defmacro implementation (<definitions> -> <package>))
+    (defmacro include <package>)
     ;; UNIX
-    (defsyntax c (<string> -> <object>))
+    (defmacro c (<string> -> <object>))
   )
 )
+
+;; Control flow and condition system: Dylan, Goo, Common Lisp, PLT Scheme
+;; Inline C: Alien Goo
+;; Packages and functors: OCaml, C++, Dylan, PLOT
+;; Object system and generic functions: CLOS, Dylan, Factor, C++
+;; Hygienic macros, reflective tower, syntax objects: SRFI-72
+;; Variables, functions, terminology: Common Lisp, Dylan, Goo, PLOT

@@ -1,5 +1,5 @@
-A generic Lisp for UNIX systems programming, with Smalltalk's objects,
-Factor's mixins, Dylan's control flow primitives and condition system,
-SRFI-72's macros, OCaml's module system, and Goo's inline "C".
+A generic Lisp for UNIX systems programming, with a dynamic, open
+object model, orthogonal control flow primitives and condition system,
+hygienic procedural macros, higher-order modules, and inline "C".
 
 Manuel Simoni, July 2009

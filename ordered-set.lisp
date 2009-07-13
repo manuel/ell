@@ -1,24 +1,24 @@
 (defpackage Ordered-Type ()
   (interface
-    (deftype <t>)
+    (defclass <t>)
     (defun compare (<t> <t> -> <int>))))
 
 (defpackage Set ()
   (interface
-    (deftype <t>)
-    (deftype <elt>)
+    (defclass <t>)
+    (defclass <elt>)
     (defun make (-> <t>))
     (defun add (<t> <elt>))))
 
 (defpackage Set-Impl ((Elt Ordered-Type))
   (implementation
     (defclass <t> (elements <list> init: (list)))
-    (deftype <elt> Elt::<t>)
+    (defclass <elt> Elt::<t>)
     (defun make (-> <t>) (make-t))
     (defun add (<t> <elt>) (... (Elt::compare elt ...) ...))))
 
-(defpackage Abstract-Set ((Elt Ordered-Type) -> (Set <elt> = Elt::<t>))
-  Set-Impl)
+(defpackage Make-Set ((Elt Ordered-Type) -> Set)
+  (Set-Impl Elt))
 
 ;;;
 
@@ -30,7 +30,7 @@
       (strcmp (tolower s1) (tolower s2)))))
 
 (defpackage CI-String-Set ()
-  (Abstract-Set CI-String))
+  (Make-Set CI-String))
 
 ;;;
 
