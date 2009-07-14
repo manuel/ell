@@ -42,7 +42,7 @@
     (defun quote (<form> -> <form>))
     (defun quasiquote (<form> -> <form>))
     (defun datum->syntax-object (<environment> <form> -> <form>))
-    ;; Types and Objects
+    ;; Objects
     (defun call-method (<object> <symbol> &rest args &all-keys key-args -> <object>))
     (defun slot-value (<object> <symbol> -> <symbol>))
     (defun set-slot-value (<object> <symbol> <object>))
@@ -56,6 +56,7 @@
     (defun set-super-classes (<class> &rest super-classes))
     (defun set-slot-specs (<class> &rest slot-specs))
     (defun set-method (<class> <symbol> <function>))
+    (defun sub-class-p (<class> <class> -> <boolean>))
     ;; Conditions
     (defmacro let-handler (handler-bindings <form> -> <object>))
     (defun signal (<condition> -> <object>))
