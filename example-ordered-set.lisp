@@ -1,3 +1,9 @@
+;;; The classical set example of higher-order modules from
+;;; http://caml.inria.fr/pub/docs/manual-ocaml/manual004.html 
+;;;
+;;; Also shows how functors are instantiated and how finally modules
+;;; are erased from the resulting code by the compiler.
+
 (defpackage Ordered-Type ()
   (interface
     (defclass <t>)
@@ -40,7 +46,7 @@
     (let set = (S::make)
       (S::add set "foo"))))
 
-;; defunctorize
+;; after defunctorization:
 
 (defpackage My ()
   (implementation
@@ -54,7 +60,7 @@
     (defun make (-> <t>) (make-t))
     (defun add (<t> <elt>) (... (strcmp (tolower elt) (tolower ...)) ...)))) ; inlining
 
-;; demodularize
+;; after demodularization:
 
 (let My::set = (Set-Impl##CI-String::make)
   (Set-Impl##CI-String::add My::set "foo"))
@@ -69,6 +75,3 @@
 (defun CI-String::compare ((s1 <str>) (s2 <str>) -> <int>)
   (declare inline)
   (strcmp (tolower s1) (tolower s2)))
-
-
-;; http://caml.inria.fr/pub/docs/manual-ocaml/manual004.html

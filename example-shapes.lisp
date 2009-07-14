@@ -1,7 +1,8 @@
-(defpackage Graphics ()
-  (interface
-    (defun draw-rect (x y w h))
-    (defun draw-circ (x y r))))
+;;; Classical example of extending an existing module implementing
+;;; geometric shapes with () a new datatype () a new operation () both.
+;;;
+;;; Note that this is for illustration of the module system only.
+;;; I'm not sure anyone would actually want to program that way.
 
 (defpackage Shape ()
   (interface
@@ -11,6 +12,11 @@
     (defun make-rect (w h -> <rect>))
     (defun make-circ (r -> <circ>))
     (defun draw (<t> x y))))
+
+(defpackage Graphics ()
+  (interface
+    (defun draw-rect (x y w h))
+    (defun draw-circ (x y r))))
 
 (defpackage Shape-Impl ((G Graphics))
   (implementation
@@ -40,8 +46,8 @@
     (defclass <trans> <: <t>
       constructor: (<t> dx dy)
       <t> dx dy)
-    (defmethod draw (<trans .shape .dx .dy> x y)
-      (draw shape (+ x dx) (+ y dy)))))
+    (defmethod draw (<trans .t .dx .dy> x y)
+      (draw t (+ x dx) (+ y dy)))))
 
 (defpackage Make-Add-Class-Ext ((G Graphics) -> Add-Class-Ext)
   (Add-Class-Ext-Impl (Shape-Impl G)))
@@ -49,8 +55,8 @@
 (defpackage My-Use-Add-Class-Ext ((G Graphics))
   (implementation
     (use S = (Make-Add-Class-Ext G))
-    (let* ((rect (S::make-rect 10 10))
-           (trans (S::make-trans rect 25 25)))
+    (let* rect = (S::make-rect 10 10)
+          trans = (S::make-trans rect 25 25)
       (S::draw trans 0 0))))
 
 (defpackage Add-Method-Ext ((S Shape))
@@ -72,7 +78,7 @@
 (defpackage My-Use-Add-Method-Ext ((G Graphics))
   (implementation
     (use S = (Make-Add-Method-Ext G))
-    (let* ((rect (S::make-rect 10 10)))
+    (let rect = (S::make-rect 10 10)
       (S::area rect))))
 
 (defpackage Add-Class-And-Method-Ext ((S Shape))
@@ -84,8 +90,8 @@
   (implementation
     (include (Add-Class-Ext-Impl SI))
     (include (Add-Method-Ext-Impl SI))
-    (defmethod area (<trans .shape>) 
-      (area shape))))
+    (defmethod area (<trans .t>) 
+      (area t))))
 
 (defpackage Make-Class-And-Method-Ext ((G Graphics) -> Add-Class-And-Method-Ext)
   (Add-Class-And-Method-Ext-Impl (Shape-Impl G)))
@@ -93,6 +99,6 @@
 (defpackage My-Use-Extended-Class-And-Method ((G Graphics))
   (implementation
     (use S = (Make-Add-Class-And-Method-Ext G))
-    (let ((rect (S::make-rect 10 10))
-          (trans (S::make-trans rect 25 25)))
+    (let rect = (S::make-rect 10 10)
+         trans = (S::make-trans rect 25 25)
       (S::area trans))))

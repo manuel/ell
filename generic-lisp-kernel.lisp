@@ -1,4 +1,4 @@
-(defpackage Lisp-Kernel ()
+(defpackage Generic-Lisp-Kernel ()
   (interface
     ;; Built-in classes and objects
     (defclass <object>)
@@ -33,7 +33,7 @@
     (defun call-with-escape-continuation (<function> -> <object>))
     ;; Syntax transformers and reflective tower
     (defmacro defmacro (<signature> <function>))
-    (defmacro macrolet (transformer-bindings <form> -> <object>))
+    (defmacro let-macro (transformer-bindings <form> -> <object>))
     (defmacro eval-when-compile (<form>))
     ;; Syntax objects
     (defun first (<list> -> <form>))
@@ -57,16 +57,16 @@
     (defun set-slot-specs (<class> &rest slot-specs))
     (defun set-method (<class> <symbol> <function>))
     ;; Conditions
-    (defmacro handler-bind (handler-bindings <form> -> <object>))
+    (defmacro let-handler (handler-bindings <form> -> <object>))
     (defun signal (<condition> -> <object>))
     ;; Evaluation
     (defun eval (<form> -> <object>))
     ;; Packages
     (defmacro defpackage (<symbol> <signature> <package>))
     (defmacro use (&all-keys package-bindings))
-    (defmacro interface (<declarations> -> <package>))
-    (defmacro implementation (<definitions> -> <package>))
-    (defmacro include <package>)
+    (defmacro interface (&rest declarations -> <package>))
+    (defmacro implementation (&rest definitions -> <package>))
+    (defmacro include (&rest packages))
     ;; UNIX
     (defmacro c (<string> -> <object>))
   )
@@ -78,3 +78,4 @@
 ;; Object system and generic functions: CLOS, Dylan, Factor, C++
 ;; Hygienic macros, reflective tower, syntax objects: SRFI-72
 ;; Variables, functions, terminology: Common Lisp, Dylan, Goo, PLOT
+;; Expansion process: R6RS Ch. 10

@@ -1,5 +1,0 @@
-A generic Lisp for UNIX systems programming, with a dynamic, open
-object model, orthogonal control flow primitives and condition system,
-hygienic procedural macros, higher-order modules, and inline "C".
-
-Manuel Simoni, July 2009
