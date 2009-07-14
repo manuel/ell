@@ -2,7 +2,7 @@
   (interface
     (include-all-types K)
     (include-all-variables K)
-    (include-function 
+    (include-function
       K::apply
       K::boundp
       K::call-method

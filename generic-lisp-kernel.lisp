@@ -31,6 +31,7 @@
     (defmacro progn (&body forms -> <object>))
     (defmacro unwind-protect (<form> <form> -> <object>))
     (defun call-with-escape-continuation (<function> -> <object>))
+    (defun invoke-continuation (<continuation>))
     ;; Syntax transformers and reflective tower
     (defmacro defmacro (<signature> <function>))
     (defmacro let-macro (transformer-bindings <form> -> <object>))

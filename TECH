@@ -1,0 +1,73 @@
+Calling convention
+==================
+
+Functions are always called indirectly via a function pointer.
+
+Global functions and closures use the same calling convention, and
+closures are ordinary function pointers.
+
+Every function gets its own address passed as an argument.  This is
+used by closures to find their closed-over variables.
+
+void *f_ptr(..., void *f_addr, ...)
+
+Closure representation on the heap
+==================================
+
++--------+
+| c4     |
+| c3     | 
+| c2     | ... 
+| c1     | -3    -- closure environment (variable length)
+| parent | -2    -- parent environment
+| f_ptr  | -1    -- closure code
+| tramp  | 0     -- pointer to closure trampoline
++--------+          (shared by all closures)
+
+A closure is represented as a heap-allocated object whose last member
+is a pointer to a trampoline function shared by all closures.
+
+The trampoline uses the calling convention function address (which is
+the address of the last member) to find the actual closure code and
+the closure environment at negative offsets from the address.
+
+Generic function dispatch
+=========================
+
+For every generic function, a perfect hash function (PHF) is generated
+that maps a class object (of every class that defines or inherits a
+method for the generic function) to an index in an array of
+first-class labels (with the method bodies).
+
+Method lookups with this scheme should be very fast, as the PHF is
+fast to compute, has no collisions, and invoking a method amounts to a
+simple goto.
+
+some_gen_fun(..., object *this, ...) {
+  char phf_data[...];
+  void **labels = [ &&label_1, &&label_2, ... ];
+  goto labels[ phf(this->class, phf_data) ];
+label_1:
+  ... method impl ...
+label_2:
+  ... method impl ...
+...
+}
+
+Dependent recompilation
+=======================
+
+Object representation
+=====================
+
+Class representation
+====================
+
+Stack unwinding
+===============
+
+Macros
+======
+
+Modules
+=======
