@@ -70,8 +70,3 @@
 (defun Set-Impl##CI-String::make (-> Set-Impl##CI-String::<t>) (Set-Impl##CI-String::make-t))
 (defun Set-Impl##CI-String::add (Set-Impl##CI-String::<t> Set-Impl##CI-String::<elt>)
   (... (strcmp (tolower elt) (tolower ...)) ...))
-   
-(deftype CI-String::<t> <str>)
-(defun CI-String::compare ((s1 <str>) (s2 <str>) -> <int>)
-  (declare inline)
-  (strcmp (tolower s1) (tolower s2)))

@@ -1,0 +1,74 @@
+`ell` is an implementation of a new Lisp dialect for UNIX systems
+programming, called Generic Lisp, with an open class model, orthogonal
+control flow primitives, a condition system, hygienic procedural
+macros, higher-order modules, and inline C.
+
+Bindings
+========
+
+Generic Lisp has two namespaces to reduce naming conflicts between
+variables and functions.  The variable namespace contains bindings of
+global variables, classes, and package objects.  The function
+namespace contains bindings of global functions and macros.
+
+Functions
+=========
+
+Functions can have required, optional, rest, and keyword parameters as
+in Common Lisp.  Extraneous keyword arguments are not picked up by the
+rest parameter (as in Common Lisp), instead they populate the
+all-keyword parameter, which is a dictionary.
+
+Conditions
+==========
+
+Conditions are normal classes, are restartable, and are unified with
+restarts, as in Dylan.
+
+Control
+=======
+
+Generic Lisp has first-class escape continuations for non-local jumps,
+as well as stack-unwind protection.
+
+Classes
+=======
+
+Classes can have multiple superclasses and their slots and methods can
+be changed at runtime (unless they're selaed).
+
+Generic object-orientation (GOO)
+================================
+
+Like Goo, Generic Lisp is designed for impurely functional programming
+with ad-hoc polymorphism.  Methods are called via single-dispatching
+generic functions.  In combination with the dynamic class system,
+Generic Lisp is very similar in style to Factor.
+
+Higher-order modules and parametric polymorphism
+================================================
+
+Like OCaml, Generic Lisp has an advanced module system implemented via
+a separate module language, that is erased from the final code.
+Functors (modules that map modules to modules) are instantiated like
+C++ templates for highest performance.
+
+Macros and reflective tower
+===========================
+
+Generic Lisp uses Andre van Tonder's hygienic and procedural macro
+system (SRFI-72), but makes it look like Common Lisp's `defmacro`.
+Hygiene can be broken explicity.  Macro code is run in separate levels
+in a reflective tower, and code required by macros can be injected
+into arbitrary levels.
+
+Inline C
+========
+
+Probably the most important feature is inline C modelled after Alien
+Goo, which tightly integrates Generic Lisp with UNIX.  Inline C can
+access and call back into Lisp easily.  C libraries can be made
+accessible in a pay-as-you-go fashion, or systematically by using
+Inline C generating macros.
+
+-- Manuel Simoni (msimoni over at gmail), July 2009

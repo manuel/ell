@@ -34,7 +34,6 @@
     ;; Syntax transformers and reflective tower
     (defmacro defmacro (<signature> <function>))
     (defmacro let-macro (transformer-bindings <form> -> <object>))
-    (defmacro eval-when-compile (<form>))
     ;; Syntax objects
     (defun first (<list> -> <form>))
     (defun rest (<list> -> <list>))
@@ -48,20 +47,21 @@
     (defun set-slot-value (<object> <symbol> <object>))
     (defun class-of (<object> -> <class>))
     ;; Classes
-    (defmacro make-class ((<symbol> &rest super-classes) &rest slot-specs
-                           &key super-classes-mutable-p 
-                                slot-specs-mutable-p
-                                methods-mutable-p
-                           -> <class>))
-    (defun set-super-classes (<class> &rest super-classes))
+    (defun make-class ((<symbol> &rest superclasses) &rest slot-specs
+                       &key superclasses-mutable-p 
+                       slot-specs-mutable-p
+                       methods-mutable-p
+                       -> <class>))
+    (defun set-superclasses (<class> &rest superclasses))
     (defun set-slot-specs (<class> &rest slot-specs))
     (defun set-method (<class> <symbol> <function>))
-    (defun sub-class-p (<class> <class> -> <boolean>))
+    (defun subclassp (<class> <class> -> <boolean>))
     ;; Conditions
     (defmacro let-handler (handler-bindings <form> -> <object>))
     (defun signal (<condition> -> <object>))
-    ;; Evaluation
+    ;; Evaluation and reflective tower
     (defun eval (<form> -> <object>))
+    (defmacro eval-when-compile (<form>))
     ;; Packages
     (defmacro defpackage (<symbol> <signature> <package>))
     (defmacro use (&all-keys package-bindings))
