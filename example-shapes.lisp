@@ -69,7 +69,7 @@
   (implementation
     (include SI)
     (defgeneric area (<t>))
-    (defmethod area (<rect .w .w>) (* w w))
+    (defmethod area (<rect .w .h>) (* w h))
     (defmethod area (<circ .r>) (* 3.14 r r))))
 
 (defpackage Make-Add-Method-Ext ((G Graphics) -> Add-Method-Ext)
@@ -82,6 +82,7 @@
       (S::area rect))))
 
 (defpackage Add-Class-And-Method-Ext ((S Shape))
+  documentation: "Adds both the new shape class and the new operation."
   (interface
     (include (Add-Class-Ext S))
     (include (Add-Method-Ext S))))
@@ -96,7 +97,7 @@
 (defpackage Make-Class-And-Method-Ext ((G Graphics) -> Add-Class-And-Method-Ext)
   (Add-Class-And-Method-Ext-Impl (Shape-Impl G)))
 
-(defpackage My-Use-Extended-Class-And-Method ((G Graphics))
+(defpackage My-Class-And-Method-Ext ((G Graphics))
   (implementation
     (use S = (Make-Add-Class-And-Method-Ext G))
     (let rect = (S::make-rect 10 10)
