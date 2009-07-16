@@ -1,6 +1,5 @@
 (defpackage Generic-Lisp ((K Generic-Lisp-Kernel))
-  (interface
-    (include-all-types K)
+  (signature
     (include-all-variables K)
     (include-function
       K::apply
@@ -36,7 +35,7 @@
 )
 
 (defpackage Generic-Lisp-Impl ()
-  (implementation
+  (structure
     (defmacro lambda (signature &body body)
       `(K::lambda ,signature (progn ,@body)))
     (defmacro unwind-protect (protected &body cleanups)

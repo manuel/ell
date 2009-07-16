@@ -5,7 +5,7 @@
 ;;; I'm not sure anyone would actually want to program that way.
 
 (defpackage Shape ()
-  (interface
+  (signature
     (defclass <t>)
     (defclass <rect> <: <t>)
     (defclass <circ> <: <t>)
@@ -14,12 +14,12 @@
     (defun draw (<t> x y))))
 
 (defpackage Graphics ()
-  (interface
+  (signature
     (defun draw-rect (x y w h))
     (defun draw-circ (x y r))))
 
 (defpackage Shape-Impl ((G Graphics))
-  (implementation
+  (structure
     (defclass <t>)
     (defclass <rect> <: <t>
       constructor: (w h)
@@ -35,13 +35,13 @@
 
 (defpackage Add-Class-Ext ((S Shape))
   documentation: "Adds a new shape class with an existing method."
-  (interface
+  (signature
     (include S)
     (defclass <trans> <: <t>)
     (defun make-trans (<t> dx dy))))
 
 (defpackage Add-Class-Ext-Impl ((SI Shape-Impl))
-  (implementation
+  (structure
     (include SI)
     (defclass <trans> <: <t>
       constructor: (<t> dx dy)
@@ -53,7 +53,7 @@
   (Add-Class-Ext-Impl (Shape-Impl G)))
 
 (defpackage My-Use-Add-Class-Ext ((G Graphics))
-  (implementation
+  (structure
     (use S = (Make-Add-Class-Ext G))
     (let* rect = (S::make-rect 10 10)
           trans = (S::make-trans rect 25 25)
@@ -61,12 +61,12 @@
 
 (defpackage Add-Method-Ext ((S Shape))
   documentation: "Adds a new method to existing shapes."
-  (interface
+  (signature
     (include S)
     (defun area (<t>))))
 
 (defpackage Add-Method-Ext-Impl ((SI Shape-Impl))
-  (implementation
+  (structure
     (include SI)
     (defgeneric area (<t>))
     (defmethod area (<rect .w .h>) (* w h))
@@ -76,19 +76,19 @@
   (Add-Method-Ext-Impl (Shape-Impl G)))
 
 (defpackage My-Use-Add-Method-Ext ((G Graphics))
-  (implementation
+  (structure
     (use S = (Make-Add-Method-Ext G))
     (let rect = (S::make-rect 10 10)
       (S::area rect))))
 
 (defpackage Add-Class-And-Method-Ext ((S Shape))
   documentation: "Adds both the new shape class and the new operation."
-  (interface
+  (signature
     (include (Add-Class-Ext S))
     (include (Add-Method-Ext S))))
   
 (defpackage Add-Class-And-Method-Ext-Impl ((SI Shape-Impl))
-  (implementation
+  (structure
     (include (Add-Class-Ext-Impl SI))
     (include (Add-Method-Ext-Impl SI))
     (defmethod area (<trans .t>) 
@@ -98,7 +98,7 @@
   (Add-Class-And-Method-Ext-Impl (Shape-Impl G)))
 
 (defpackage My-Class-And-Method-Ext ((G Graphics))
-  (implementation
+  (structure
     (use S = (Make-Add-Class-And-Method-Ext G))
     (let rect = (S::make-rect 10 10)
          trans = (S::make-trans rect 25 25)
