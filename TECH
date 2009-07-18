@@ -45,7 +45,7 @@ The environment of a closure is an array of pointers to the
 closed-over values.  Inside the body of a closure, every closed-over
 free variable is uniquely identified by its position in the
 environment array, so variable lookups in a closure's environment are
-O(1).
+fast.
 
 A closure may also access a variable closed-over by one of the
 closure's ancestors.  In this case, there is only one binding for the
@@ -55,7 +55,7 @@ Generic function dispatch
 =========================
 
 For every generic function, a perfect hash function (PHF) is generated
-that maps a class object (of every class that defines or inherits a
+that maps a class pointer (of every class that defines or inherits a
 method for the generic function) to an index in an array of
 first-class labels (with the method bodies).
 
@@ -76,6 +76,8 @@ label_2:
 
 Dependent recompilation
 =======================
+
+The module dependency graph is kept in memory at runtime.
 
 Object representation
 =====================

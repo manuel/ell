@@ -1,4 +1,4 @@
-`ell` is an implementation of a new Lisp dialect for UNIX systems
+`ell' is an implementation of a new Lisp dialect for UNIX systems
 programming, called Generic Lisp, with an open class model, orthogonal
 control flow primitives, a condition system, hygienic procedural
 macros, higher-order modules, and inline C.
@@ -18,6 +18,10 @@ Functions can have required, optional, rest, and keyword parameters as
 in Common Lisp.  Extraneous keyword arguments are not picked up by the
 rest parameter (as in Common Lisp), instead they populate the
 all-keyword parameter, which is a dictionary.
+
+In contrast to other Lisps, a function signature can not only bind
+variables, but also functions.  This means that FLET, in addition to
+LET, can be implemented as macros that calls LAMBDA.
 
 Conditions
 ==========
@@ -51,13 +55,14 @@ Higher-order modules and parametric polymorphism
 Like OCaml, Generic Lisp has an advanced module system implemented via
 a separate module language, that is erased from the final code.
 Functors (modules that map modules to modules) are instantiated like
-C++ templates for highest performance.
+C++ templates for highest performance.  Cross-module inlining combines
+highest abstraction with highest performance.
 
 Macros and reflective tower
 ===========================
 
 Generic Lisp uses Andre van Tonder's hygienic and procedural macro
-system (SRFI-72), but makes it look like Common Lisp's `defmacro`.
+system (SRFI-72), but makes it look like Common Lisp's `defmacro'.
 Hygiene can be broken explicity.  Macro code is run in separate levels
 in a reflective tower, and code required by macros can be injected
 into arbitrary levels.

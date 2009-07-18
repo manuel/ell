@@ -1,5 +1,5 @@
 (defpackage Generic-Lisp ((Generic-Lisp-Kernel K))
-  (interface
+  (signature
     (include-all-variables K)
     (include-function
       K::apply
