@@ -1,4 +1,4 @@
-(defpackage Generic-Lisp-Kernel
+(defpackage Generic-Lisp-Kernel ()
   (signature
     ;; Built-in classes and objects
     (defclass <package>)

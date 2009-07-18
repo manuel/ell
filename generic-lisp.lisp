@@ -1,5 +1,5 @@
-(defpackage Generic-Lisp ((K Generic-Lisp-Kernel))
-  (signature
+(defpackage Generic-Lisp ((Generic-Lisp-Kernel K))
+  (interface
     (include-all-variables K)
     (include-function
       K::apply
@@ -43,5 +43,5 @@
   )
 )
 
-(defpackage Make-Generic-Lisp ((K Generic-Lisp-Kernel) -> Generic-Lisp)
+(defpackage Make-Generic-Lisp ((Generic-Lisp-Kernel K) -> Generic-Lisp)
   (Generic-Lisp-Impl K))

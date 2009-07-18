@@ -4,12 +4,12 @@
 ;;; Also shows how functors are instantiated and how finally modules
 ;;; are erased from the resulting code by the compiler.
 
-(defpackage Ordered-Type
+(defpackage Ordered-Type ()
   (signature
     (defclass <t>)
     (defun compare (<t> <t> -> <int>))))
 
-(defpackage Set
+(defpackage Set ()
   (signature
     (defclass <t>)
     (defclass <elt>)
@@ -28,19 +28,19 @@
 
 ;;;
 
-(defpackage CI-String
+(defpackage CI-String ()
   (structure
     (deftype <t> <str>)
     (defun compare ((<str> s1) (<str> s2) -> <int>)
       (declare (inline))
       (strcmp (tolower s1) (tolower s2)))))
 
-(defpackage CI-String-Set
+(defpackage CI-String-Set ()
   (Make-Set CI-String))
 
 ;;;
 
-(defpackage My
+(defpackage My ()
   (structure
     (use S = CI-String-Set)
     (let set = (S::make)
@@ -48,12 +48,12 @@
 
 ;; after defunctorization:
 
-(defpackage My
+(defpackage My ()
   (structure
     (let set = (Set-Impl##CI-String::make)
       (Set-Impl##CI-String::add set "foo"))))
 
-(defpackage Set-Impl##CI-String
+(defpackage Set-Impl##CI-String ()
   (structure
     (defclass <t> (<list> elements init: (list)))
     (deftype <elt> CI-String::<t>)
