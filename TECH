@@ -6,11 +6,6 @@ Functions are always called indirectly via a function pointer.
 Global functions and closures use the same calling convention, and
 closures are ordinary function pointers.
 
-Every function gets its own address passed as an argument.  This is
-used by closures to find their closed-over variables.
-
-void *f_ptr(..., void *f_addr, ...)
-
 Closure representation on the heap
 ==================================
 
@@ -28,9 +23,8 @@ Closure representation on the heap
 A closure is represented as a heap-allocated object whose last member
 is code that acts as a trampoline.
 
-The trampoline uses the calling convention function address to find
-the actual closure function and environment at negative offsets from
-the address.
+The trampoline uses the address of the instruction pointer to jump the
+closure function.
 
 Closure environments
 ====================

@@ -34,7 +34,7 @@
   )
 )
 
-(defpackage Generic-Lisp-Impl ()
+(defpackage Generic-Lisp-Impl ((Generic-Lisp-Kernel K))
   (structure
     (defmacro lambda (signature &body body)
       `(K::lambda ,signature (progn ,@body)))

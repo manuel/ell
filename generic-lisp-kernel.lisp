@@ -1,4 +1,4 @@
-(defpackage Generic-Lisp-Kernel ()
+(defpackage Generic-Lisp-Kernel
   (signature
     ;; Built-in classes and objects
     (defclass <object>)
@@ -28,8 +28,8 @@
     (defmacro lambda (signature <form> -> <function>))
     (defmacro defun (<symbol> <function>))
     (defmacro function (<symbol> -> <function>))
-    (defun apply (<function> &rest args &all-keys key-args -> <object>))
-    (defun funcall (<function> args key-args))
+    (defun apply (function-or-symbol &rest args &all-keys key-args -> <object>))
+    (defun funcall (function-or-symbol args key-args))
     (defun fboundp (<symbol> -> <boolean>))
     ;; Control
     (defmacro if (<boolean> <form> <form> -> <object>))

@@ -4,7 +4,7 @@
 ;;; Note that this is for illustration of the module system only.
 ;;; I'm not sure anyone would actually want to program that way.
 
-(defpackage Shape ()
+(defpackage Shape
   (signature
     (defclass <t>)
     (defclass <rect> <: <t>)
@@ -13,7 +13,7 @@
     (defun make-circ (r -> <circ>))
     (defun draw (<t> x y))))
 
-(defpackage Graphics ()
+(defpackage Graphics
   (signature
     (defun draw-rect (x y w h))
     (defun draw-circ (x y r))))
