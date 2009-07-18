@@ -21,7 +21,7 @@ all-keyword parameter, which is a dictionary.
 
 In contrast to other Lisps, a function signature can not only bind
 variables, but also functions.  This means that FLET, in addition to
-LET, can be implemented as macros that calls LAMBDA.
+LET, can be implemented as macros that call LAMBDA.
 
 Conditions
 ==========
