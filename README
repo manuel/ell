@@ -34,16 +34,16 @@ as well as stack-unwind protection.
 Classes
 =======
 
-Classes can have multiple superclasses and their slots and methods can
-be changed at runtime (unless they're selaed).
+Classes can have multiple superclasses and their superclasses, slots,
+and methods can be changed at runtime (unless they're sealed).
 
 Generic object-orientation (GOO)
 ================================
 
-Like Goo, Generic Lisp is designed for impurely functional programming
-with ad-hoc polymorphism.  Methods are called via single-dispatching
-generic functions.  In combination with the dynamic class system,
-Generic Lisp is very similar in style to Factor.
+Like Goo, Generic Lisp is designed for a mix of functional and
+object-oriented programming.  Methods are called via
+single-dispatching generic functions.  In combination with the dynamic
+class system, Generic Lisp is very similar in style to Factor.
 
 Higher-order modules and parametric polymorphism
 ================================================

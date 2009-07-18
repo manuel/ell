@@ -18,18 +18,38 @@ Closure representation on the heap
 | c4     |
 | c3     | 
 | c2     | ... 
-| c1     | -3    -- closure environment (variable length)
-| parent | -2    -- parent environment
-| f_ptr  | -1    -- closure code
-| tramp  | 0     -- pointer to closure trampoline
-+--------+          (shared by all closures)
+| c1     | -2    -- closure data (variable length)
+| f_ptr  | -1    -- closure function pointer
+| CODE   | 0     -- closure trampoline code
+|        | ...
+|        |
++--------+
 
 A closure is represented as a heap-allocated object whose last member
-is a pointer to a trampoline function shared by all closures.
+is code that acts as a trampoline.
 
-The trampoline uses the calling convention function address (which is
-the address of the last member) to find the actual closure code and
-the closure environment at negative offsets from the address.
+The trampoline uses the calling convention function address to find
+the actual closure function and environment at negative offsets from
+the address.
+
+Closure environments
+====================
+
+Every lambda form results in a new closure, whose environment contains
+bindings for the free variables that are closed over by the closure.
+
+A free variable is a variable used in the body of a lambda that is
+neither a global variable, nor a parameter of the lambda.
+
+The environment of a closure is an array of pointers to the
+closed-over values.  Inside the body of a closure, every closed-over
+free variable is uniquely identified by its position in the
+environment array, so variable lookups in a closure's environment are
+O(1).
+
+A closure may also access a variable closed-over by one of the
+closure's ancestors.  In this case, there is only one binding for the
+variable shared by the ancestor and all descendants.
 
 Generic function dispatch
 =========================
