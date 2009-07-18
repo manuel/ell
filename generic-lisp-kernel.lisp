@@ -1,9 +1,9 @@
 (defpackage Generic-Lisp-Kernel ()
   (signature
     ;; Built-in classes and objects
-    (defclass <package>)
-    (defclass <class>)
     (defclass <object>)
+    (defclass <class>)
+    (defclass <package>)
     (defclass <function>)
     (defclass <generic> <: <function>)
     (defclass <method> <: <function>)
@@ -17,7 +17,9 @@
     (defclass <form>)
     (defclass <symbol> <: <form>)
     (defclass <list> <: <form>)
-    (defclass <ast>)
+    (defclass <syntax> <: <form>)
+    (defclass <symbol-syntax> <: (<syntax> <symbol>))
+    (defclass <list-syntax> <: (<syntax> <list>))
     ;; Variables
     (defmacro defparameter (<symbol> <object>))
     (defmacro setq (<symbol> <object>))
@@ -38,12 +40,12 @@
     ;; Macros
     (defmacro defmacro (macro-signature <function>))
     (defmacro let-macro (expander-bindings <form> -> <object>))
-    ;; Forms and abstract syntax trees
+    ;; Forms and syntax objects
     (defun elt (<list> <int> -> <form>))
     (defun subseq (<list> <int> &optional <int> -> <list>))
-    (defun quote (<form> -> <ast>))
-    (defun quasiquote (<form> -> <ast>))
-    (defun form->ast (<form> <environment> -> <ast>))
+    (defun quote (<form> -> <syntax>))
+    (defun quasiquote (<form> -> <syntax>))
+    (defun form->syntax (<form> <environment> -> <syntax>))
     ;; Objects
     (defun call-method (<object> <symbol> &rest args &all-keys key-args -> <object>))
     (defun slot-value (<object> <symbol> -> <symbol>))
