@@ -1,7 +1,6 @@
-(defpackage Generic-Lisp-Kernel ()
+(defpackage Generic-Lisp-Kernel
   (signature
     ;;;; Built-in classes and objects
-    ;; Symbols can be package scoped, syntax: Package::symbol
     (defclass <object>)
     (defclass <class>)
     (defclass <package>)
@@ -22,14 +21,10 @@
     (defclass <symbol-syntax> <: (<syntax> <symbol>))
     (defclass <list-syntax> <: (<syntax> <list>))
     ;;;; Variables
-    ;; + variable access by name
     (defmacro defparameter (<symbol> <object>))
     (defmacro setq (<symbol> <object>))
     (defun boundp (<symbol> -> <boolean>))
     ;;;; Functions
-    ;; parameters: required, &optional, &rest, &key, &all-keys, evaluated l-t-r
-    ;; lambdas may bind functions with (function var) parameters
-    ;; + function or macro call (operator &rest &all-keys)
     (defmacro lambda (signature <form> -> <function>))
     (defmacro defun (<symbol> <function>))
     (defmacro function (<symbol> -> <function>))
@@ -43,20 +38,15 @@
     (defmacro return-from ((<object> label) <object>))
     (defmacro unwind-protect ((<form> protected) (<form> cleanup) -> <object>))
     ;;;; Macros
-    ;; macros destructure arguments, and have additional &environment
-    ;; (for use with FORM->SYNTAX) and &whole parameters.
     (defmacro defmacro (macro-signature <function>))
     (defmacro let-macro (expander-bindings <form> -> <object>))
     ;;;; Forms and syntax objects
-    ;; syntax objects are forms with lexical binding information for hygiene,
-    ;; they can be used interchangeably with code that requires forms
-    ;; Syntax: ' = SYNTAX and ` = QUASISYNTAX, , and ,@
     (defun elt (<list> <int> -> <form>))
     (defun subseq (<list> <int> &optional <int> -> <list>))
     (defmacro syntax (<form> -> <syntax>))
     (defmacro quasisyntax (<form> -> <syntax>))
-    (defun form->syntax (<form> <environment> -> <syntax>)) ; for creating syntax in a particular lexical 
-    ;;;; Objects                                            ; environment (breaking hygiene)
+    (defun form->syntax (<form> <environment> -> <syntax>))
+    ;;;; Objects
     (defun call-method (<object> <symbol> &rest args &all-keys key-args -> <object>))
     (defun slot-value (<object> <symbol> -> <symbol>))
     (defun set-slot-value (<object> <symbol> <object>))
@@ -76,9 +66,8 @@
     (defun signal (<condition> -> <object>))
     ;;;; Evaluation and reflective tower
     (defun eval (<form> -> <object>))
-    (defmacro eval-when-compile (<form>)) ; nestable for higher meta-levels
+    (defmacro eval-when-compile (<form>))
     ;;;; Packages
-    ;; + functor application where <package> is allowed: (Functor &rest)
     (defmacro defpackage (<symbol> <package>))
     (defmacro signature (&rest declarations -> <package>))
     (defmacro structure (&rest definitions -> <package>))
@@ -89,14 +78,44 @@
     (defmacro include-function (&rest fqns))
     (defmacro include-macro (&rest fqns))
     ;;;; Native
-    (defmacro native (<string> -> <object>))
+    (defmacro native ((<string> host-language) -> <object>))
   )
 )
 
-;; Control flow and condition system: Dylan, Goo, Common Lisp, PLT Scheme
-;; Inline C: Alien Goo
-;; Packages and functors: OCaml, C++, Dylan, PLOT
-;; Object system and generic functions: CLOS, Dylan, Factor, C++
-;; Hygienic macros, reflective tower, syntax objects: SRFI-72
-;; Variables, functions, terminology: Common Lisp, Dylan, Goo, PLOT
-;; Expansion process: R6RS Ch. 10
+;;; This is the low-level form into which all code is translated by
+;;; the compiler.  In a sense, it can be viewed as the instruction set
+;;; of a Lisp (virtual) machine.
+;;;
+;;; As usual, a form can be a literal (evaluates to itself), a symbol
+;;; (evaluates to the value of the symbol's binding), or a list
+;;; (evaluates to a function call, or is a macro that expands to
+;;; another form, or is a special form).
+;;;
+;;; Symbols can be package-scoped, with the syntax `Package::symbol'.
+;;;
+;;; Functions can have required, `&optional', `&rest', `&key', and
+;;; `&all-keys' parameters.  `&all-keys' is populated with a
+;;; dictionary of all keyword arguments passed to the function.
+;;;
+;;; Macros destructure their arguments, and take additional
+;;; `&environment' and `&whole' parameters.  `&environment' can be
+;;; used with `form->syntax' to break hygiene by inserting code into a
+;;; particular lexical scope.
+;;;
+;;; Package expressions are written in a lazy functional language, so
+;;; functor applications of the form (Functor &rest) are allowed
+;;; wherever a `<package>' object is allowed.
+;;;
+;;; Code can be lifted into a higher meta-level with
+;;; `eval-when-compile'.  By nesting, code can be inserted into
+;;; arbitrary meta-levels.
+;;;
+;;; References:
+;;; Control flow and condition system: Dylan
+;;; Inline C: Alien Goo
+;;; Packages and functors: OCaml
+;;; Object system and generic functions: Factor (w/out multimethods)
+;;; Hygienic macros, reflective tower, syntax objects: SRFI-72
+;;; Variables, functions, terminology, lexical syntax: Common Lisp
+;;; Expansion process: R6RS Ch. 10
+;;; Quasiquotation: Alan Bawden, "Quasiquotation in Lisp", Appendix B
