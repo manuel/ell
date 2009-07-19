@@ -42,11 +42,18 @@
 
 (defpackage My
   (structure
-    (use S = CI-String-Set)
-    (let set = (S::make)
-      (S::add set "foo"))))
+    (let-package S = CI-String-Set)
+      (let set = (S::make)
+        (S::add set "foo"))))
 
-;; after defunctorization:
+;; expansion:
+
+(defpackage My
+  (structure
+    (let set = (CI-String-Set::make)
+      (CI-String-Set::add set "foo"))))
+
+;; defunctorization:
 
 (defpackage My
   (structure
@@ -60,7 +67,7 @@
     (defun make (-> <t>) (make-t))
     (defun add (<t> <elt>) (... (strcmp (tolower elt) (tolower ...)) ...)))) ; inlining
 
-;; after demodularization:
+;; demodularization:
 
 (let My::set = (Set-Impl##CI-String::make)
   (Set-Impl##CI-String::add My::set "foo"))
