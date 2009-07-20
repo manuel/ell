@@ -29,10 +29,9 @@
 ;;;
 
 (defpackage CI-String
-  (structure
+  (signature 
     (deftype <t> <str>)
-    (defun compare ((<str> s1) (<str> s2) -> <int>)
-      (declare (inline))
+    (defun compare ((<t> s1) (<t> s2) -> <int>)
       (strcmp (tolower s1) (tolower s2)))))
 
 (defpackage CI-String-Set
@@ -42,38 +41,37 @@
 
 (defpackage My
   (structure
-    (let-package S = CI-String-Set)
-      (let set = (S::make)
-        (S::add set "foo"))))
+    (defpackage S CI-String-Set)
+    (let set = (S::make)
+      (S::add set "foo"))))
 
-;; expansion:
+;; flatten:
 
-(defpackage My
-  (structure
-    (let set = (CI-String-Set::make)
-      (CI-String-Set::add set "foo"))))
+(let My::set = (CI-String-Set::make)
+  (CI-String-Set::add My::set "foo"))
 
-;; defunctorization:
+;; functor instantiation:
 
-(defpackage My
-  (structure
-    (let set = (Set-Impl##CI-String::make)
-      (Set-Impl##CI-String::add set "foo"))))
+(let My::set = (Set-Impl##CI-String::make)
+  (Set-Impl##CI-String::add My::set "foo"))
 
 (defpackage Set-Impl##CI-String
   (structure
     (defclass <t> (<list> elements init: (list)))
     (deftype <elt> CI-String::<t>)
     (defun make (-> <t>) (make-t))
-    (defun add (<t> <elt>) (... (strcmp (tolower elt) (tolower ...)) ...)))) ; inlining
+    (defun add (<t> <elt>) (... (CI-String::compare elt ...) ...))))
 
-;; demodularization:
+;; flatten and resolve deftype equalities:
 
 (let My::set = (Set-Impl##CI-String::make)
   (Set-Impl##CI-String::add My::set "foo"))
 
 (defclass Set-Impl##CI-String::<t> (<list> elements init: (list)))
-(deftype Set-Impl##CI-String::<elt> CI-String::<t>)
-(defun Set-Impl##CI-String::make (-> Set-Impl##CI-String::<t>) (Set-Impl##CI-String::make-t))
-(defun Set-Impl##CI-String::add (Set-Impl##CI-String::<t> Set-Impl##CI-String::<elt>)
-  (... (strcmp (tolower elt) (tolower ...)) ...))
+(defun Set-Impl##CI-String::make (-> Set-Impl##CI-String::<t>)
+  (Set-Impl##CI-String::make-t))
+(defun Set-Impl##CI-String::add (Set-Impl##CI-String::<t> (<str> elt))
+  (... (CI-String::compare elt ...) ...))
+
+(defun CI-String::compare ((<str> s1) (<str> s2) -> <int>)
+  (strcmp (tolower s1) (tolower s2)))

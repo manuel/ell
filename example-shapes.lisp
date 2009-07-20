@@ -54,10 +54,10 @@
 
 (defpackage My-Use-Add-Class-Ext ((Graphics G))
   (structure
-    (use S = (Make-Add-Class-Ext G))
-    (let* rect = (S::make-rect 10 10)
-          trans = (S::make-trans rect 25 25)
-      (S::draw trans 0 0))))
+    (let-package S = (Make-Add-Class-Ext G)
+      (let* rect = (S::make-rect 10 10)
+            trans = (S::make-trans rect 25 25)
+        (S::draw trans 0 0)))))
 
 (defpackage Add-Method-Ext ((Shape S))
   documentation: "Adds a new method to existing shapes."
@@ -77,9 +77,9 @@
 
 (defpackage My-Use-Add-Method-Ext ((Graphics G))
   (structure
-    (use S = (Make-Add-Method-Ext G))
-    (let rect = (S::make-rect 10 10)
-      (S::area rect))))
+    (let-package S = (Make-Add-Method-Ext G)
+      (let rect = (S::make-rect 10 10)
+        (S::area rect)))))
 
 (defpackage Add-Class-And-Method-Ext ((Shape S))
   documentation: "Adds both the new shape class and the new operation."
@@ -97,9 +97,9 @@
 (defpackage Make-Class-And-Method-Ext ((Graphics G) -> Add-Class-And-Method-Ext)
   (Add-Class-And-Method-Ext-Impl (Shape-Impl G)))
 
-(defpackage My-Class-And-Method-Ext ((Graphics G))
+(defpackage My-Use-Class-And-Method-Ext ((Graphics G))
   (structure
-    (use S = (Make-Add-Class-And-Method-Ext G))
-    (let rect = (S::make-rect 10 10)
-         trans = (S::make-trans rect 25 25)
-      (S::area trans))))
+    (let-package S = (Make-Add-Class-And-Method-Ext G)
+      (let rect = (S::make-rect 10 10)
+           trans = (S::make-trans rect 25 25)
+        (S::area trans)))))
