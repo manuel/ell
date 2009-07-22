@@ -18,10 +18,13 @@
 
 (defpackage Set-Impl ((Ordered-Type Elt))
   (structure
-    (defclass <t> (<list> elements init: (list)))
+    (defclass <t>
+      (<list> elements init: (list)))
     (deftype <elt> Elt::<t>)
-    (defun make (-> <t>) (make-t))
-    (defun add (<t> <elt>) (... (Elt::compare elt ...) ...))))
+    (defun make (-> <t>) 
+      (make-t))
+    (defun add (<t> <elt>) 
+      (... (Elt::compare elt ...) ...))))
 
 (defpackage Make-Set ((Ordered-Type Elt) -> Set)
   (Set-Impl Elt))
@@ -29,7 +32,7 @@
 ;;;
 
 (defpackage CI-String
-  (signature 
+  (structure
     (deftype <t> <str>)
     (defun compare ((<t> s1) (<t> s2) -> <int>)
       (strcmp (tolower s1) (tolower s2)))))

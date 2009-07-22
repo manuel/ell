@@ -32,9 +32,9 @@
       (G::draw-rect x y w h))
     (defmethod draw (<circ .r> x y)
       (G::draw-rect x y r))))
-
+  
 (defpackage Add-Class-Ext ((Shape S))
-  documentation: "Adds a new shape class with an existing method."
+  doc: "Adds a new shape class with an existing method."
   (signature
     (include S)
     (defclass <trans> <: <t>)
@@ -54,13 +54,13 @@
 
 (defpackage My-Use-Add-Class-Ext ((Graphics G))
   (structure
-    (let-package S = (Make-Add-Class-Ext G)
-      (let* rect = (S::make-rect 10 10)
-            trans = (S::make-trans rect 25 25)
-        (S::draw trans 0 0)))))
+    (defpackage S (Make-Add-Class-Ext G))
+    (let* rect = (S::make-rect 10 10)
+          trans = (S::make-trans rect 25 25)
+      (S::draw trans 0 0))))
 
 (defpackage Add-Method-Ext ((Shape S))
-  documentation: "Adds a new method to existing shapes."
+  doc: "Adds a new method to existing shapes."
   (signature
     (include S)
     (defun area (<t>))))
@@ -77,16 +77,16 @@
 
 (defpackage My-Use-Add-Method-Ext ((Graphics G))
   (structure
-    (let-package S = (Make-Add-Method-Ext G)
-      (let rect = (S::make-rect 10 10)
-        (S::area rect)))))
+    (defpackage S (Make-Add-Method-Ext G))
+    (let rect = (S::make-rect 10 10)
+      (S::area rect))))
 
 (defpackage Add-Class-And-Method-Ext ((Shape S))
-  documentation: "Adds both the new shape class and the new operation."
+  doc: "Adds both the new shape class and the new operation."
   (signature
     (include (Add-Class-Ext S))
     (include (Add-Method-Ext S))))
-  
+
 (defpackage Add-Class-And-Method-Ext-Impl ((Shape-Impl SI))
   (structure
     (include (Add-Class-Ext-Impl SI))
@@ -99,7 +99,7 @@
 
 (defpackage My-Use-Class-And-Method-Ext ((Graphics G))
   (structure
-    (let-package S = (Make-Add-Class-And-Method-Ext G)
-      (let rect = (S::make-rect 10 10)
-           trans = (S::make-trans rect 25 25)
-        (S::area trans)))))
+    (defpackage S (Make-Add-Class-And-Method-Ext G))
+    (let* rect = (S::make-rect 10 10)
+          trans = (S::make-trans rect 25 25)
+      (S::area trans))))

@@ -1,6 +1,6 @@
 (defpackage Generic-Lisp-Kernel
   (signature
-    ;;;; Built-in classes and objects
+    ;; Built-in classes and objects
     (defclass <object>)
     (defclass <class>)
     (defclass <function>)
@@ -18,41 +18,40 @@
     (defclass <list-form> <: <form>)
     (defclass <literal-form> <: <form>)
     (defclass <code>)
-    ;;;; Variables
-    (defmacro defparameter (symbol-or-function <object>))
-    (defmacro setq (symbol-or-function <object>))
-    (defun boundp (symbol-or-function -> <boolean>))
+    ;; Variables
+    (defmacro def (symbol-or-function <object>))
+    (defmacro set (symbol-or-function <object>))
     (defun eq (<object> <object> -> <boolean>))
-    ;;;; Functions
+    ;; Functions
     (defmacro lambda (signature <form> -> <function>))
-    (defmacro function (<symbol> -> <function>))
-    (defun apply (function-or-symbol &rest args &all-keys key-args -> <object>))
-    (defun funcall (function-or-symbol args key-args))
-    ;;;; Control
+    (defun funcall (symbol-or-function args key-args))
+    (defun apply (symbol-or-function &rest args &all-keys key-args -> <object>))
+    ;; Control
     (defmacro if (<boolean> <form> <form> -> <object>))
     (defmacro progn (&body forms -> <object>))
     (defmacro block (<function> -> <object>))
     (defmacro return-from ((<object> label) &optional <object>))
     (defmacro unwind-protect ((<function> protected) (<function> cleanup) -> <object>))
-    ;;;; Macros and reflective tower
+    ;; Macros and reflective tower
     (defmacro defmacro (macro-signature <function>))
-    (defmacro eval-when-compile (<form>))
-    ;;;; Forms
-    (defun elt (<list-form> <int> -> <form>))
-    (defun subseq (<list-form> <int> &optional <int> -> <form>))
+    (defmacro eval-when (situations <form>))
+    ;; Forms
+    (defun at (<list-form> <int> -> <form>))
+    (defun slice (<list-form> <int> &optional <int> -> <form>))
     (defmacro quote (<form> -> <form>))
     (defmacro quasiquote (<form> -> <form>))
     (defmacro unquote (<form>))
     (defmacro unquote-splicing (<list-form>))
-    ;;;; Code
-    (defun form->code (<form> <environment> -> <code>))
-    (defun code->form (<code> -> <form>))
-    ;;;; Objects
+    ;; Code objects
+    (defun encode (<form> <environment> -> <code>))
+    (defun decode (<code> -> <form>))
+    ;; Objects
+    (defmacro make-instance (<class> &all-keys slot-initializers -> <object>))
     (defmacro call-method (<object> <symbol> &rest args &all-keys key-args -> <object>))
     (defun slot-value (<object> <symbol> -> <symbol>))
     (defun set-slot-value (<object> <symbol> <object>))
     (defun class-of (<object> -> <class>))
-    ;;;; Classes
+    ;; Classes
     (defun make-class ((<symbol> &rest superclasses) &rest slot-specs
                        &key superclasses-mutable-p 
                        slot-specs-mutable-p
@@ -62,18 +61,18 @@
     (defun set-slot-specs (<class> &rest slot-specs))
     (defun set-method (<class> <symbol> <function>))
     (defun subclassp (<class> <class> -> <boolean>))
-    ;;;; Conditions
-    (defmacro handler-bind (&all-keys handler-bindings <form> -> <object>))
+    ;; Conditions
+    (defmacro with-handler (&all-keys handler-bindings <form> -> <object>))
     (defun signal (<condition> -> <object>))
-    ;;;; Evaluation
+    ;; Evaluation
     (defun eval (<form> -> <object>))
-    ;;;; Packages
+    ;; Modules
     (defmacro defpackage (<symbol> <package>))
-    (defmacro signature (&rest definitions -> <package>))
-    (defmacro structure (&rest declarations -> <package>))
+    (defmacro structure (&rest definitions -> <package>))
+    (defmacro signature (&rest declarations -> <package>))
     (defmacro functor (functor-signature <package> -> <package>))
     (defmacro include (&rest package-or-member-names))
-    ;;;; Native
+    ;; Native
     (defmacro native ((<string> host-language) -> <object>))
   )
 )
