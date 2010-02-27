@@ -1,0 +1,31 @@
+Ell is a new Lisp for UNIX systems programming, mostly inspired by
+Common Lisp, Goo, Scheme, and Factor.
+
+From Common Lisp:
+- Polymorphism via generic functions
+- Restartable exceptions (actually uses Dylan's simplification)
+- Control flow (BLOCK, RETURN-FROM, TAGBODY, GO)
+- No continuations or tail calls
+- Full dynamism (any expression can be used at any time)
+- Optional, keyword, and rest parameters
+
+From Goo:
+- Not too simple
+- Object-orientation in the core
+- Inline "C" (actually the main reason for doing this)
+
+From Factor:
+- Object system based on single inheritance and post-hoc mixins
+- Automatic recompilation based on dependency tracking
+
+From Scheme:
+- Hygienic macros (SRFI-72)
+- Syntax objects instead of conses
+- Implicit phasing
+
+Other:
+- Compiles to C
+- Not image-based
+- Separate compilation of packages
+
+Manuel J. Simoni, 2010-02-27
