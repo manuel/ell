@@ -1,0 +1,8 @@
+-*-outline-*-
+
+* Bindings
+
+Ell is a Lisp-2, which means that there a two namespaces: one for
+variable bindings and one for function bindings.
+
+Macros are also in the function namespace.

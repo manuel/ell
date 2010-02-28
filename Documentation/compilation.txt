@@ -1,0 +1,53 @@
+-*-outline-*-
+
+* Compilation
+
+The compilation model is based on Ghuloum and Dybvig's "Implicit
+Phasing for R6RS Libraries", ICFP 2007.  Note: This is tricky stuff,
+don't expect to understand the following, unless you already know what
+I'm talking about. ;)
+
+A package depends on other packages, either for their macros
+(compile-time bindings), values (runtime bindings: variables and
+functions), or both.
+
+Expanding a package means to transform macro calls in its code with
+the results of the macros, resulting in core language code without
+macros.
+
+Evaluating a package means to evaluate its value definitions, and its
+initialization expressions.
+
+** Visit-time
+
+When the expansion of a package P requires a macro from another
+package, that package's macro definitions must be evaluated before
+compiling P.  This is called "visiting a package", and the code that
+evaluates macro definitions is called "visit-time code".
+
+Example: Package P uses package Q's macro FOOMAC, thus Q's visit-time
+code needs to be evaluated before expanding P.
+
+** Invoke-time
+
+When the expansion and/or evaluation of a package P requires a value
+(variable or function) from another package, directly or indirectly,
+that package's value definitions and initialization expressions must
+be evaluated before expanding and/or evaluating P.  This is called
+"invoking a package", and the code that evaluates value definitions
+and initialization expressions is called "invoke-time code".
+
+Example 1 (Evaluation): Package P's value definitions or
+initialization expressions call package Q's function FOO, thus Q's
+invoke-time code needs to be evaluated before evaluating P.
+
+Example 2 (Expansion): When package P's macro BARMAC uses package Q's
+function FOO (e.g. for processing the syntax, not in the macro's
+expansion), and BARMAC is used in the value definitions or
+initialization expressions of P (and thus required for expanding P),
+Q's invoke-time code needs to be evaluated before expanding P.
+
+Example 3 (Indirect dependency): When package R uses P's macro BARMAC
+from Example 2 in its value definitions or initialization expressions
+(and thus BARMAC is required for expanding R), Q's invoke-time code
+(and P's visit-time code) needs to be evaluated before expanding R.
