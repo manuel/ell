@@ -1,0 +1,63 @@
+-*- outline -*-
+
+* `ell' Kernel Language
+
+** Fundamental
+*** class `<object>'
+*** class `<function>'
+*** class `<symbol>'
+*** class `<string>'
+*** class `<number>'
+*** class `<boolean>'
+*** class `<nil>'
+*** constant `#t'
+*** constant `#f'
+*** constant `nil'
+*** special `quote (symbol -> <symbol>)'
+*** function `eq (<object> <object> -> <boolean>)'
+** Bindings
+*** special `def (var-or-fun <object> -> <object>)'
+*** special `defconst (var-or-fun <object> -> <object>)'
+*** special `set (var-or-fun <object> -> <object>)'
+*** function `boundp (<symbol> -> <boolean>)'
+*** special `function (fun-name -> <function>)'
+** Functions
+*** special `lambda (sig form -> <function>)'
+*** function `funcall (sym-or-fun args key-args -> <object>)'
+*** function `apply (sym-or-fun &rest &all-keys -> <object>)'
+** Control flow
+*** special `if (<boolean> <form> <form> -> <object>)'
+*** special `progn (&body forms -> <object>)'
+*** function `unwind-protect ((protected <function>) (cleanup <function>))'
+*** function `call-with-escape-continuation (<function> -> <object>)'
+*** special `tagbody (&body tagbody -> <nil>)'
+*** special `go (tag)'
+** Macros
+*** special `defmacro (name expander-fun)'
+*** special `quasiquote (form -> <form>)'
+*** special `unquote (form)'
+*** special `unquote-splicing (list-form)'
+** Classes
+*** class `<type>'
+*** class `<class>'
+*** class `<mixin>'
+*** function `make-class (<symbol> -> <class>)'
+*** function `set-slot-specs (<class> ...)'
+*** function `set-superclass (<class> (superclass <class>))'
+*** function `make-mixin (<symbol> -> <mixin>)'
+*** function `set-mixins (<type> (mixins <ordered-set>))'
+*** function `set-method (<type> <symbol> <function>)'
+*** function `subtypep (<type> <type> -> <boolean>)'
+** Objects
+*** function `make (symbol-or-class &all-keys slot-initializers)'
+*** function `call-method (<object> <symbol> &rest &all-keys)'
+*** function `slot-value (<object> <symbol> -> <object>)'
+*** function `set-slot-value (<object> <symbol> <object>)'
+*** function `class-of (<object> -> <class>)'
+** Exceptions
+*** function `handler-bind (handler-bindings <function> -> <object>)'
+*** function `signal (condition -> <object>)'
+** Evaluation
+*** function `eval (<form> env -> <object>)'
+** Inline "C"
+*** special `native ((c-snippet <string>))'

@@ -1,0 +1,93 @@
+-*- outline -*-
+
+
+* `ell': Executable and Linkable Lisp
+
+March 2010
+
+Manuel Simoni, <msimoni@gmail.com>
+
+
+** Compilation, Linking, and Loading
+
+
+
+
+** Namespaces
+
+`ell' is a pure Lisp-2.  There is a variable and a function namespace,
+and no other namespaces.  Types live in the variable namespace, and
+are conventionally named like `<type-name>', to prevent name clashes
+with variables.
+
+Lisp-2 is chosen over Lisp-1, for the reason that without a function
+namespace, function names may clash with variable names.
+
+
+** Symbols
+
+Symbols are both literals, as well as global variables.
+
+*** Symbol literals
+
+The literal part of a symbol is implemented as one global variable
+(linker symbol) per program, that's a pointer to a string with the
+name of the symbol, and a second global variable that points to the
+address of the first.
+
+E.g. when a program quotes a symbol `x' then:
+
+    ell_obj *_lit_x = symbol("x");
+    ell_obj **_sym_x = &lit_x;
+
+Thus, symbols are uniquified by the linker.
+
+*** Symbol variables
+
+The variable part of symbols is implemented as an additional
+per-thread variable, the "value cell" of the symbol.
+
+E.g. when a program accesses variable `x' then:
+
+    __thread ell_obj *_var_x;
+
+--
+
+    _var_x;
+
+*** Dynamic binding of symbols
+
+Dynamic binding of variables uses shallow binding, which means that
+the value cell of a symbol is changed to the new value for a dynamic
+extent of code.  When control flow leaves the extent, the old value of
+the cell is restored.
+
+*** Hierarchic structure of symbols
+
+Every symbol has a hierarchic structure.  
+
+
+** Goals
+
+*** Convenient and robust mixing of Lisp and C code
+
+*** Support typeful programming
+
+
+** Non-goals
+
+*** High performance of the Lisp parts of an app
+
+Code is probably IO and system call heavy anyway.
+
+*** Space efficiency of the Lisp parts of an app
+
+Huge data structures and objects of which you have lots of should be
+written in C anyway.
+
+
+** Principles
+
+*** Object-orientation is a must, but enough is enough.
+
+*** Don't fight the ball of mud.
