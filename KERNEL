@@ -1,24 +1,23 @@
 -*- outline -*-
-
 * Fundamental
 ** `<object>` class
+** `<package>` class
 ** `<function>` class
 ** `<symbol>` class
 ** `<string>` class
 ** `<number>` class
 ** `<boolean>` class
 ** `<nil>` class
-** `#t` constant
-** `#f` constant
-** `nil` constant
-** `quote symbol -> <symbol>` special
-** `eq <object> <object> -> <boolean>` function
+* Packages
+** `package &body body` special
+** `provide &rest names` special
+** `require import` special
 * Bindings
-** `defparameter var-or-fun <object> -> <object>` special
-** `setq var-or-fun <object> -> <object>` special
-** `boundp <symbol> -> <boolean>` function
-** `symbol-value <symbol> -> <object>` function
-** `set-symbol-value <symbol> <object> -> <object>` function
+** `defparameter name value` special
+** `setq name value` special
+** `boundp <name> -> <boolean>` function
+** `symbol-value <name> -> <object>` function
+** `set-symbol-value <name> -> <object>` function
 * Functions
 ** `function fun-name -> <function>` special
 ** `lambda sig &body forms -> <function>` special
@@ -32,34 +31,9 @@
 ** `tagbody &body tagbody -> <nil>` special
 ** `go tag` special
 * Macros
-** `defexpander name expander-fun` special
+** `defsyntax name expander-fun` special
 ** `quasiquote form -> <form>` special
 ** `unquote form` special
 ** `unquote-splicing list-form` special
-* Types
-** `<type>` class
-** `set-method <type> <symbol> <function>` function
-** `subtypep <type> <type> -> <boolean>` function
-* Classes
-** `<class> <: <type>` class
-** `make-class <symbol> -> <class>` function
-** `set-slot-descriptions <class> slot-descs` function
-** `set-superclass <class> (superclass <class>)` function
-* Mixins
-** `<mixin> <: <type>` class
-** `make-mixin <symbol> -> <mixin>` function
-** `mixins-of <type> -> <ordered-set>` function
-** `set-mixins <type> (mixins <ordered-set>)` function
-* Objects
-** `make <class> &keys slot-initializers` function
-** `call-method <object> <symbol> &rest &keys` function
-** `slot-value <object> <symbol> -> <object>` function
-** `set-slot-value <object> <symbol> <object>` function
-** `class-of <object> -> <class>` function
-* Conditions
-** `handler-bind (&rest bindings) &rest forms -> <object>` special
-** `signal <condition> -> <object>` function
 * Evaluation
 ** `eval <form> -> <object>` function
-* Inline "C"
-** `native c-snippet` special
