@@ -1,39 +1,24 @@
--*- outline -*-
-* Fundamental
-** `<object>` class
-** `<package>` class
-** `<function>` class
-** `<symbol>` class
-** `<string>` class
-** `<number>` class
-** `<boolean>` class
-** `<nil>` class
-* Packages
-** `package &body body` special
-** `provide &rest names` special
-** `require import` special
-* Bindings
-** `defparameter name value` special
-** `setq name value` special
-** `boundp <name> -> <boolean>` function
-** `symbol-value <name> -> <object>` function
-** `set-symbol-value <name> -> <object>` function
-* Functions
-** `function fun-name -> <function>` special
-** `lambda sig &body forms -> <function>` special
-** `funcall sym-or-fun args key-args -> <object>` function
-** `apply sym-or-fun &rest &keys -> <object>` function
-* Control Flow
-** `if test-form then-form &optional else-form -> <object>` special
-** `progn &body forms -> <object>` special
-** `unwind-protect protected &rest cleanup` special
-** `call-with-escape-continuation <function> -> <object>` function
-** `tagbody &body tagbody -> <nil>` special
-** `go tag` special
-* Macros
-** `defsyntax name expander-fun` special
-** `quasiquote form -> <form>` special
-** `unquote form` special
-** `unquote-splicing list-form` special
-* Evaluation
-** `eval <form> -> <object>` function
+-*- org -*-
+** defparameter name value -> value
+** lambda sig expr -> function
+** fexpr sig expr -> fexpr
+** eval form-or-syntax environment -> object
+** the-environment -> environment
+** quote form -> form
+** quasiquote form -> syntax
+** function name -> function
+** apply symbol-or-function args keys -> object
+** funcall symbol-or-function &rest args &keys keys -> object
+** boundp form-or-syntax-symbol -> boolean
+** setq name value -> object
+** block name expr -> object
+** return-from name
+** unwind-protect protected-thunk cleanup-thunk -> object
+** defdynamic name value -> value
+** dynamic name -> value
+** set-dynamic name value -> value
+** environment exports expr -> object
+** import env -> nil
+** import-only env -> nil
+** form->syntax template-identifier form -> syntax
+** progn &rest exprs
