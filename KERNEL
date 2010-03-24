@@ -20,5 +20,5 @@
 ** environment exports expr -> object
 ** import env -> nil
 ** import-only env -> nil
-** form->syntax template-identifier form -> syntax
+** datum->syntax template-identifier form -> syntax
 ** progn &rest exprs
