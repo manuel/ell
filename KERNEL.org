@@ -1,0 +1,48 @@
+-*- org -*-
+* Bindings
+** defparameter (identifier <<syntax>>) value -> <object>
+** setq (identifier <<syntax>>) value -> <object>
+** boundp (identifier <syntax>) -> <boolean>
+** symbol-value identifier -> <object>
+** set identifier <object> -> <object>
+** makunbound identifier 
+* Functions
+** lambda (sig <<syntax>>) (expr <<syntax>>) -> <function>
+** apply (fun <function>) (args <list>) (keys <map>) -> <object>
+** funcall (fun <function>) &rest &keys -> <object>
+** function <<identifier>> -> <function>
+* Packages
+** defenvironment name &body body -> <object>
+** defpackage name &body body -> <object>
+** provide &rest exports -> <nil>
+** require env -> <nil>
+** require-for-syntax env -> <nil>
+* Evaluation
+** eval <syntax> -> <object>
+* Macros and Quotation
+** defexpander name function -> <nil>
+** quote <<form>> -> <form>
+** quasiquote <<form>> -> <syntax>
+** unquote <<form>>
+** unquote-splicing <<form>>
+** datum->syntax <syntax> <form> -> <syntax>
+* Control Flow
+** if <<syntax>> <<syntax>> <<syntax>> -> <object>
+** progn &rest exprs -> <object>
+** call-with-escape-continuation <function> -> <object>
+** unwind-protect (protected <function>) (cleanup <function>) -> <object>
+** tagbody &body tagbody -> <nil>
+** go tag -> |
+* Objects and Classes
+** make-class name -> <class>
+** set-superclasses sub super
+** set-method
+** call-method
+** set-slot-specs
+** make-instance
+** slot-value
+** set-slot-value
+** class-of
+** subclassp
+* Native
+** native-expr <<string>> &optional result-class -> <object>
