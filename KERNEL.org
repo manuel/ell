@@ -1,16 +1,15 @@
--*- org -*-
 * Bindings
-** defparameter (identifier <<syntax>>) value -> <object>
-** setq (identifier <<syntax>>) value -> <object>
-** boundp (identifier <syntax>) -> <boolean>
-** symbol-value identifier -> <object>
-** set identifier <object> -> <object>
-** makunbound identifier 
+** defparameter name value -> name
+** defun function-name function -> name
+** set name value -> <object>
+** fset name value -> <object>
+** boundp symbol -> <boolean>
+** fboundp symbol -> <boolean>
 * Functions
-** lambda (sig <<syntax>>) (expr <<syntax>>) -> <function>
+** lambda sig expr -> <function>
 ** apply (fun <function>) (args <list>) (keys <map>) -> <object>
-** funcall (fun <function>) &rest &keys -> <object>
-** function <<identifier>> -> <function>
+** funcall (fun <function>) &rest args &keys keys -> <object>
+** function name -> <function>
 * Packages
 ** defenvironment name &body body -> <object>
 ** defpackage name &body body -> <object>
@@ -20,12 +19,10 @@
 * Evaluation
 ** eval <syntax> -> <object>
 * Macros and Quotation
-** defexpander name function -> <nil>
-** quote <<form>> -> <form>
-** quasiquote <<form>> -> <syntax>
-** unquote <<form>>
-** unquote-splicing <<form>>
-** datum->syntax <syntax> <form> -> <syntax>
+** defmacro name expander-function -> name
+** quote form -> <syntax>
+** quasiquote form -> <syntax>
+** form->syntax syntax form -> <syntax>
 * Control Flow
 ** if <<syntax>> <<syntax>> <<syntax>> -> <object>
 ** progn &rest exprs -> <object>
@@ -33,16 +30,22 @@
 ** unwind-protect (protected <function>) (cleanup <function>) -> <object>
 ** tagbody &body tagbody -> <nil>
 ** go tag -> |
-* Objects and Classes
-** make-class name -> <class>
-** set-superclasses sub super
-** set-method
-** call-method
-** set-slot-specs
-** make-instance
-** slot-value
-** set-slot-value
-** class-of
-** subclassp
-* Native
-** native-expr <<string>> &optional result-class -> <object>
+* Classes
+** make-class name superclasses slot-specs -> class
+** set-superclasses class superclasses
+** set-method class method-name function
+** set-slot-specs class slot-specs
+** subclassp sub super -> boolean
+* Objects
+** make-instance class &keys slots -> object
+** call-method object method-name &rest &keys -> value
+** slot-value object slot-name -> value
+** set-slot-value object slot-name value -> value
+** class-of object -> class
+** no-applicable-method object method-name args keys -> result
+* Dynamic Variables
+** defdynamic name value -> name
+** dynamic name -> value
+** set-dynamic name value -> value
+* Native Interface
+** native <<string>> &optional result-class -> <object>
