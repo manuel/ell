@@ -1,51 +1,49 @@
-* Bindings
-** defparameter name value -> name
-** defun function-name function -> name
-** set name value -> <object>
-** fset name value -> <object>
-** boundp symbol -> <boolean>
-** fboundp symbol -> <boolean>
-* Functions
-** lambda sig expr -> <function>
-** apply (fun <function>) (args <list>) (keys <map>) -> <object>
-** funcall (fun <function>) &rest args &keys keys -> <object>
-** function name -> <function>
-* Packages
-** defenvironment name &body body -> <object>
-** defpackage name &body body -> <object>
-** provide &rest exports -> <nil>
-** require env -> <nil>
-** require-for-syntax env -> <nil>
-* Evaluation
-** eval <syntax> -> <object>
-* Macros and Quotation
-** defmacro name expander-function -> name
-** quote form -> <syntax>
-** quasiquote form -> <syntax>
-** form->syntax syntax form -> <syntax>
-* Control Flow
-** if <<syntax>> <<syntax>> <<syntax>> -> <object>
-** progn &rest exprs -> <object>
-** call-with-escape-continuation <function> -> <object>
-** unwind-protect (protected <function>) (cleanup <function>) -> <object>
-** tagbody &body tagbody -> <nil>
-** go tag -> |
-* Classes
-** make-class name superclasses slot-specs -> class
-** set-superclasses class superclasses
-** set-method class method-name function
-** set-slot-specs class slot-specs
-** subclassp sub super -> boolean
-* Objects
-** make-instance class &keys slots -> object
-** call-method object method-name &rest &keys -> value
-** slot-value object slot-name -> value
-** set-slot-value object slot-name value -> value
-** class-of object -> class
-** no-applicable-method object method-name args keys -> result
-* Dynamic Variables
-** defdynamic name value -> name
-** dynamic name -> value
-** set-dynamic name value -> value
-* Native Interface
-** native <<string>> &optional result-class -> <object>
+* Kernel Language
+** Bindings
+*** defparameter name value -> name
+*** defun name function -> name
+*** setq name value -> value
+*** fsetq name function -> function
+*** boundp symbol -> boolean
+*** fboundp symbol -> boolean
+** Functions
+*** lambda signature form -> function
+*** apply function (args <list>) (keys <dict>) -> result
+*** funcall function &rest args &keys keys -> result
+*** function name -> function
+** Evaluation
+*** eval form -> result
+** Macros and Quotation
+*** defsyntax name expander-function -> name
+*** quasiquote form -> form
+*** datum->syntax form form -> form
+** Control Flow
+*** if test then else -> value
+*** progn &rest exprs -> value
+*** call-with-escape-continuation function -> result
+*** unwind-protect protected-thunk cleanup-thunk -> result
+*** tagbody &body tagbody -> nil
+*** go tag -> |
+** Native Interface
+*** native string &optional result-class -> value
+** Packages
+*** provide &rest exports -> nil
+*** require package -> nil
+*** require-when-compile package -> nil
+** Dynamic Variables
+*** make-dynamic value -> dynamic
+*** dynamic dynamic -> value
+*** set-dynamic dynamic value -> value
+** Classes
+*** make-class name superclasses slot-specs -> class
+*** set-superclasses class superclasses
+*** set-method class method-name function
+*** set-slot-specs class slot-specs
+*** subclassp sub super -> boolean
+** Objects
+*** make-instance class &keys slots -> object
+*** call-method object method-name &rest &keys -> value
+*** slot-value object slot-name -> value
+*** set-slot-value object slot-name value -> value
+*** class-of object -> class
+*** no-applicable-method object method-name args keys -> result
