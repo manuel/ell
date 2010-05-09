@@ -98,6 +98,8 @@ Returns the value of the named slot of the object.
 Sets the named slot of the object to the given value.
 *** class-of object -> class [function]
 Returns the class of the given object.
+*** call-next-method &rest args -> result [local function]
+*** no-next-method object method-name args keys -> result [generic]
 *** no-applicable-method object method-name args keys -> result [generic]
 Called when no method with the given name exists in the object's class
 or its superclasses.
