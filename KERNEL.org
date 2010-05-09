@@ -2,10 +2,10 @@
 ** Bindings
 *** defparameter name value -> name [special]
 Defines a variable binding with the given name and value in the
-current scope.
+current environment.
 *** defun name function -> name [special]
 Defines a function binding with the given name and function in the
-current scope.
+current environment.
 *** setq name value -> value [special]
 Sets the global or local variable binding with the given name to the
 given value.
@@ -14,13 +14,14 @@ Sets the global or local function binding with the given name to the
 given function.
 *** boundp symbol -> boolean [function]
 Returns true if there is a variable binding with the given name in the
-current scope.
+current environment.
 *** fboundp symbol -> boolean [function]
 Returns true if there is a function binding with the given name in the
-current scope.
+current environment.
 ** Functions
-*** lambda signature form -> function [special]
-Creates an anonymous function.
+*** lambda signature &body -> function [special]
+Creates an anonymous function.  The body of a lambda is an environment
+in which new local bindings can be defined.
 *** apply function (args <list>) (keys <dict>) -> result [function]
 Applies a function to the given positional and keyword arguments.
 *** funcall function &rest args &keys keys -> result [function]
@@ -59,10 +60,11 @@ Creates a new dynamic (thread-local) variable object.
 *** dynamic dynamic -> value [function]
 Returns the value of the dynamic variable.
 *** set-dynamic dynamic value -> value [function]
-Sets the value of the dynamic variables.
+Sets the value of the dynamic variable.
 ** Macros
 *** defsyntax name expander-function -> name [special]
-Defines an expander function with the given name in the current scope.
+Defines an expander function with the given name in the current
+environment.
 *** quasisyntax form -> form [special]
 Constructs a piece of quoted syntax with unquotes.
 *** datum->syntax template-id form -> form [function]
@@ -100,24 +102,16 @@ Returns the class of the given object.
 Called when no method with the given name exists in the object's class
 or its superclasses.
 ** Packages
-*** defpackage name &body -> nil [special]
-Defines a new named scope, that can be separately compiled.  The body
-of a package cannot access lexically enclosing variables.  The binding
-for the package exists in the variable namespace, but cannot be changed.
-*** provide &rest names -> nil [special]
-Makes the bindings with the given names available to other packages.
-For every name, both the variable and function binding is provided.
-PROVIDE expressions must appear before any other forms in a package.
+*** defpackage name exports &body -> nil [special]
+Defines a new named environment, that can be separately compiled.  The
+body of a package cannot access lexically enclosing variables.  The
+binding for the package exists in the variable namespace, but cannot
+be changed.  The body of the package is an environment in which new
+local bindings can be created.
 *** require package -> nil [special]
 Loads the specified package if it isn't loaded yet, and makes its
-top-level bindings accessible in the current scope.
+top-level bindings accessible in the current environment.
 *** require-for-syntax package -> nil [special]
-Advises the compiler that bindings from the specified package may be
-required for the compilation of the current package.  This is merely a
-hint.  If actually no bindings from the package are required during
-compilation, the package is not loaded at compile-time.  This is in
-contrast to REQUIRE, which always loads the specified package, whether
-or not its bindings are used.
 ** Native Interface
 *** native c-string &optional result-class -> value [special]
 Includes a snippet of C, with escaping back into Lisp, and automatic
