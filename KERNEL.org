@@ -1,4 +1,4 @@
-* Kernel Language
+* Kernel Language Draft
 ** Bindings
 *** defparameter name value -> name [special]
 Defines a variable binding with the given name and value in the
@@ -38,7 +38,11 @@ Calls a function with multiple values.
 If the test form evaluates to true, evaluates the then form, otherwise
 evaluates the else form.
 *** progn &rest exprs -> value [special]
-Evaluates the expressions in sequence and returns value of the last.
+Evaluates the expressions in sequence and returns the value of the
+last.  If a PROGN occurs at the top-level of an environment, its
+contents are spliced into the top-level, as if the PROGN didn't exist.
+This is useful for writing macros that expand to more than one
+top-level definiton and/or expression.
 *** call-with-escape-continuation function -> result [function]
 Calls the given function with one argument, a function that represents
 the current continuation.  Calling the continuation function with a
@@ -99,10 +103,14 @@ Sets the named slot of the object to the given value.
 *** class-of object -> class [function]
 Returns the class of the given object.
 *** call-next-method &rest args -> result [local function]
+Calls the next method, aka "super".  Only available inside methods.
 *** no-next-method object method-name args keys -> result [generic]
+Called when there's no next method.  To handle this, define a method
+on this generic method for your class.
 *** no-applicable-method object method-name args keys -> result [generic]
 Called when no method with the given name exists in the object's class
-or its superclasses.
+or its superclasses.  To handle this, define a method on this generic
+function for your class.
 ** Packages
 *** defpackage name exports &body -> nil [special]
 Defines a new named environment, that can be separately compiled.  The
@@ -114,6 +122,11 @@ local bindings can be created.
 Loads the specified package if it isn't loaded yet, and makes its
 top-level bindings accessible in the current environment.
 *** require-for-syntax package -> nil [special]
+Loads the specified package before loading macros defined in the
+current package.  This is useful for utility functions used by macros,
+as macros have no access to runtime bindings.  If macros use other
+macros, packages may be loaded more than once during compilation, in a
+phase-separated tower.
 ** Native Interface
 *** native c-string &optional result-class -> value [special]
 Includes a snippet of C, with escaping back into Lisp, and automatic
