@@ -1,24 +1,26 @@
-;;; Solution to expression problem with f-bounded polymorphism,
+;;; Solution to expression problem with F-bounded polymorphism,
 ;;; following ``The Expression Problem Revisited Four new solutions
 ;;; using generics'' by Mads Torgersen, Fig. 3, 4, 5.  mjs, 2010-05-15
 
 (defpackage basic (<basic-expr> <basic-lit> <basic-plus> to-str)
-  (defclass (<basic-expr> (<: C (<basic-expr> C))))
-  (defclass (<basic-lit> (<: C (<basic-expr> C))) ((<basic-expr> C))
+  (deftype T (<basic-expr> T))
+  (defclass (<basic-expr> T))
+  (defclass (<basic-lit> T) ((<basic-expr> T))
     ((value <num>)))
-  (defclass (<basic-plus> (<: C (<basic-expr> C))) ((<basic-expr> C))
-    ((left C)
-     (right C)))
-  (defmethod to-str (<lit .value> -> <str>)
+  (defclass (<basic-plus> T) ((<basic-expr> T))
+    ((left T)
+     (right T)))
+  (defmethod to-str (<basic-lit .value> -> <str>)
     (num-to-str value))
-  (defmethod to-str (<plus .left .right> -> <str>)
+  (defmethod to-str (<basic-plus .left .right> -> <str>)
     (conc (to-str left) "+" (to-str right))))
 
 (defpackage eval (<eval-expr> <eval-lit> <eval-plus> eval)
   (require basic)
-  (defclass (<eval-expr> (<: C (<eval-expr> C))) ((<basic-expr> C)))
-  (defclass (<eval-lit> (<: C (<eval-expr> C))) ((<basic-lit> C) (<eval-expr> C)))
-  (defclass (<eval-plus> (<: C (<eval-expr> C))) ((<basic-plus> C) (<eval-expr> C)))
+  (deftype T (<eval-expr> T))
+  (defclass (<eval-expr> T) ((<basic-expr> T)))
+  (defclass (<eval-lit> T) ((<eval-expr> T) (<basic-lit> T)))
+  (defclass (<eval-plus> T) ((<eval-expr> T) (<basic-plus> T)))
   (defmethod eval (<eval-lit .value> -> <num>)
     value)
   (defmethod eval (<eval-plus .left .right> -> <num>)
@@ -26,14 +28,15 @@
 
 (defpackage basic-neg (<basic-neg>)
   (require basic)
-  (defclass (<basic-neg> (<: C (<basic-expr> C))) ((<basic-expr> C))
-    ((expr C)))
+  (defclass (<basic-neg> T) ((<basic-expr> T))
+    ((expr T)))
   (defmethod to-str (<neg .expr> -> <str>)
     (conc "-" (to-str expr))))
 
 (defpackage eval-neg (<eval-neg>)
   (require basic basic-neg eval)
-  (defclass (<eval-neg> (<: C (<eval-expr> C))) ((<basic-neg> C) (<eval-expr> C)))
+  (deftype T (<eval-expr> T))
+  (defclass (<eval-neg> T) ((<eval-expr> T) (<basic-neg> T)))
   (defmethod eval (<eval-neg .expr> -> <num>)
     (- (eval expr))))
 
