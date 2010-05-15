@@ -28,6 +28,7 @@
 
 (defpackage basic-neg (<basic-neg>)
   (require basic)
+  (deftype T (<basic-expr> T))
   (defclass (<basic-neg> T) ((<basic-expr> T))
     ((expr T)))
   (defmethod to-str (<neg .expr> -> <str>)
