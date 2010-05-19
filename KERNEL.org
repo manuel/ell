@@ -43,16 +43,11 @@ last.  If a PROGN occurs at the top-level of an environment, its
 contents are spliced into the top-level, as if the PROGN didn't exist.
 This is useful for writing macros that expand to more than one
 top-level definiton and/or expression.
-*** call-with-escape-continuation function -> result [function]
-Calls the given function with one argument, a function that represents
-the current continuation.  Calling the continuation function with a
-value will abort the current computation, and return the value from
-the original call to CALL-WITH-ESCAPE-CONTINUATION.  An error is
-signaled if the continuation is called more than once, or after the
-dynamic extent of CALL-WITH-ESCAPE-CONTINUATION has ended.
 *** unwind-protect protected-thunk cleanup-thunk -> result [function]
 Calls the protected thunk and ensures that the cleanup thunk is called
 whether the protected thunk returns normally, or via a non-local exit.
+*** block name expr -> result [special]
+*** return-from block-name &optional result [special]
 *** tagbody &body tagbody -> nil [special]
 Creates a body of expressions and tags.  Expressions in the TAGBODY
 may perform non-local jumps to tags with GO.
@@ -82,26 +77,17 @@ Creates a new class with the given name, superclasses, and slot
 specifiers.
 *** set-superclasses class superclasses [function]
 Updates the superclasses of the class.
-*** put-method class method-name function [function]
-Sets the method definition with the given name for the class.
 *** set-slot-specifiers class slot-specifiers [function]
 Updates the slot specifiers of the given class.  Instances are updated
 lazily to the new layout.
 *** subclassp a b -> boolean [function]
 Returns true if class A is a subclass of class B.
-** Objects
-*** make-instance class &keys slots -> object [function]
-Creates a new object of the given class, and initializes its slots
-using the supplied dictionary.
+** Methods
+*** put-method class method-name function [function]
+Sets the method definition with the given name for the class.
 *** find-method object method-name &rest &keys -> function [function]
 Looks for the method with the given name in the object's class and
 superclasses.
-*** slot-value object slot-name -> value [function]
-Returns the value of the named slot of the object.
-*** set-slot-value object slot-name value -> value [function]
-Sets the named slot of the object to the given value.
-*** class-of object -> class [function]
-Returns the class of the given object.
 *** call-next-method &rest args -> result [local function]
 Calls the next method, aka "super".  Only available inside methods.
 *** no-next-method object method-name args keys -> result [generic]
@@ -111,6 +97,19 @@ on this generic method for your class.
 Called when no method with the given name exists in the object's class
 or its superclasses.  To handle this, define a method on this generic
 function for your class.
+** Objects
+*** make-instance class &keys slots -> object [function]
+Creates a new object of the given class, and initializes its slots
+using the supplied dictionary.
+*** slot-value object slot-name -> value [function]
+Returns the value of the named slot of the object.
+*** set-slot-value object slot-name value -> value [function]
+Sets the named slot of the object to the given value.
+*** class-of object -> class [function]
+Returns the class of the given object.
+*** the class object
+Casts the object to the specified class.  Signals an error if object
+is not a generalized instance of the class.
 ** Packages
 *** defpackage name exports &body -> nil [special]
 Defines a new named environment, that can be separately compiled.  The
