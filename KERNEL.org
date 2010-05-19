@@ -2,16 +2,18 @@
 ** Bindings
 *** defparameter name value -> name [special]
 Defines a variable binding with the given name and value in the
-current environment.
+current environment.  If the binding is already defined, its value is
+updated.
 *** defun name function -> name [special]
 Defines a function binding with the given name and function in the
-current environment.
+current environment.  If the binding is already defined, its value is
+updated.
 *** setq name value -> value [special]
 Sets the global or local variable binding with the given name to the
-given value.
+given value.  Signals an error if no such binding is defined.
 *** fsetq name function -> function [special]
 Sets the global or local function binding with the given name to the
-given function.
+given function.  Signals an error if no such binding is defined.
 *** boundp symbol -> boolean [function]
 Returns true if there is a variable binding with the given name in the
 current environment.
@@ -22,32 +24,36 @@ current environment.
 *** lambda signature &body -> function [special]
 Creates an anonymous function.  The body of a lambda is an environment
 in which new local bindings can be defined.
-*** apply function (args <list>) (keys <dict>) -> result [function]
+*** apply function (args <list>) (keys <dict>) -> result* [function]
 Applies a function to the given positional and keyword arguments.
-*** funcall function &rest args &keys keys -> result [function]
+*** funcall function &rest args &keys keys -> result* [function]
 Applies a function to the given positional and keyword arguments.
 *** function name -> function [special]
 Returns the function of the global or local function binding with the
 given name.
 *** values &rest objects -> object* [special]
 Returns multiple values.  
-*** multiple-value-call function &rest forms -> result [special]
+*** multiple-value-call function &rest forms -> result* [special]
 Calls a function with multiple values.
 ** Control Flow
-*** if test-form then-form else-form -> value [special]
+*** if test-form then-form else-form -> value* [special]
 If the test form evaluates to true, evaluates the then form, otherwise
 evaluates the else form.
-*** progn &rest exprs -> value [special]
+*** progn &rest exprs -> value* [special]
 Evaluates the expressions in sequence and returns the value of the
 last.  If a PROGN occurs at the top-level of an environment, its
 contents are spliced into the top-level, as if the PROGN didn't exist.
 This is useful for writing macros that expand to more than one
 top-level definiton and/or expression.
-*** unwind-protect protected-thunk cleanup-thunk -> result [function]
-Calls the protected thunk and ensures that the cleanup thunk is called
-whether the protected thunk returns normally, or via a non-local exit.
-*** block name expr -> result [special]
-*** return-from block-name &optional result [special]
+*** unwind-protect protected-form &body cleanup-forms -> result* [function]
+Evaluates the protected form and ensures that the cleanup forms are
+evaluated whether the protected thunk returns normally, or via a
+non-local exit.  Returns the values of the protected form.
+*** block name &body forms -> result* [special]
+Establishes a lexical binding for a nonlocal exit for a body of code.
+Code may return from the block with RETURN-FROM.
+*** return-from block-name &optional result -> | [special]
+Performs a non-local jump to the given block.
 *** tagbody &body tagbody -> nil [special]
 Creates a body of expressions and tags.  Expressions in the TAGBODY
 may perform non-local jumps to tags with GO.
@@ -69,31 +75,31 @@ Constructs a piece of quoted syntax with unquotes.
 *** datum->syntax template-id form -> form [function]
 Repaints the form with the same color as the template identifier.
 ** Evaluation
-*** eval form -> result [special]
+*** eval form -> result* [special]
 Evaluates the form in the top-level environment and returns its value.
 ** Classes
 *** make-class name superclasses slot-specifiers -> class [function]
 Creates a new class with the given name, superclasses, and slot
 specifiers.
-*** set-superclasses class superclasses [function]
+*** set-superclasses class superclasses -> nil [function]
 Updates the superclasses of the class.
-*** set-slot-specifiers class slot-specifiers [function]
+*** set-slot-specifiers class slot-specifiers -> nil [function]
 Updates the slot specifiers of the given class.  Instances are updated
 lazily to the new layout.
 *** subclassp a b -> boolean [function]
 Returns true if class A is a subclass of class B.
 ** Methods
-*** put-method class method-name function [function]
+*** put-method class method-name function -> nil [function]
 Sets the method definition with the given name for the class.
 *** find-method object method-name &rest &keys -> function [function]
 Looks for the method with the given name in the object's class and
 superclasses.
-*** call-next-method &rest args -> result [local function]
+*** call-next-method &rest args -> result* [local function]
 Calls the next method, aka "super".  Only available inside methods.
-*** no-next-method object method-name args keys -> result [generic]
+*** no-next-method object method-name args keys -> result* [generic]
 Called when there's no next method.  To handle this, define a method
 on this generic method for your class.
-*** no-applicable-method object method-name args keys -> result [generic]
+*** no-applicable-method object method-name args keys -> result* [generic]
 Called when no method with the given name exists in the object's class
 or its superclasses.  To handle this, define a method on this generic
 function for your class.
@@ -107,7 +113,7 @@ Returns the value of the named slot of the object.
 Sets the named slot of the object to the given value.
 *** class-of object -> class [function]
 Returns the class of the given object.
-*** the class object
+*** the class object -> object
 Casts the object to the specified class.  Signals an error if object
 is not a generalized instance of the class.
 ** Packages
