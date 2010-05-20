@@ -89,11 +89,11 @@ lazily to the new layout.
 *** subclassp a b -> boolean [function]
 Returns true if class A is a subclass of class B.
 ** Methods
-*** put-method class method-name function -> nil [function]
-Sets the method definition with the given name for the class.
 *** find-method object method-name &rest &keys -> function [function]
 Looks for the method with the given name in the object's class and
 superclasses.
+*** put-method class method-name function -> nil [function]
+Sets the method definition with the given name for the class.
 *** call-next-method &rest args -> result* [local function]
 Calls the next method, aka "super".  Only available inside methods.
 *** no-next-method object method-name args keys -> result* [generic]
@@ -113,7 +113,11 @@ Returns the value of the named slot of the object.
 Sets the named slot of the object to the given value.
 *** class-of object -> class [function]
 Returns the class of the given object.
-*** the class object -> object
+** Types
+*** deftype name type -> nil [special]
+Establishes a named type, that's a subtype of the given type
+expression, in the current environment.
+*** the class object -> object [special]
 Casts the object to the specified class.  Signals an error if object
 is not a generalized instance of the class.
 ** Packages
