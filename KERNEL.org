@@ -48,7 +48,7 @@ top-level definiton and/or expression.
 *** unwind-protect protected-form &body cleanup-forms -> result* [function]
 Evaluates the protected form and ensures that the cleanup forms are
 evaluated whether the protected thunk returns normally, or via a
-non-local exit.  Returns the values of the protected form.
+non-local jump.  Returns the values of the protected form.
 *** block name &body forms -> result* [special]
 Establishes a lexical binding for a nonlocal exit for a body of code.
 Code may return from the block with RETURN-FROM.
@@ -74,9 +74,13 @@ environment.
 Constructs a piece of quoted syntax with unquotes.
 *** datum->syntax template-id form -> form [function]
 Repaints the form with the same color as the template identifier.
-** Evaluation
-*** eval form -> result* [special]
-Evaluates the form in the top-level environment and returns its value.
+** Types
+*** deftype name type -> nil [special]
+Establishes a named, universally quantified type, that's a subtype of
+the given type expression, in the current environment.
+*** the class object -> object [special]
+Casts the object to the specified class.  Signals an error if object
+is not a generalized instance of the class.
 ** Classes
 *** make-class name superclasses slot-specifiers -> class [function]
 Creates a new class with the given name, superclasses, and slot
@@ -113,13 +117,6 @@ Returns the value of the named slot of the object.
 Sets the named slot of the object to the given value.
 *** class-of object -> class [function]
 Returns the class of the given object.
-** Types
-*** deftype name type -> nil [special]
-Establishes a named type, that's a subtype of the given type
-expression, in the current environment.
-*** the class object -> object [special]
-Casts the object to the specified class.  Signals an error if object
-is not a generalized instance of the class.
 ** Packages
 *** defpackage name exports &body -> nil [special]
 Defines a new named environment, that can be separately compiled.  The
@@ -136,6 +133,9 @@ current package.  This is useful for utility functions used by macros,
 as macros have no access to runtime bindings.  If macros use other
 macros, packages may be loaded more than once during compilation, in a
 phase-separated tower.
+** Evaluation
+*** eval form -> result* [special]
+Evaluates the form in the top-level environment and returns its value.
 ** Native Interface
 *** native c-string &optional result-class -> value [special]
 Includes a snippet of C, with escaping back into Lisp, and automatic
