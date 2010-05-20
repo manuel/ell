@@ -13,8 +13,8 @@ separate, deterministic compilation, and of course a REPL.  One rather
 unusual feature, for a Lisp, is the inclusion of an /optional/ static
 type system with bounded parametric polymorphism ("generics").  =ell=
 packages are compiled, via C, to ELF shared objects and can be linked
-with the standard linker, which allows the creation of small, complete
-executables for deployment.
+with the standard linker, which allows the creation of small,
+self-contained executables for deployment.
 
 =ell= is not designed for maximum performance, but rather for maximum
 dynamicity, although the design doesn't preclude efficient
