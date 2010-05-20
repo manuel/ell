@@ -9,9 +9,9 @@ features expected by seasoned Lispers, such as a condition system, an
 object system with generic functions and multiple inheritance,
 orthogonal control flow primitives, optional, rest, and keyword
 parameters, multiple values, powerful, lowlevel macros (with hygiene),
-and separate, deterministic compilation, and of course a REPL.  One
-rather unusual feature, for a Lisp, is the inclusion of a static type
-system with bounded parametric polymorphism ("generics").  =ell=
+separate, deterministic compilation, and of course a REPL.  One rather
+unusual feature, for a Lisp, is the inclusion of an /optional/ static
+type system with bounded parametric polymorphism ("generics").  =ell=
 packages are compiled, via C, to ELF shared objects and can be linked
 with the standard linker, which allows the creation of small, complete
 executables for deployment.
@@ -24,10 +24,10 @@ written in C anyway (you wouldn't want to code something like an
 efficient radix-tree for IP-address lookup in Lisp, or any dynamic
 language), and for that =ell= provides convenient inline C access.
 =ell= is a compiler-only implementation without a separate
-interpreter, is written in GNU C, and can bootstrap itself /ex nihilo/
-requiring nothing but GCC.
+interpreter, is written in GNU C, and can bootstrap itself /ex
+nihilo/, requiring nothing but GCC.
 
-The design of the =ell= [[KERNEL.org][kernel language]] is by and large finished, and
+The design of the =ell= kernel language is by and large finished, and
 I expect to develop the first version over the course of 2010.
 
 /Manuel Simoni <msimoni@gmail.com>/
