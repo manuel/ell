@@ -1,21 +1,19 @@
 * Kernel Language Draft
-** Modules
-*** defmodule name sig &rest typed-structure -> nil [special]
+** Packages
+*** defpackage name exports &body body -> nil [special]
 Defines a new named environment, that can be separately compiled.  The
-body of a module cannot access lexically enclosing variables.  The
-binding for the module exists in the variable namespace, but cannot
-be changed.  The body of the module is an environment in which new
+body of a package cannot access lexically enclosing variables.  The
+binding for the package exists in the variable namespace, but cannot
+be changed.  The body of the package is an environment in which new
 local bindings can be created.
-*** signature &body [special]
-*** structure &body [special]
-*** open module -> nil [special]
-Loads the specified module if it isn't loaded yet, and makes its
+*** require package -> nil [special]
+Loads the specified package if it isn't loaded yet, and makes its
 top-level bindings accessible in the current environment.
-*** open-for-syntax module -> nil [special]
-Loads the specified module before loading macros defined in the
-current module.  This is useful for utility functions used by macros,
+*** require-for-syntax package -> nil [special]
+Loads the specified package before loading macros defined in the
+current package.  This is useful for utility functions used by macros,
 as macros have no access to runtime bindings.  If macros use other
-macros, modules may be loaded more than once during compilation, in a
+macros, packages may be loaded more than once during compilation, in a
 phase-separated tower.
 ** Bindings
 *** defparameter name value -> name [special]
@@ -78,6 +76,24 @@ Creates a body of expressions and tags.  Expressions in the TAGBODY
 may perform non-local jumps to tags with GO.
 *** go tag -> | [special]
 Performs a non-local jump to the given tag.
+** Dynamic Variables
+*** defdynamic name value -> name [function]
+Creates a new dynamic (thread-local) variable object.
+*** dynamic name -> value [function]
+Returns the value of the dynamic variable.
+*** set-dynamic name value -> value [function]
+Sets the value of the dynamic variable.
+** Macros
+*** defsyntax name expander-function -> name [special]
+Defines an expander function with the given name in the current
+environment.
+*** quasisyntax form -> form [special]
+Constructs a piece of quoted syntax with unquotes.
+*** datum->syntax template-id form -> form [function]
+Repaints the form with the same color as the template identifier.
+** Evaluation
+*** eval form -> result* [special]
+Evaluates the form in the top-level environment and returns its value.
 ** Classes
 *** defclass name &optional superclasses slot-specifiers class-options -> name [special]
 Creates a new class (or updates an existing class) with the given
@@ -118,24 +134,6 @@ Returns the value of the named slot of the object.
 *** set-slot-value object slot-name value -> value [function]
 Sets the named slot of the object to the given value.
 *** slot-boundp object slot-name -> boolean [function]
-** Dynamic Variables
-*** defdynamic name value -> name [function]
-Creates a new dynamic (thread-local) variable object.
-*** dynamic name -> value [function]
-Returns the value of the dynamic variable.
-*** set-dynamic name value -> value [function]
-Sets the value of the dynamic variable.
-** Macros
-*** defsyntax name expander-function -> name [special]
-Defines an expander function with the given name in the current
-environment.
-*** quasisyntax form -> form [special]
-Constructs a piece of quoted syntax with unquotes.
-*** datum->syntax template-id form -> form [function]
-Repaints the form with the same color as the template identifier.
-** Evaluation
-*** eval form -> result* [special]
-Evaluates the form in the top-level environment and returns its value.
 ** Native Interface
 *** native c-string &optional result-class -> value [special]
 Includes a snippet of C, with escaping back into Lisp, and automatic
