@@ -1,4 +1,4 @@
-* Kernel Language Draft
+* Executable and Linkable Lisp Kernel Language
 ** Packages
 *** defpackage name exports &body body -> nil [special]
 Defines a new named environment, that can be separately compiled.  The
@@ -15,44 +15,6 @@ phase-separated tower.
 *** require package -> nil [special]
 Loads the specified package if it isn't loaded yet, and makes its
 top-level bindings accessible in the current environment.
-** Classes
-*** defclass name &optional superclasses slot-specifiers class-options -> name [special]
-Creates a new class (or updates an existing class) with the given
-name, superclasses, and slot specifiers.
-*** definstance class super [special]
-Dynamically adds a "mixin" superclass to a class.
-*** subclassp a b -> boolean [function]
-Returns true if class A is a subclass of class B.
-** Objects
-*** make class &keys slots -> object [function]
-Creates a new object of the given class, and initializes its slots
-using the supplied dictionary.
-*** class-of object -> class [function]
-Returns the class of the given object.
-*** the class object -> object [special]
-Casts the object to the specified class.  Signals an error if object
-is not a generalized instance of the class.
-*** slot-value object slot-name -> value [function]
-Returns the value of the named slot of the object.
-*** set-slot-value object slot-name value -> value [function]
-Sets the named slot of the object to the given value.
-*** slot-boundp object slot-name -> boolean [function]
-** Methods
-*** defgeneric name sig [special]
-*** defmethod name sig body -> nil [special]
-Sets the method definition with the given name for the class.
-*** find-method object method-name &rest &keys -> function [function]
-Looks for the method with the given name in the object's class and
-superclasses.
-*** call-next-method &rest args -> result* [local function]
-Calls the next method, aka "super".  Only available inside methods.
-*** no-next-method object method-name args keys -> result* [generic]
-Called when there's no next method.  To handle this, define a method
-on this generic method for your class.
-*** no-applicable-method object method-name args keys -> result* [generic]
-Called when no method with the given name exists in the object's class
-or its superclasses.  To handle this, define a method on this generic
-function for your class.
 ** Bindings
 *** defparameter name value -> name [special]
 Defines a variable binding with the given name and value in the
@@ -116,10 +78,50 @@ Creates a body of expressions and tags.  Expressions in the TAGBODY
 may perform non-local jumps to tags with GO.
 *** go tag -> | [special]
 Performs a non-local jump to the given tag.
+** Multiple Values
 *** values &rest objects -> object* [special]
 Returns multiple values.  
 *** multiple-value-call function &rest forms -> result* [special]
 Calls a function with multiple values.
+** Classes
+*** defclass name &optional superclasses slot-specifiers class-options -> name [special]
+Creates a new class (or updates an existing class) with the given
+name, superclasses, and slot specifiers.
+*** definstance class super [special]
+Dynamically adds a "mixin" superclass to a class.
+*** subclassp a b -> boolean [function]
+Returns true if class A is a subclass of class B.
+*** deftype name &optional f-bound -> nil [special]
+** Objects
+*** make class &keys slots -> object [function]
+Creates a new object of the given class, and initializes its slots
+using the supplied dictionary.
+*** class-of object -> class [function]
+Returns the class of the given object.
+*** the class object -> object [special]
+Casts the object to the specified class.  Signals an error if object
+is not a generalized instance of the class.
+*** slot-value object slot-name -> value [function]
+Returns the value of the named slot of the object.
+*** set-slot-value object slot-name value -> value [function]
+Sets the named slot of the object to the given value.
+*** slot-boundp object slot-name -> boolean [function]
+** Generic Functions
+*** defgeneric name sig [special]
+*** defmethod name sig body -> nil [special]
+Sets the method definition with the given name for the class.
+*** find-method object method-name &rest &keys -> function [function]
+Looks for the method with the given name in the object's class and
+superclasses.
+*** call-next-method &rest args -> result* [local function]
+Calls the next method, aka "super".  Only available inside methods.
+*** no-next-method object method-name args keys -> result* [generic]
+Called when there's no next method.  To handle this, define a method
+on this generic method for your class.
+*** no-applicable-method object method-name args keys -> result* [generic]
+Called when no method with the given name exists in the object's class
+or its superclasses.  To handle this, define a method on this generic
+function for your class.
 ** Macros
 *** defsyntax name expander-function -> name [special]
 Defines an expander function with the given name in the current

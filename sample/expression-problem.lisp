@@ -24,7 +24,7 @@
   (defmethod eval ((Eval-Lit .value) -> Number) value)
   (defmethod eval ((Eval-Plus .left .right) -> Number) (+ (eval left) (eval right))))
 
-(defpackage Basic-neg (Basic-neg)
+(defpackage Basic-Neg (Basic-Neg)
   (require Basic)
   (deftype T (Basic-Expr T))
   (defclass (Basic-Neg T) ((Basic-Expr T)) 

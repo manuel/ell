@@ -57,7 +57,7 @@
 (defmethod map (collection function)
   (proclaim (ftype (Collection A) (A -> B) -> (Collection B)))
   (let ((range (range collection))
-        (result (List B)))
+        (result (make (List B))))
     (while (not (emptyp range))
       (add result (funcall function (front range)))
       (pop-front range))
