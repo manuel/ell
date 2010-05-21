@@ -6,15 +6,15 @@ body of a package cannot access lexically enclosing variables.  The
 binding for the package exists in the variable namespace, but cannot
 be changed.  The body of the package is an environment in which new
 local bindings can be created.
-*** require package -> nil [special]
-Loads the specified package if it isn't loaded yet, and makes its
-top-level bindings accessible in the current environment.
 *** require-for-syntax package -> nil [special]
 Loads the specified package before loading macros defined in the
 current package.  This is useful for utility functions used by macros,
 as macros have no access to runtime bindings.  If macros use other
 macros, packages may be loaded more than once during compilation, in a
 phase-separated tower.
+*** require package -> nil [special]
+Loads the specified package if it isn't loaded yet, and makes its
+top-level bindings accessible in the current environment.
 ** Classes
 *** defclass name &optional superclasses slot-specifiers class-options -> name [special]
 Creates a new class (or updates an existing class) with the given
@@ -32,9 +32,13 @@ Returns the class of the given object.
 *** the class object -> object [special]
 Casts the object to the specified class.  Signals an error if object
 is not a generalized instance of the class.
-** Generic Functions
-*** defgeneric name sig [special]
+*** slot-value object slot-name -> value [function]
+Returns the value of the named slot of the object.
+*** set-slot-value object slot-name value -> value [function]
+Sets the named slot of the object to the given value.
+*** slot-boundp object slot-name -> boolean [function]
 ** Methods
+*** defgeneric name sig [special]
 *** defmethod name sig body -> nil [special]
 Sets the method definition with the given name for the class.
 *** find-method object method-name &rest &keys -> function [function]
@@ -49,12 +53,6 @@ on this generic method for your class.
 Called when no method with the given name exists in the object's class
 or its superclasses.  To handle this, define a method on this generic
 function for your class.
-** Slots
-*** slot-value object slot-name -> value [function]
-Returns the value of the named slot of the object.
-*** set-slot-value object slot-name value -> value [function]
-Sets the named slot of the object to the given value.
-*** slot-boundp object slot-name -> boolean [function]
 ** Bindings
 *** defparameter name value -> name [special]
 Defines a variable binding with the given name and value in the
@@ -76,6 +74,13 @@ current environment.
 *** fboundp symbol -> boolean [function]
 Returns true if there is a function binding with the given name in the
 current environment.
+** Dynamic Variables
+*** defdynamic name value -> name [function]
+Creates a new dynamic (thread-local) variable object.
+*** dynamic name -> value [function]
+Returns the value of the dynamic variable.
+*** set-dynamic name value -> value [function]
+Sets the value of the dynamic variable.
 ** Functions
 *** lambda signature &body -> function [special]
 Creates an anonymous function.  The body of a lambda is an environment
@@ -87,26 +92,6 @@ Applies a function to the given positional and keyword arguments.
 *** function name -> function [special]
 Returns the function of the global or local function binding with the
 given name.
-** Multiple Values
-*** values &rest objects -> object* [special]
-Returns multiple values.  
-*** multiple-value-call function &rest forms -> result* [special]
-Calls a function with multiple values.
-** Dynamic Variables
-*** defdynamic name value -> name [function]
-Creates a new dynamic (thread-local) variable object.
-*** dynamic name -> value [function]
-Returns the value of the dynamic variable.
-*** set-dynamic name value -> value [function]
-Sets the value of the dynamic variable.
-** Macros
-*** defsyntax name expander-function -> name [special]
-Defines an expander function with the given name in the current
-environment.
-*** quasisyntax form -> form [special]
-Constructs a piece of quoted syntax with unquotes.
-*** datum->syntax template-id form -> form [function]
-Repaints the form with the same color as the template identifier.
 ** Control Flow
 *** if test-form then-form else-form -> value* [special]
 If the test form evaluates to true, evaluates the then form, otherwise
@@ -131,6 +116,18 @@ Creates a body of expressions and tags.  Expressions in the TAGBODY
 may perform non-local jumps to tags with GO.
 *** go tag -> | [special]
 Performs a non-local jump to the given tag.
+*** values &rest objects -> object* [special]
+Returns multiple values.  
+*** multiple-value-call function &rest forms -> result* [special]
+Calls a function with multiple values.
+** Macros
+*** defsyntax name expander-function -> name [special]
+Defines an expander function with the given name in the current
+environment.
+*** quasisyntax form -> form [special]
+Constructs a piece of quoted syntax with unquotes.
+*** datum->syntax template-id form -> form [function]
+Repaints the form with the same color as the template identifier.
 ** Evaluation
 *** eval form -> result* [special]
 Evaluates the form in the top-level environment and returns its value.
