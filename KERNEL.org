@@ -85,6 +85,8 @@ Returns multiple values.
 Calls a function with multiple values.
 ** Types & Classes
 *** deftype name &optional f-bound -> nil [special]
+Establishes a type in the current environment.  Optionally, an F-bound
+may be supplied.
 *** defclass name &optional superclasses slot-specifiers class-options -> name [special]
 Creates a new class (or updates an existing class) with the given
 name, superclasses, and slot specifiers.
@@ -106,8 +108,10 @@ Returns the value of the named slot of the object.
 *** set-slot-value object slot-name value -> value [function]
 Sets the named slot of the object to the given value.
 *** slot-boundp object slot-name -> boolean [function]
+Returns true if the named slot is bound.
 ** Generic Functions
 *** defgeneric name sig [special]
+Specifies that a method with the given signature must exist.
 *** defmethod name sig body -> nil [special]
 Sets the method definition with the given name for the class.
 *** find-method object method-name &rest &keys -> function [function]
