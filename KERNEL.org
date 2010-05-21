@@ -6,15 +6,15 @@ body of a package cannot access lexically enclosing variables.  The
 binding for the package exists in the variable namespace, but cannot
 be changed.  The body of the package is an environment in which new
 local bindings can be created.
+*** require package -> nil [special]
+Loads the specified package if it isn't loaded yet, and makes its
+top-level bindings accessible in the current environment.
 *** require-for-syntax package -> nil [special]
 Loads the specified package before loading macros defined in the
 current package.  This is useful for utility functions used by macros,
 as macros have no access to runtime bindings.  If macros use other
 macros, packages may be loaded more than once during compilation, in a
 phase-separated tower.
-*** require package -> nil [special]
-Loads the specified package if it isn't loaded yet, and makes its
-top-level bindings accessible in the current environment.
 ** Bindings
 *** defparameter name value -> name [special]
 Defines a variable binding with the given name and value in the
@@ -83,7 +83,8 @@ Performs a non-local jump to the given tag.
 Returns multiple values.  
 *** multiple-value-call function &rest forms -> result* [special]
 Calls a function with multiple values.
-** Classes
+** Types & Classes
+*** deftype name &optional f-bound -> nil [special]
 *** defclass name &optional superclasses slot-specifiers class-options -> name [special]
 Creates a new class (or updates an existing class) with the given
 name, superclasses, and slot specifiers.
@@ -91,7 +92,6 @@ name, superclasses, and slot specifiers.
 Dynamically adds a "mixin" superclass to a class.
 *** subclassp a b -> boolean [function]
 Returns true if class A is a subclass of class B.
-*** deftype name &optional f-bound -> nil [special]
 ** Objects
 *** make class &keys slots -> object [function]
 Creates a new object of the given class, and initializes its slots
