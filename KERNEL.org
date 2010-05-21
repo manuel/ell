@@ -79,11 +79,9 @@ Repaints the form with the same color as the template identifier.
 Evaluates the form in the top-level environment and returns its value.
 ** Types
 *** deftype name type -> nil [special]
-Establishes a named, universally quantified type, that's a subtype of
-the given type expression, in the current environment.
-*** the class object -> object [special]
-Casts the object to the specified class.  Signals an error if object
-is not a generalized instance of the class.
+Establishes a universally quantified type, that's a subtype of the
+given type expression, in the current environment.  Used for static
+type safety through recursive types.
 ** Classes
 *** defclass name &optional superclasses slot-specifiers class-options -> name [special]
 Creates a new class (or updates an existing class) with the given
@@ -115,6 +113,9 @@ Returns the value of the named slot of the object.
 Sets the named slot of the object to the given value.
 *** class-of object -> class [function]
 Returns the class of the given object.
+*** the class object -> object [special]
+Casts the object to the specified class.  Signals an error if object
+is not a generalized instance of the class.
 ** Packages
 *** defpackage name exports &body -> nil [special]
 Defines a new named environment, that can be separately compiled.  The
