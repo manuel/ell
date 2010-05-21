@@ -2,17 +2,17 @@
          Range emptyp 
          front pop-front set-front 
          double-ended-p back pop-back set-back
-         Concurrent-modification
+         Concurrent-Modification
          List
          Set 
-         Dict Dict-entry
+         Map Map-Entry
          find map)
 
 (deftype A)
 (deftype B)
 
 (defclass (Collection A))
-(defclass (Range A) (Collection A))
+(defclass (Range A) ((Collection A)))
 (defgeneric all ((Collection A) -> (Range A)))
 (defmethod all ((range (Range A)) -> (Range A)) range)
 
@@ -25,20 +25,20 @@
 (defgeneric pop-back ((Range A)))
 (defgeneric set-back ((Range A) A -> A))
 
-(define-condition Concurrent-modification)
+(define-condition Concurrent-Modification)
 
 (defclass (List A) ((Collection A))
   ((version <num>)))
 
-(defclass (Dict A B))
-(defclass (Dict-entry A B))
-(defgeneric get ((Dict A B) A -> B))
-(defgeneric contains-key-p ((Dict A B) A -> Boolean))
-(defgeneric put ((Dict A B) A B))
-(defgeneric remove ((Dict A B) A))
-(defgeneric keys ((Dict A B) -> (Collection A)))
-(defgeneric values ((Dict A B) -> (Collection B)))
-(defgeneric entries ((Dict A B) -> (Collection (Dict-entry A B))))
+(defclass (Map A B))
+(defclass (Map-Entry A B))
+(defgeneric get ((Map A B) A -> B))
+(defgeneric contains-key-p ((Map A B) A -> Boolean))
+(defgeneric put ((Map A B) A B))
+(defgeneric remove ((Map A B) A))
+(defgeneric keys ((Map A B) -> (Collection A)))
+(defgeneric values ((Map A B) -> (Collection B)))
+(defgeneric entries ((Map A B) -> (Collection (Map-Entry A B))))
 
 (defclass (Set A) ((Collection A)))
 (defgeneric add ((Set A) A))
