@@ -1,166 +1,267 @@
+#+OPTIONS: toc:2 num:t
+#+TITLE: =ell(1)= - Executable and Linkable Lisp
+#+AUTHOR: Manuel J. Simoni
+#+EMAIL: msimoni@gmail.com
+* Front Matter
+** Description
+Executable and Linkable Lisp (Ell) is a new dialect of Lisp for
+GNU/Linux systems programming.  Ell is culturally closest to the
+dialects Common Lisp, Dylan, Scheme, EuLisp, ISLISP, Goo and PLOT.
+Ell has an optional static type system with parametric polymorphism
+similar to Cecil, ensuring the static type safety of patterns such as
+binary methods or the expression problem.
+
+This document is a reference for implementors and knowledgable
+programmers, and describes the small kernel of forms which is
+understood by the Ell compiler and type system, and into which all
+expressions are ultimately expanded.  The final chapters describe
+libraries containing derived syntax and utility classes built on top
+of the kernel language.
+** Contact
+Manuel J. Simoni <msimoni@gmail.com>
+** Date/Revision
+Please see bottom of document.
+* Command Line Usage
+** *.ellconfig* [file]
+** *ell* file1.lisp ... fileN.lisp [command]
+** *ell* *make* file1.lisp ... fileN.lisp [command]
+** *ell* *link* file1.lisp ... fileN.lisp -o out.so [command]
 * Packages
 Packages are units of compilation and namespace management.
 Filesystem trees of files are mapped 1:1 to in-language packages.
 Additionally, nested packages may be declared wherever definitions are
 allowed.
-** defpackage name exports &body body -> nil [special]
+
+Ell is a /multi-time/ language, meaning there are at least two
+times: a macroexpand-time, and a runtime, and if the macros themselves
+use macros there may be a /reflective tower/ of additional, disjoint
+times (or /phases/) of arbitrary height.
+
+In order to ensure deterministic compilation, the macros calls in
+every package get expanded in a per-package macroexpand-time.  This
+means, packages used by macro expanders may be loaded an arbitrary
+number of separate times during macroexpansion.
+** *defpackage* name exports &body body -> nil [special]
 Defines a new named environment, that can be separately compiled.  The
 body of a package cannot access lexically enclosing variables.  The
 binding for the package exists in the variable namespace, but cannot
 be changed.  The body may contain definitions.
-** provide &rest names -> nil [special]
-** require package -> nil [special]
+*** Examples:
+: (defpackage Car-Stuff (Car Wheel Engine crank-engine))
+:   (defclass Car () 
+:     ((wheels (List Wheel)) 
+:      (engine Engine)))
+:   ...
+:   (defun crank-engine ((car Car))
+:     ...)
+** *provide* &rest names -> nil [special]
+May be used before any other expressions at the beginning of a file,
+to define the exports.
+*** Examples:
+: ;; beginning of file
+: (provide x y)
+: (defparameter x 1)
+: (defparameter y 2)
+
+** *require* package -> nil [special]
 Loads the specified package if it isn't loaded yet, and makes its
 top-level bindings accessible in the current environment.
-** require-for-syntax package -> nil [special]
+*** Examples:
+: (defpackage That-Package (x)
+:   (defparameter x 1))
+: (require That-Package)
+: x **> 1
+
+: (defpackage Some-Package ()
+:   (require This-Package That-Package)
+:   ...)
+** *require-for-syntax* package -> nil [special]
 Loads the specified package before loading macros defined in the
 current package.  This is useful for utility functions used by macros,
 as macros have no access to runtime bindings.  If macros use other
 macros, packages may be loaded more than once during compilation, in a
 phase-separated tower.
+*** Examples:
+
 * Bindings
 Lexical variables may be global (established by a definition in some
 environment) or local (introduced by closures).  Inner bindings shadow
 outer bindings per static scoping.
-** defparameter name value -> name [special]
+** *defparameter* name value -> name [special]
 Defines a variable binding with the given name and value in the
 current environment.  If the binding is already defined, its value is
 updated.
-** defun name sig body -> name [special]
+** *defun* name sig body -> name [special]
 Defines a function binding with the given name and function in the
 current environment.  If the binding is already defined, its value is
 updated.
-** setq name value -> value [special]
+** *setq* name value -> value [special]
 Sets the global or local variable binding with the given name to the
 given value.  Signals an error if no such binding is defined.
-** fsetq name function -> function [special]
+** *fsetq* name function -> function [special]
 Sets the global or local function binding with the given name to the
 given function.  Signals an error if no such binding is defined.
-** boundp symbol -> boolean [function]
+** *boundp* symbol -> boolean [function]
 Returns true if there is a variable binding with the given name in the
 current environment.
-** fboundp symbol -> boolean [function]
+** *fboundp* symbol -> boolean [function]
 Returns true if there is a function binding with the given name in the
 current environment.
 * Dynamic Variables
 Dynamic variables have one value per thread, and are used for
 customizing functions deep in a call tree, where passing extra
 parameters to each function would be burdensome.
-** defdynamic name value -> name [function]
+** *defdynamic* name value -> name [function]
 Creates a new dynamic (thread-local) variable object.
-** dynamic name -> value [function]
+** *dynamic* name -> value [function]
 Returns the value of the dynamic variable.
-** set-dynamic name value -> value [function]
+** *set-dynamic* name value -> value [function]
 Sets the value of the dynamic variable.
-** dlet bindings &body body -> result* [syntax]
 * Functions
 Functions take required, optional, and rest positional arguments, as
 well as keyword arguments.  Functions may return multiple values, but
 as in Common Lisp, all values but the first gets discarded unless the
 caller makes an explicit multiple-values call.
-** lambda signature &body -> function [special]
+** *lambda* signature &body -> function [special]
 Creates an anonymous function closure.  The body of a lambda may
 contain definitions.  As usual, functions close over outer lexical
 bindings.
-** apply function (args <list>) (keys <dict>) -> result* [function]
+** *apply* function (args <list>) (keys <dict>) -> result* [function]
 Applies a function to the given positional and keyword arguments,
 where the data structures are supplied by the user.
-** funcall function &rest args &keys keys -> result* [function]
+** *funcall* function &rest args &keys keys -> result* [function]
 Applies a function to the given positional and keyword arguments,
 where the data structures are created by a compiler intrinsic.
-** function name -> function [special]
+** *function* name -> function [special]
 Returns the function of the global or local function binding with the
 given name.
 * Control Flow
 As per Common Lisp.
-** if test-form then-form else-form -> value* [special]
+** *if* test-form then-form else-form -> value* [special]
 If the test form evaluates to true, evaluates the then form, otherwise
 evaluates the else form.
-** progn &rest exprs -> value* [special]
+** *progn* &rest exprs -> value* [special]
 Evaluates the expressions in sequence and returns the value of the
 last.  If a PROGN occurs at the top-level of an environment, its
 contents are spliced into the top-level, as if the PROGN didn't exist.
 This is useful for writing macros that expand to more than one
-top-level definiton and/or expression.
-** unwind-protect protected-form &body cleanup-forms -> result* [function]
+top-level definiton and*or expression.
+** *unwind-protect* protected-form &body cleanup-forms -> result* [function]
 Evaluates the protected form and ensures that the cleanup forms are
 evaluated whether the protected thunk returns normally, or via a
 non-local jump.  Returns the values of the protected form.
-** block name &body forms -> result* [special]
+** *block* name &body forms -> result* [special]
 Establishes a lexical binding for a nonlocal exit for a body of code.
 Code may return from the block with RETURN-FROM.
-** return-from block-name &optional result -> | [special]
+** *return-from* block-name &optional result -> | [special]
 Performs a non-local jump to the given block.
-** tagbody &body tagbody -> nil [special]
+** *tagbody* &body tagbody -> nil [special]
 Creates a body of expressions and tags.  Expressions in the TAGBODY
 may perform non-local jumps to tags with GO.
-** go tag -> | [special]
+** *go* tag -> | [special]
 Performs a non-local jump to the given tag.
 * Multiple Values
 As per Common Lisp.
-** values &rest objects -> object* [special]
+** *values* &rest objects -> object* [special]
 Returns multiple values.  
-** multiple-value-call function &rest forms -> result* [special]
+** *multiple-value-call* function &rest forms -> result* [special]
 Calls a function with multiple values.
 * Types and Classes
-** deftype name &optional f-bound -> nil [special]
+** *deftype* name &optional f-bound -> nil [special]
 Establishes a type in the current environment.  Optionally, an F-bound
 may be supplied.
-** defclass name &optional superclasses slot-specifiers class-options -> name [special]
+** *defclass* name &optional superclasses slot-specifiers class-options -> name [special]
 Creates a new class (or updates an existing class) with the given
 name, superclasses, and slot specifiers.
-** definstance class super [special]
+** *mixin* class mixin [special]
 Dynamically adds a "mixin" superclass to a class.
-** subclassp a b -> boolean [function]
+** *subclassp* a b -> boolean [function]
 Returns true if class A is a subclass of class B.
+* Core Classes
+** *Object* [class]
+** *Boolean* [class]
+** *Number* [class]
+** *String* [class]
+** *Symbol* [class]
+** *Null* [class]
+** *#t* [constant]
+** *#f* [constant]
+** *nil* [constant]
 * Objects
-** make class &keys slots -> object [function]
+** *make* class &keys slots -> object [function]
 Creates a new object of the given class, and initializes its slots
 using the supplied dictionary.
-** class-of object -> class [function]
+** *class-of* object -> class [function]
 Returns the class of the given object.
-** the class object -> object [special]
+** *the* class object -> object [special]
 Casts the object to the specified class.  Signals an error if object
 is not a generalized instance of the class.
-** slot-value object slot-name -> value [function]
+** *slot-value* object slot-name -> value [function]
 Returns the value of the named slot of the object.
-** set-slot-value object slot-name value -> value [function]
+** *set-slot-value* object slot-name value -> value [function]
 Sets the named slot of the object to the given value.
-** slot-boundp object slot-name -> boolean [function]
+** *slot-boundp* object slot-name -> boolean [function]
 Returns true if the named slot is bound.
-* Generic Functions
+** *equal* o1 o2 -> boolean [generic]
+** *eq* o1 o2 -> boolean [function]
+** *sxhash* object -> hash-code [generic]
+* Generic Functions and Methods
 Single dispatch.
-** defgeneric name sig [special]
+** *defgeneric* name sig [special]
 Specifies that a method with the given signature must exist.
-** defmethod name sig body -> nil [special]
+** *defmethod* name sig body -> nil [special]
 Sets the method definition with the given name for the class.
-** find-method object method-name &rest &keys -> function [function]
-Looks for the method with the given name in the object's class and
-superclasses.
-** call-next-method &rest args -> result* [local function]
+** *call-next-method* &rest args -> result* [local function]
 Calls the next method, aka "super".  Only available inside methods.
-** no-next-method object method-name args keys -> result* [generic]
+** *no-next-method* object method-name args keys -> result* [generic]
 Called when there's no next method.  To handle this, define a method
 on this generic method for your class.
-** no-applicable-method object method-name args keys -> result* [generic]
+** *no-applicable-method* object method-name args keys -> result* [generic]
 Called when no method with the given name exists in the object's class
 or its superclasses.  To handle this, define a method on this generic
 function for your class.
 * Macros
 Lowlevel hygienic macros.
-** defsyntax name expander-function -> name [special]
+** *defsyntax* name expander-function -> name [special]
 Defines an expander function with the given name in the current
 environment.
-** quasisyntax form -> form [special]
+** *quasisyntax* form -> form [special]
 Constructs a piece of quoted syntax with unquotes.
-** datum->syntax template-id form -> form [function]
+** *datum->syntax* template-id form -> form [function]
 Repaints the form with the same color as the template identifier.
+** *Form* [class]
 * Evaluation
-** eval form -> result* [special]
+** *eval* form -> result* [special]
 Evaluates the form in the top-level environment and returns its value.
 * Native Interface
-** native c-string &optional result-class -> value [special]
+** *native* c-string &optional result-class -> value [special]
 Includes a snippet of C, with escaping back into Lisp, and automatic
 conversion to and from native values.
-
+* Standard Library
+** *null* [function]
+** *let* [syntax]
+** *flet* [syntax]
+** *dynamic-let* [syntax]
+** *setf* place value -> value [syntax]
+** *from* package name -> object [syntax]
+* Conditions Library
+** *Condition* [class]
+** *Restart* [class]
+** *handle* conditions -> result* [syntax]
+** *catch* conditions -> result* [syntax]
+** *signal* condition -> result*
+** *error* condition -> |
+** *cerror* condition -> result*
+* Collections Library
+** *Collection* [class]
+** *List* [class]
+** *Linked-List* [class]
+** *Map* [class]
+** *Map-Entry* [class]
+** *Hash-Map* [class]
+** *Set* [class]
+** *Hash-Set* [class]
+** *Range* [class]
+** *map* [class]
+** *find* [class]
 
