@@ -60,11 +60,11 @@ may perform non-local jumps to tags with GO.
 *** go tag -> | [special]
 Performs a non-local jump to the given tag.
 ** Dynamic Variables
-*** make-dynamic value -> dynamic [function]
+*** defdynamic name value -> name [function]
 Creates a new dynamic (thread-local) variable object.
-*** dynamic dynamic -> value [function]
+*** dynamic name -> value [function]
 Returns the value of the dynamic variable.
-*** set-dynamic dynamic value -> value [function]
+*** set-dynamic name value -> value [function]
 Sets the value of the dynamic variable.
 ** Macros
 *** defsyntax name expander-function -> name [special]
@@ -85,22 +85,17 @@ the given type expression, in the current environment.
 Casts the object to the specified class.  Signals an error if object
 is not a generalized instance of the class.
 ** Classes
-*** make-class name superclasses slot-specifiers -> class [function]
-Creates a new class with the given name, superclasses, and slot
-specifiers.
-*** set-superclasses class superclasses -> nil [function]
-Updates the superclasses of the class.
-*** set-slot-specifiers class slot-specifiers -> nil [function]
-Updates the slot specifiers of the given class.  Instances are updated
-lazily to the new layout.
+*** defclass name &optional superclasses slot-specifiers class-options -> name [special]
+Creates a new class (or updates an existing class) with the given
+name, superclasses, and slot specifiers.
 *** subclassp a b -> boolean [function]
 Returns true if class A is a subclass of class B.
 ** Methods
+*** defmethod class method-name sig body -> nil [function]
+Sets the method definition with the given name for the class.
 *** find-method object method-name &rest &keys -> function [function]
 Looks for the method with the given name in the object's class and
 superclasses.
-*** put-method class method-name function -> nil [function]
-Sets the method definition with the given name for the class.
 *** call-next-method &rest args -> result* [local function]
 Calls the next method, aka "super".  Only available inside methods.
 *** no-next-method object method-name args keys -> result* [generic]
