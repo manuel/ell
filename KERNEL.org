@@ -1,88 +1,300 @@
 #+OPTIONS: toc:2 num:t
-#+TITLE: =ell(1)= - Executable and Linkable Lisp
+#+TITLE:  Executable and Linkable Lisp (Ell) Manual
 #+AUTHOR: Manuel J. Simoni
 #+EMAIL: msimoni@gmail.com
+#+TEXT: Weekend Edition.
 * Front Matter
 ** Description
-Executable and Linkable Lisp (Ell) is a new dialect of Lisp for
-GNU/Linux systems programming.  Ell is culturally closest to the
-dialects Common Lisp, Dylan, Scheme, EuLisp, ISLISP, Goo and PLOT.
-Ell has an optional static type system with parametric polymorphism
-similar to Cecil, ensuring the static type safety of patterns such as
-binary methods or the expression problem.
+Executable and Linkable Lisp (Ell) is a Lisp for GNU/Linux systems
+programming.  Ell is memetically closest to the dialects of Common
+Lisp, Dylan, and Scheme.  Ell has an optional static type system
+with polymorphism similar to C# generics, ensuring static type safety
+for sections of code annotated with types.
 
-This document is a reference for implementors and knowledgable
-programmers, and describes the small kernel of forms which is
-understood by the Ell compiler and type system, and into which all
-expressions are ultimately expanded.  The final chapters describe
-libraries containing derived syntax and utility classes built on top
-of the kernel language.
-** Contact
+This manual is intended as a reference for implementors and
+knowledgeable programmers, and describes the core forms (and some
+derived standard forms and standard classes) which are understood by
+the Ell compiler and type system, and into which all expressions are
+ultimately expanded.
+** Contacting the Author
 Manuel J. Simoni <msimoni@gmail.com>
-** Date/Revision
-Please see bottom of document.
-* Command Line Usage
+* Language Overview
+Ell is a scripting language for programming in the POSIX and
+specifically GNU/Linux environment.  A typical use case would be to
+take a C library for writing HTTP servers, and an embeddable database
+written in C, and connect the two by some Lisp logic.
+
+Ell tries to, as much as possible, /faithfully/ reuse and adapt
+modular functionality developed and proven in other languages, instead
+of inventing new features and solutions.
+*** Objects
+Object-oriented programming in Ell is modelled after the standard
+SmallTalk model: classes describe the slots (member variables) and
+methods shared by instances of the class.
+
+Multiple inheritance is supported, including dynamic changes to the
+class hierarchy, which subsumes the /mixin/ model.
+
+The method sending and slot access mechanisms are, as in CLOS, hidden
+behind a facade of /generic functions/, which seamlessly integrate
+object-oriented programming with standard functional programming
+idioms, such as mapping.
+
+Of course, /everything is an object/, and new methods can be attached
+to built-in types.
+*** Functions
+Functions are closures and are directly modelled after Scheme, with
+Common Lisp-like more extensive lambda lists having required,
+optional, keyword, and rest parameters.
+
+Multiple return values are supported as in Common Lisp: unless the
+caller explicitly asks for multiple return values, all but the first
+are discarded.
+
+Functions usually declare the types of their parameters and result
+values, to allow the type system to ensure static safety, as there is
+only limited type inference.
+*** Control Flow
+Control flow uses a standard stack model and has lexical nonlocal
+exits and lexical gotos, with integrated stack unwind protection,
+modelled directly after Common Lisp.
+*** Dynamic Variables
+Dynamically-scoped, thread-local variables are treated as first-class
+objects, as in various Schemes and ISLISP.
+*** Macros
+The procedural hygienic and referentially transparent macro system and
+syntax objects are modelled after current Schemes, in particular
+SRFI 72.  Hygiene can be circumvented programmatically, if desired.
+*** Types
+Ell is a /typeful/ language.  Types are deeply embedded in the
+language, although the static type system is /optional/ and /can/ be
+circumvented - this is simply required for a Lisp, as for example
+top-level variables and functions may be arbitrarily redefined at
+runtime.
+
+Type errors are always treated as only warnings about /possible but
+not necessarily happening/ runtime errors - the language doesn't
+prevent you from /trying to/ execute an apparently type-unsafe
+expression, but the ultimate arbiter and guarantor of type safety is
+always the runtime, so unsafe behavior never happens.  This model is
+taken from Cecil and Diesel.
+*** Polymorphism
+The type system has F-bounded polymorphism (mostly identical to C#
+generics) for object-oriented programming.  This kind of polymorphism
+is natural for assuring the static type safety of many typeful
+programming patterns.
+
+Runtime type information about the actual polymorphic type arguments
+is maintained, like in C#.  This means that for example a list of
+integers knows at runtime that it's a list of integers, as opposed to
+Java where it only knows it's a list.
+
+(Ell also has /ad-hoc/ polymorphism in the form of generic functions.)
+*** Condition System
+A Dylan-equivalent condition system is built, following Goo, on top of
+dynamic variables.  Signalling a condition is simply a function call
+to a handler function, that has to perform a nonlocal exit itself, if
+abortion of the signaller is desired.  In other words, catching an
+exception doesn't mean that the stack gets automatically unwound.
+
+This allows the use of /restarts/. (The handler may itself signal a
+condition, the restart, back to the signaller.  Since the stack isn't
+automatically unwound, the original signaller may continue at the
+point where it signalled the original condition.)
+*** Collections
+A standard collections framework with arrays, doubly-linked lists,
+hash tables, and hash sets is included, modelled directly after Java's
+collections API.
+
+Traversal uses D's /ranges/, an interface similar to, but
+higher-level, than iterators.
+*** Compilation
+The compiler generates native object files via the C compiler.  The
+compilation process is modelled after PLT Scheme and the Extensible
+Component Verifier and Builder (XCVB).  The use of /phase separation/
+makes compilation deterministic.  Due to this strict phase separation,
+packages may be loaded in arbitrarily high, disjoint levels of a
+reflective tower of macroexpansion-times.
+*** Linking
+During development, packages are compiled to positionally independent,
+shared object files.  For deployment, compiled packages may be linked
+by the standard system linker to produce a self-contained executable.
+If desired, the compiler (and evaluator) may be left out of the
+executable.
+*** Modularity
+Modularity is modelled after Chez Scheme.  Packages may be nested, and
+macros may generate package and import forms, allowing the definition
+of advanced modularity features such as selective and renaming
+importing through macros.
+*** Native Interface
+Following Goo, Ell is deeply integrated with the system ABI via
+conservative garbage collection and inline C expressions, that may
+escape back into Lisp.  This allows the piece-wise use of C ABIs.
+Unlike /foreign-function interfaces/, this requires no up-front
+specification of foreign types, and not only allows the use of native
+functions, but also C preprocessor macros and other preprocessor
+directives defined by C libraries.
+*** Programming Style
+Lisp lends itself to a mixed object-oriented and functional
+programming style.  The success of languages like Perl, Python, and
+Ruby (but also Java and C#) in systems programming has validated the
+usefulness of this style, and Ell fully embraces it.
+
+Furthermore, Ell doesn't at all try to replace C for systems
+programming.  It's expected that many Ell programs will be written in
+a mixture of C and Lisp, playing each to its strengths: high
+performance and low-level control for C, high abstraction and
+dynamicity for Lisp.
+*** Relation to Other Languages
+Ell derives its main thrust from *Common Lisp*'s core, but trims it
+down considerably, while striving to keep a lot of its power.  In the
+future, Ell may adopt additional features from Common Lisp as
+libraries.
+
+Ell has probably the conceptual size of R6RS *Scheme*, so it's not a
+minimalist language.  A number of idioms and solutions are adopted
+from different Scheme implementations.
+
+The no-nonsense, compact but powerful designs of *Dylan*, *Goo*,
+and *PLOT* have served as a strong inspiration.  Like PLOT, Ell does
+/everthing right/ by design.
+
+Ell is very close to *Cecil* and *Diesel* in some design decisions,
+most notably the type system.  The same holds for *Factor* and its
+approach to generic object-orientation in particular and programming
+style in general.
+
+Prominent typeful languages like *O'Caml* and *Haskell* have
+determined the design of Ell in part.  Their underlying models are
+nevertheless sufficiently different from and much more static than
+Lisp, that there is less cross-pollination than one might expect.
+
+Ell is specifically designed to be conceptually smaller than
+either *Scala* or O'Caml, whose advanced feature sets comes at the
+expensive price of conceptual 
+overload.
+
+There is significant overlap between *C#* (and to a lesser
+extent, *Java*), and some dynamic object-oriented programming
+languages designed since the 1990s (Dylan, StrongTalk, Cecil, Diesel,
+PLOT), and thus Ell.
+
+Recent dynamic languages like *Ruby* provide a lot of guidance and
+experience about how to integrate with the operating system, and also
+serve as a confirmation that there's value in the dynamic language
+model, that can't be had elsewhere.
+*** Performance
+Ell is designed with a "full Lisp" experience in mind, mandating the
+need for some unavoidable runtime and space overhead.  That said, Ell
+should at least be suited to tasks achievable by other scripting
+languages.  Ell is specifically not designed for scientific or
+high-performance computing, and leverages its tight integration with C
+and its libraries whenever high performance or small space consumption
+is a requirement.
+
+A special consideration is that for many systems programs, kernel
+system call overheads dominate execution time.  In this setting, raw
+language performance isn't as important, so Ell's choice is always to
+focus on all-out dynamism.  Even in the face of massive dynamism, Self
+has shown how to achieve about 50% of the performance of raw C in a
+fully dynamically-dispatched language.
+*** Deviations and Innovations
+**** Rich Quasiquote
+The advent of JSON-like object literals in programming languages is
+predated by Lisp's use of quoted lists.  The major benefit of
+quotation is its succint syntax, because individual symbols in a list
+don't need to be quoted individually.  What's missing from newer
+languages is the facility of /quasiquotation/ though: the ability to
+construct lists from a mixture of static and dynamic parts.  Ell
+extends quasiquotation for the construction of ordered or unordered
+sets and maps, thereby combining the power of Lisp's quasiquotation
+with the convenience of JSON-like object literals.
+: (defparameter the-links '(List foo bar blah))
+: (defparameter an-object 
+:   `(Map (name hello-world)
+:         (tags (Ordered-Set "bar" "baz" "foo"))
+:         (links (List quux ,@the-links))))
+**** F-bounded Polymorphism
+F-bounded polymorphism can be used to ensure the type safety of
+certain programming patterns.  Specifically, it allows the type
+checking of many typeful programming patterns, such as type-safe
+subject/observer, /binary methods/, and the /expression problem/.  The
+following code defines a type variable T, instances of which which
+must be a subtype of Cloneable.  The clone generic function takes an
+object that's an instance of whatever class T is, and returns a copy
+of excactly the same class.
+: (deftype T Cloneable)
+: (defgeneric clone ((object T) -> T))
+**** Multi-Phase Loading
+If a macro uses values or functions from another package at
+macroexpansion-time, that package needs of course to be loaded first,
+at macroexpansion-time.  One problem in languages such as Ell, with
+strict phase separation between the runtime and the different
+macroexpansion times, is to specify dependencies between different
+phases succinctly as well as precisely.
+
+Ikarus Scheme is pioneering the use of /implicit phasing/, the
+automatic inference of the different phases in which an identifier is
+required.  A package is only loaded on a by-need basis into each phase
+where it is required.  This violates the usual user expectation
+though, that requiring a package will execute the top-level
+expressions in it.
+
+Ell takes a two-pronged approach, using eager execution of the
+/runtime requirements/ established by =require=, and by-need, implicit
+execution for the /macroexpansion requirements/ established by
+=require-for-syntax=.  The former works like ordinary Lisp =require=,
+loading the package at runtime if it isn't loaded yet.  The latter
+automatically infers all macroexpand phases in which the package is
+required, like Ikarus, and loads the package in these phases.
+
+=require= accommodates the user expectation that requiring a package
+for runtime will load it automatically.  A single =require-for-syntax=
+is enough to automatically load a package at whatever macroexpansion
+time(s) it is required, or none at all if the package isn't required.
+The packages required for macroexpansion should be deterministic and
+side-effect free, so executing them multiple times, or not all should
+be possible anyway.
+**** Typed Parameter Syntactic Sugar
+A useful syntactic sugar is employed for destructuring objects passed
+as parameters.  The syntax =(Type .slot1 .slot2)= extracts the two
+slots slot1 and slot2 from an object, and binds them to fresh
+variables named slot1 and slot2 in the body of a function.
+: (defclass Person ()
+:   ((name String)
+:    (age Int)))
+: (defun foo ((the-person (Person .name .age)))
+:   (print name)
+:   (print age))
+Another variation, made possible by the uniform use of uppercase for
+type names, is to leave the parameter name out completely, focusing
+only on the slots:
+: (defun foo ((Person .name .age))
+:   (print name)
+:   (print age))
+** Example
+* Usage
 ** *.ellconfig* [file]
-** *ell* file1.lisp ... fileN.lisp [command]
-** *ell* *make* file1.lisp ... fileN.lisp [command]
+*** PATHS [setting]
+** *ell* *run* file1.lisp ... fileN.lisp [command]
+** *ell* *eval* expression [command]
+** *ell* *compile* file1.lisp ... fileN.lisp [command]
 ** *ell* *link* file1.lisp ... fileN.lisp -o out.so [command]
-* Packages
-Packages are units of compilation and namespace management.
-Filesystem trees of files are mapped 1:1 to in-language packages.
-Additionally, nested packages may be declared wherever definitions are
-allowed.
-
-Ell is a /multi-time/ language, meaning there are at least two
-times: a macroexpand-time, and a runtime, and if the macros themselves
-use macros there may be a /reflective tower/ of additional, disjoint
-times (or /phases/) of arbitrary height.
-
-In order to ensure deterministic compilation, the macros calls in
-every package get expanded in a per-package macroexpand-time.  This
-means, packages used by macro expanders may be loaded an arbitrary
-number of separate times during macroexpansion.
-** *defpackage* name exports &body body -> nil [special]
-Defines a new named environment, that can be separately compiled.  The
-body of a package cannot access lexically enclosing variables.  The
-binding for the package exists in the variable namespace, but cannot
-be changed.  The body may contain definitions.
-*** Examples:
-: (defpackage Car-Stuff (Car Wheel Engine crank-engine))
-:   (defclass Car () 
-:     ((wheels (List Wheel)) 
-:      (engine Engine)))
-:   ...
-:   (defun crank-engine ((car Car))
-:     ...)
-** *provide* &rest names -> nil [special]
-May be used before any other expressions at the beginning of a file,
-to define the exports.
-*** Examples:
-: ;; beginning of file
-: (provide x y)
-: (defparameter x 1)
-: (defparameter y 2)
-
-** *require* package -> nil [special]
-Loads the specified package if it isn't loaded yet, and makes its
-top-level bindings accessible in the current environment.
-*** Examples:
-: (defpackage That-Package (x)
-:   (defparameter x 1))
-: (require That-Package)
-: x **> 1
-
-: (defpackage Some-Package ()
-:   (require This-Package That-Package)
-:   ...)
-** *require-for-syntax* package -> nil [special]
-Loads the specified package before loading macros defined in the
-current package.  This is useful for utility functions used by macros,
-as macros have no access to runtime bindings.  If macros use other
-macros, packages may be loaded more than once during compilation, in a
-phase-separated tower.
-*** Examples:
-
+* Built-ins
+** *Object* [class]
+** *Function* [class]
+** *Form* [class]
+** *Boolean* (Form) [class]
+** *Number* (Form) [class]
+** *Symbol* (Form) [class]
+** *String* (Form) [class]
+** *Null* (Form) [class]
+** *nil* [constant]
+** *#t* [constant]
+** *#f* [constant]
+** *null* [function]
+** *quote* form -> form [special]
+** *quasiquote* form -> form [special]
 * Bindings
 Lexical variables may be global (established by a definition in some
 environment) or local (introduced by closures).  Inner bindings shadow
@@ -91,6 +303,7 @@ outer bindings per static scoping.
 Defines a variable binding with the given name and value in the
 current environment.  If the binding is already defined, its value is
 updated.
+** *defvar* name value -> name [syntax]
 ** *defun* name sig body -> name [special]
 Defines a function binding with the given name and function in the
 current environment.  If the binding is already defined, its value is
@@ -107,21 +320,28 @@ current environment.
 ** *fboundp* symbol -> boolean [function]
 Returns true if there is a function binding with the given name in the
 current environment.
-* Dynamic Variables
+** *let* bindings &body body -> result* [syntax]
+** *flet* bindings &body body -> result* [syntax]
+** *setf* place value -> value [syntax]
 Dynamic variables have one value per thread, and are used for
 customizing functions deep in a call tree, where passing extra
 parameters to each function would be burdensome.
-** *defdynamic* name value -> name [function]
+** *defdynamic* name value -> name [special]
 Creates a new dynamic (thread-local) variable object.
-** *dynamic* name -> value [function]
+** *dynamic* dynamic -> value [function]
 Returns the value of the dynamic variable.
-** *set-dynamic* name value -> value [function]
+** *set-dynamic* dynamic value -> value [function]
 Sets the value of the dynamic variable.
-* Functions
-Functions take required, optional, and rest positional arguments, as
-well as keyword arguments.  Functions may return multiple values, but
-as in Common Lisp, all values but the first gets discarded unless the
-caller makes an explicit multiple-values call.
+** *dlet* bindings &body body -> result* [syntax]
+* Functions and Control Flow
+Functions support required and optional positional parameters,
+optional keyword parameters (which can also be accessed in batch), and
+positional rest parameters (accessible in batch).  All parameters can
+be typed, and optional parameters can have default values.  
+
+Functions may return multiple values, but as in Common Lisp, all
+values but the first gets discarded unless the caller makes an
+explicit multiple-values call.
 ** *lambda* signature &body -> function [special]
 Creates an anonymous function closure.  The body of a lambda may
 contain definitions.  As usual, functions close over outer lexical
@@ -135,8 +355,10 @@ where the data structures are created by a compiler intrinsic.
 ** *function* name -> function [special]
 Returns the function of the global or local function binding with the
 given name.
-* Control Flow
-As per Common Lisp.
+** *values* &rest objects -> object* [special]
+Returns multiple values.  
+** *multiple-value-call* function &rest forms -> result* [special]
+Calls a function with multiple values.
 ** *if* test-form then-form else-form -> value* [special]
 If the test form evaluates to true, evaluates the then form, otherwise
 evaluates the else form.
@@ -160,42 +382,69 @@ Creates a body of expressions and tags.  Expressions in the TAGBODY
 may perform non-local jumps to tags with GO.
 ** *go* tag -> | [special]
 Performs a non-local jump to the given tag.
-* Multiple Values
-As per Common Lisp.
-** *values* &rest objects -> object* [special]
-Returns multiple values.  
-** *multiple-value-call* function &rest forms -> result* [special]
-Calls a function with multiple values.
-* Types and Classes
-** *deftype* name &optional f-bound -> nil [special]
-Establishes a type in the current environment.  Optionally, an F-bound
-may be supplied.
+** *Condition* [class]
+** *Restart* (Condition) [class]
+** *handler-bind* bindings &body body -> result* [syntax]
+** *signal* condition -> result* [function]
+** *error* condition -> | [function]
+** *cerror* condition -> result* [function]
+* Objects
+Classes are user defined types.
+*** Type Variables
+Type variables may be defined, and optionally given a bound.  A bound
+is a potentially recursive type, of which values of the variable must
+be instances of subtypes.  The definition of a type variable is the
+same concept as "forall" and /quantification/, namely introducing a
+named type for a body of expressions, in this case a package.
+: (deftype T) ; no bound, allow all types
+: (defun foo ((something T) -> T) something)
+: (deftype X Integer) ; bound, only allow subtypes of Integer
+: (deftype Y (Foo Y)) ; standard recursive pattern
+*** Variance
+Subtyping is /invariant/ wrt subclassing.  (List Integer) is a not a
+subtype of (List Number).
+*** Polymorphic Functions
+Sometimes, such as when creating instances of parameterized classes,
+it is necessary to pass types at runtime.  This is possible in a
+limited form, as the following example demonstrates:
+: (defun my-make-array (&type T -> (Array T))
+:   (make (Array T)))
+: (my-make-array String)
+Type parameters to functions are declared using the lambda list
+keyword =&type=, and can have default values, which makes them
+optional.  Type arguments appear positionally before other arguments;
+they are differentiated from the other arguments by their uppercase
+name.  
+
+Runtime types cannot be stored in variables, or assigned to, only
+received by functions, so these forms are incorrect:
+: (let ((T String))
+:   (make T))
+: 
+: (defun foo (&type T -> T)
+:   (setq T String)
+:   (make T))
 ** *defclass* name &optional superclasses slot-specifiers class-options -> name [special]
 Creates a new class (or updates an existing class) with the given
 name, superclasses, and slot specifiers.
-** *mixin* class mixin [special]
+** *definstance* class mixin [special]
 Dynamically adds a "mixin" superclass to a class.
 ** *subclassp* a b -> boolean [function]
-Returns true if class A is a subclass of class B.
-* Core Classes
-** *Object* [class]
-** *Boolean* [class]
-** *Number* [class]
-** *String* [class]
-** *Symbol* [class]
-** *Null* [class]
-** *#t* [constant]
-** *#f* [constant]
-** *nil* [constant]
-* Objects
-** *make* class &keys slots -> object [function]
+Returns true if class A is a subclass of type B.
+
+** *the* class object -> object [special]
+Casts the object to the specified class.  Signals an error if object
+is not a generalized instance of the class.
+*** Objects
+Following CLOS, there's only a single namespace for slots - same named
+slots inherited from multiple superclasses are merged.  Slots may also
+get added to or removed from existing instances due to class
+redefinitions at runtime.
+** *make* &type class &keys slots -> object [function]
 Creates a new object of the given class, and initializes its slots
 using the supplied dictionary.
 ** *class-of* object -> class [function]
 Returns the class of the given object.
-** *the* class object -> object [special]
-Casts the object to the specified class.  Signals an error if object
-is not a generalized instance of the class.
 ** *slot-value* object slot-name -> value [function]
 Returns the value of the named slot of the object.
 ** *set-slot-value* object slot-name value -> value [function]
@@ -205,10 +454,12 @@ Returns true if the named slot is bound.
 ** *equal* o1 o2 -> boolean [generic]
 ** *eq* o1 o2 -> boolean [function]
 ** *sxhash* object -> hash-code [generic]
-* Generic Functions and Methods
-Single dispatch.
-** *defgeneric* name sig [special]
-Specifies that a method with the given signature must exist.
+*** Generic Functions and Methods
+Single dispatch.  The method selection algorithm is not designed yet,
+but will probably use a mechanism similar to Diesel to warn users of
+ambiguous method calls.
+** *defgeneric* name sig [special] Specifies
+that a method with the given signature must exist.
 ** *defmethod* name sig body -> nil [special]
 Sets the method definition with the given name for the class.
 ** *call-next-method* &rest args -> result* [local function]
@@ -220,48 +471,115 @@ on this generic method for your class.
 Called when no method with the given name exists in the object's class
 or its superclasses.  To handle this, define a method on this generic
 function for your class.
-* Macros
-Lowlevel hygienic macros.
+* Compilation and Evaluation
+Packages are units of compilation and namespace management.
+Filesystem trees of files are mapped 1:1 to in-language packages.
+Additionally, nested packages may be declared wherever definitions are
+allowed.
+
+Ell is a /multi-phase/ language, meaning there are generally at least
+two phases: a macroexpand-time, and a runtime, and if the macros
+themselves use macros there may be a /reflective tower/ of additional
+phases of arbitrary height.
+
+In order to ensure deterministic compilation, the macros calls in
+every package get expanded in a per-package macroexpand-time.  This
+means, packages used by macro expanders may be loaded an arbitrary
+number of separate times during macroexpansion.
+** *defenvironment* name exports &body body -> nil [special]
+Defines a new named environment, that is compiled inline.  The body of
+a package can access lexically enclosing variables.  The binding for
+the package exists in the variable namespace, but cannot be changed.
+The body may contain definitions.
+** *defpackage* name exports &body body -> nil [special]
+Defines a new named module, that can be separately compiled.  The
+body of a package cannot access lexically enclosing variables.  The
+binding for the package exists in the variable namespace, but cannot
+be changed.  The body may contain definitions.
+*** Examples:
+: (defpackage Car-Stuff (Car Wheel Engine crank-engine))
+:   (defclass Car () 
+:     ((wheels (List Wheel)) 
+:      (engine Engine)))
+:   ...
+:   (defun crank-engine ((car Car))
+:     ...)
+** *provide* &rest names -> nil [special]
+May be used before any other expressions at the beginning of a file,
+to define the exports.
+*** Examples:
+: ;; beginning of file
+: (provide x y)
+: (defparameter x 1)
+: (defparameter y 2)
+
+** *require* environment -> nil [special]
+Loads the specified package if it isn't loaded yet, and makes its
+top-level bindings accessible in the current environment.
+*** Examples:
+: (defpackage That-Package (x)
+:   (defparameter x 1))
+: (require That-Package)
+: x ==> 1
+
+: (defpackage Some-Package ()
+:   (require This-Package That-Package)
+:   ...)
+** *require-for-syntax* package -> nil [special]
+Loads the specified package before loading macros defined in the
+current package.  This is useful for utility functions used by macros,
+as macros have no access to runtime bindings.  If macros use other
+macros, packages may be loaded more than once during compilation, in a
+phase-separated tower.
+*** Examples:
+
+** *from* environment name -> object [syntax]
+*** Macros
+Low-Level hygienic macros.
+** *declare* decl [special]
+** *Syntax* [class]
 ** *defsyntax* name expander-function -> name [special]
 Defines an expander function with the given name in the current
 environment.
-** *quasisyntax* form -> form [special]
+** *syntax* syntax -> syntax [special]
+Constructs a piece of quoted syntax without unquotes.
+** *quasisyntax* syntax -> syntax [special]
 Constructs a piece of quoted syntax with unquotes.
-** *datum->syntax* template-id form -> form [function]
+** *datum->syntax* template-id syntax -> syntax [function]
 Repaints the form with the same color as the template identifier.
-** *Form* [class]
-* Evaluation
+*** Evaluation
 ** *eval* form -> result* [special]
 Evaluates the form in the top-level environment and returns its value.
 * Native Interface
 ** *native* c-string &optional result-class -> value [special]
 Includes a snippet of C, with escaping back into Lisp, and automatic
 conversion to and from native values.
-* Standard Library
-** *null* [function]
-** *let* [syntax]
-** *flet* [syntax]
-** *dynamic-let* [syntax]
-** *setf* place value -> value [syntax]
-** *from* package name -> object [syntax]
-* Conditions Library
-** *Condition* [class]
-** *Restart* [class]
-** *handle* conditions -> result* [syntax]
-** *catch* conditions -> result* [syntax]
-** *signal* condition -> result*
-** *error* condition -> |
-** *cerror* condition -> result*
-* Collections Library
-** *Collection* [class]
-** *List* [class]
-** *Linked-List* [class]
-** *Map* [class]
+* Collections
+Regarding the performance of the collections API, the following
+thinking applies.  Many systems and networks programming tasks fall in
+one of two classes:
+*** High frequency and massive scale
+An example would be a central IP address routing table in an internet
+server, or a mathematical simulation.  Code like this needs
+special-purpose data structures, best implemented in C, and doesn't
+require convenient APIs.  The collections API doesn't try to address
+this use case at all.
+*** Low frequency and small scale
+An example would be a servlet driving a database.  Code like this
+needs all the comfort it can get from its collections, and never
+operates on more objects than fit conveniently in memory.  The
+collections API addresses this use case with a Java-like hierarchy of
+convenient collection classes.
+** *Collection* (Form) [class]
+** *List* (Collection) [class]
+** *Linked-List* (List) [class]
+** *Array* (List) [class]
+** *Map* (Form) [class]
 ** *Map-Entry* [class]
-** *Hash-Map* [class]
-** *Set* [class]
-** *Hash-Set* [class]
+** *Hash-Map* (Map) [class]
+** *Set* (Form) [class]
+** *Hash-Set* (Set) [class]
 ** *Range* [class]
-** *map* [class]
-** *find* [class]
-
+** *all* collection -> range [generic]
+** *map* function &rest collections -> collection [function]
+** *find* item collection test -> range [function]

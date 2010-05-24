@@ -1,6 +1,0 @@
-(deftype L (Listener-Type L B))
-(deftype B (Broadcaster-Type L B))
-(defclass (Listener-Type L B))
-(defclass (Broadcaster-Type L B))
-(defclass Listener ((Listener-Type Listener Broadcaster)))
-(defclass Broadcaster ((Broadcaster-Type Listener Broadcaster)))
