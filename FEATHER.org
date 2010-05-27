@@ -1,0 +1,384 @@
+#+OPTIONS: toc:3 num:t
+#+TITLE: Compiling, Linking, Loading, and Running Lisp: The Operational Essence
+#+AUTHOR: Manuel J. Simoni
+#+EMAIL: msimoni@gmail.com
+#+TEXT: /DRAFT/
+* Description
+This document describes the compilation, linking, loading, and running
+phases of a Lisp kernel language that is minimal, but nevertheless
+representative of the kernels of modern Lisps.
+
+We rewrite Lisp expressions to a low-level language that maps directly
+to C.  Units can be compiled with the C compiler, linked with the
+system linker, and loaded and run with the system loader.
+* Units
+: (define x 1)
+: (define get-x (lambda () x))
+: (define set-x (lambda (y) (set! x y)))
+: (set-x 2)
+
+Lisp compiles, links, loads, and runs code in chunks of expressions
+which we call units.  A unit may come from a file or the REPL.
+
+A unit contains a sequence of interleaved /definitions/ and
+/initialization expressions/.  Definitions may bind names to values
+(including functions) at runtime, or to macro expanders at
+compile-time.  The other initialization expressions interspersed with
+the definitions are used only for their runtime side-effects.
+* Expressions
+Lisp expressions may be either definition expressions or ordinary
+expressions.  Definitions are used to bind names to objects, whereas
+(ordinary) expressions are used for their side-effects and/or results.
+Definitions may occur only at the top-level of a unit, and the names
+bound by definitions are scoped over the entire unit.
+** Global Variable Definition
+: (define x 1)
+Establishes a name, scoped over the entire unit, at compile-time, and
+sets it to a value at runtime.  If the name is already established,
+updates it.
+** Global Variable Reference
+: x
+: ==> 1
+Tries to return the value of a global variable.  A warning is
+signalled if the variable isn't known at compile-time.  An error is
+signalled if the variable doesn't exist at runtime.  An error is
+signalled if the variable exists, but isn't bound yet, at runtime.
+** Global Variable Update
+: (set! x 2)
+: ==> 2
+Updates the value of a global variable.  A warning is signalled if the
+variable isn't known at compile-time.  An error is signalled if the
+variable doesn't exist at runtime, which helps against accidentally
+creating a variable through a typo.
+** Anonymous Function
+: (define foo (lambda (x) x))
+Creates a function closure.  Parameters of the function shadow global
+variables and parameters of outer functions.  The parameters are
+defined as local variables in the body of the function.  A function
+closes over the local variable definitions of outer functions, meaning
+it shares the state of their bindings.
+** Global Function Call
+: (foo 3)
+: ==> 3
+Calls a global function. Same errors and warnings as for global
+variable reference.  Also signals an error at runtime if the value of
+the variable is not a function.
+** Local Variable Reference
+: (lambda (y) y)
+Returns the value of a local variable.
+** Local Variable Update
+: (lambda (z) (set! z 4) z)
+Updates the value of a local variable.
+** Local Function Call
+: (lambda (bar) (bar))
+Calls a local function.  Signals an error at runtime if the value of
+the variable is not a function.
+** Macro Definition
+: (define-macro quux (lambda (input) (syntax x)))
+Defines a macro expander function with the given name.  We will have
+a lot to say about this later.
+** Macro Call
+: (quux)
+: ==> 2
+The expression is replaced by its expansion, which is evaluated in
+its place.
+** Conditional
+: (if #t #t #f)
+: ==> #t
+Performs either of two alternatives, depending on the outcome of a
+test.
+** Sequence
+: (begin 5 6 7)
+: ==> 7
+Performs a sequence of expressions in sequence, returning the result
+of the last.  Additionally, sequence forms at the top-level of a unit
+are treated specially, in that their contents are spliced into the
+top-level, as if they were top-level expressions themselves,
+recursively.  This behavior is useful, and in fact a requirement, for
+macros that expand into definitions.
+* Expansion Process
+Before a unit is compiled, its macro calls are expanded, so that only
+built-in expressions without any macro calls remain.  The expander
+processes the expressions in a unit from left to right.
+** Main Pass
+*** Global Variable Definition
+If the expression is a variable definition, the variable name is
+remembered, but the expansion of the value is deferred.
+*** Macro Definition
+If the expression is a macro definition, its value is expanded,
+compiled, and evaluated to an expander function, and bound to the
+macro definition's name in the expander environment.
+*** Macro Call
+If the expression is a macro call, it is expanded, and processing
+continues with the expression's expansion.
+*** Sequence
+If the expression is a sequence, its sub-expressions are spliced into
+the top-level, and processing continues with the first subexpression.
+*** Other Expression
+If the expression is an ordinary expression, its expansion is
+deferred.
+** Post-Pass
+All macro definitions from the unit are known and have been evaluated.
+Only now, the deferred expressions are expanded, which has the
+peculiar effect that value expressions (the right-hand sides of
+variable definitions) may call macros defined later in a unit, whereas
+ordinary initialization expressions in the unit may not.
+* In-Memory Representations
+Before we can discuss how to prepare Lisp code for execution, we have
+to define how memory at runtime is organized.
+** Value and Function Cells
+Since global function calls are extremely common in Lisp, a special
+trick is used to increase their performance, at a small cost in space
+overhead.  For every global variable definition, we create both a
+value cell and a function cell.  So, although our kernel language is a
+Lisp-1, it's really implemented as a Lisp-2.  The runtime ensures that
+the function cell of a variable always points to the function, if the
+variable's value is a function, or to a trap function otherwise.
+Thus, we know that the function cell of a global variable always
+contains a function, and we don't need to perform a runtime type check
+when a global function is called.
+** Closures
+Closures are stored as heap-allocated memory beginning with a pointer
+to the closure's code, followed by the closed-over values of the
+function.  The (pointers to) values are usually copied into the
+closure, unless they are updated (i.e. a =set!= of the binding appears
+in the code), in which case they must be stored in heap-allocated
+boxes.  A box is shared by all functions that close over such a
+mutable binding.
+: [ code pointer | unboxed value | boxed value | unboxed value | ... ]
+:       |                              |
+:       |                              V
+:       V                            [box]----->[value]
+:  0101001110000...
+** Runtime Type Information
+We will assume for the moment that the type of every object is known
+at runtime.  We will only talk later about the actual layouts of
+objects in memory.
+* Low-Level Language
+Lisp high-level expressions have low-level effects at compile-time,
+link-time, load-time, and runtime.  Compile-time effects are the
+determination of closure layouts, and the whole process of macro
+expansion, described above.  Link-time effects are the registration of
+names with the linker, for use by other object files.  Load-time
+effects are the preparation of in-memory data needed for runtime.
+Only then, at runtime, does the actual computation of a Lisp
+expression occur.
+** Rewriting High-Level to Low-Level
+In order to express these multi-phase effects of expressions, we
+rewrite them in a special low-level language, that maps directly to C.
+Low-level language programs explicitly describe their compile-time,
+link-time, load-time, and runtime phases.
+*** Explicating Local and Global Variable References and Function Calls
+: (defrule (lambda ?signature ?expression) ->
+:   (@attrs down 'param (params signature)))
+: (defrule (set! ?name@identifier ?expression) (attr 'param name) ->
+:   (@run `(set-local-variable! ,name ,(process expression))))
+: (defrule (set! ?name@identifier ?expression) (not (attr 'param name)) ->
+:   (@run `(set-global-variable! ,name ,(process expression))))
+: (defrule (?name@identifier . ?arguments) (not (attr 'para name)) ->
+:   (@run `(global-function-call ,name . ,arguments)))
+: (defrule ?name@identifier (attr 'param name) ->
+:   (@run `(local-variable ,name)))
+: (defrule ?name@identifier (not (attr 'param name)) ->
+:   (@run `(global-variable ,name)))
+: (defrule (? . ?))
+Rewrites to:
+: (define name expression)
+: (set-local-variable! name expression)
+: (set-global-variable! name expression)
+: (lambda signature expression)
+: (if test then else)
+: (begin . expressions)
+: (local-variable x)
+: (global-variable x)
+: (x . arguments)
+: (global-function-call name . arguments)
+*** Determining Closure Layout
+: (define name expression)
+: (set-global-variable! name expression)
+: (if test then else)
+: (begin . expressions)
+: (global-variable x)
+: (x . arguments)
+: (global-function-call name . arguments)
+Rewrites lambda + local-variable + set-local-variable! to:
+: (defrule (lambda ?signature ?expression) ->
+:   (@attrs collect 
+
+: (closure-set!)
+: (defrule (local-variable ?name) ->
+:   (@attrs 
+: (box-set!)
+: (box)
+: (unbox)
+*** Global Variable Definition
+: (define name expression)
+
+: (@link (declare-value-cell name))
+: (@link (declare-function-cell name))
+: (@load (if (unbound? (function-cell name))
+:            (set-function-cell! name unbound-function)))
+: (@run (local value expression
+:         (begin
+:           (set-value-cell! name (ref value)))
+:           (if (function? (ref value))
+:               (set-function-cell! name (ref value))
+:               (set-function-cell! not-a-function))))
+*** Global Variable Reference
+: name
+
+: (@link (declare-value-cell name))
+: (@run (if (unbound? (value-cell name)) 
+:           (unbound-variable-error)
+:           (value-cell name)))
+*** Global Variable Update
+: (set! name expression)
+
+: (@link (declare-value-cell name))
+: (@link (declare-function-cell (function name)))
+: (@run (if (unbound? (value-cell name))
+:           (unbound-variable)
+:           (local value expression
+:             (begin
+:               (set-value-cell! name (ref value))
+:               (if (function? (ref value))
+:                 (set-function-cell! name (ref value))
+:                 (set-function-cell! name not-a-function))
+:               (ref value)))))
+*** Global Function Call
+: (defrule (global-function-call ?name@identifier . ?args) ->
+:   (@link (declare-function-cell name))
+:   (@load `(if (unbound? (function-cell ,name))
+:               (set-function-cell! ,name unbound-function)))
+:   (@run `(unsafe-apply-function (function-cell ,name) . ,args)))
+*** Anonymous Function
+: (lambda (x)      ; outer
+:   (lambda () x)) ; inner
+
+: (@compile (define-closure-code outer (x)
+:             (local ((x-box (box x)))
+:               (local ((clo (make-closure inner)))
+:                 (closure-set! (ref clo) 0) x-box)
+:                 (ref clo))))
+: (@compile (define-closure-code inner (x)
+:             (unbox (closure-lookup current-closure 0))))
+
+: (lambda (x)        ; outer
+:   (lambda (y)       ; mid
+:     (lambda () x)) ; inner
+: (@compile (define-closure-code outer (x)
+:             (local ((x-box (box x)))
+:               (local ((clo (make-closure inner)))
+:                 (closure-set! (ref clo) 0) x-box)
+:                 (ref clo))))
+: (@compile (define-closure-code inner (x)
+:             (unbox (closure-lookup current-closure 0))))
+
+
+: (@compile (define-closure-code clo-first-inner ()
+:             (box-set! (closure-lookup current-closure 0) 1)))
+: (@compile (define-closure-code clo-second-inner ()
+:             (box-set! (closure-lookup current-closure 0) 2)))
+: (@compile (define-closure-code clo-outer (x y)
+:             (local ((x-box (box x)) (y-box (box y)))
+:               (local clo (make-closure clo-first-inner)
+:                 (closure-set! (ref clo) 0 x-box)
+:                 (ref clo))
+:               (local clo (make-closure clo-second-inner)
+:                 (closure-set! (ref clo) 0 y-box)
+:                 (ref clo)))))
+
+** Mapping Low-Level to C
+*** Calling Convention
+: lisp_obj *(*lisp_code)(lisp_fun *__cur, lisp_args *args);
+The code for a function always receives a pointer to itself, the
+current closure, for access to closed-over variables.  The C types
+will be described later.
+
+
+*** *define-closure-code* id sig form [definition]
+Defines the C code for a closure at compile-time and gives it an
+identifier.
+: lisp_obj *
+: #(mangle-closure-code-id id)(lisp_fun *__cur, lisp_args *args)
+: {
+:   #(extract-params sig args);
+:   return #form;
+: }
+*** *declare-value-cell* name [declaration]
+Creates the value cell of a global variable as a weak linker symbol.
+: extern lisp_obj *#(mangle-value name) __attribute__((weak));
+
+*** *declare-function-cell* name [declaration]
+Creates the function cell of a global variable as a weak linker symbol.
+: extern lisp_obj *#(mangle-function name) __attribute__((weak));
+
+*** *value-cell* name -> function [expression]
+Returns the value stored in the value cell of a global variable.
+: #(mangle-value name)
+*** *function-cell* name -> function [expression]
+Returns the value stored in the function cell of a global variable.
+: #(mangle-function name)
+*** *set-value-cell!* name value -> value [expression]
+Updates the value cell of a global variable.
+: #(mangle-value name) = value;
+*** *set-function-cell!* name function -> function [expression]
+Updates the function cell of a global variable.
+: #(mangle-function name) = value;
+*** *begin* &rest expressions -> value [expression]
+Performs expressions in sequence.
+: ( #(intersperse expressions ",") )
+*** *if* test then else -> result [expression]
+Executes one of two alternative expressions depending on the outcome
+of a test.
+: (#test ? #then : #else)
+*** *local* name value form -> result [expression]
+Defines a low-level language variable.  Low-Level Language variables never shadow or are
+shadowed by Lisp variables.
+: { #(mangle-local name) = #value;
+:   #form }
+*** *ref* name -> value [expression]
+Returns the value of a low-level language variable.
+: #(mangle-local name)
+*** *unbound?* expression -> boolean [expression]
+Checks if the expression is equal to C NULL.
+: (#expr == NULL)
+*** *function?* object -> boolean [expression]
+Checks if the object is a function.
+: lisp_is_function(#object)
+*** *apply-function* function args -> result [expression]
+Ensures that the function is in fact a function and calls it with the
+given arguments.
+: {  __fun = #expression;
+:    if (lisp_is_function(__fun)) __fun->code(__fun, #args);
+:    else error(); }
+*** *unsafe-apply-function* function args keys -> result [expression]
+Calls a function with the given args, without checking whether the
+function is in fact a function.  This is used to max out performance
+of global function calls, and made safe through special conventions.
+: {  __fun = #expression;
+:    __fun->code(__fun, #args); }
+*** *make-closure* closure-code-id -> function [expression]
+Creates a function closure that references the given closure code.
+The closure environment is set up by the client separately.
+: lisp_make_closure(#(mangle-closure-code-id closure-code-id))
+*** *closure-lookup* function index -> value [expression]
+Looks up a closed-over variable in a closure's environment by its
+index in the environment.  The closure index computation and unboxing
+(if needed) are performed by the client.
+: lisp_closure_lookup(#function, #index)
+*** *closure-set!* function index value -> value [expression]
+Sets a closed-over variable in a closure's environment.  The closure
+index computation and boxing (if needed) are performed by the client.
+: lisp_closure_set(#function, #index, #value)
+*** *current-closure* -> function [variable]
+Returns the current closure, which is accessible per the closure
+calling convention.
+: __cur
+*** *box* value -> box [expression]
+*** *unbox* box -> value [expression]
+*** *box-set!* box value -> value [expression]
+*** *unbound-variable* -> function [variable]
+*** *unbound-function* -> function [variable]
+*** *not-a-function* -> function [variable]
+
