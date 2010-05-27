@@ -1,5 +1,5 @@
 #+OPTIONS: toc:2 num:t
-#+TITLE:  Executable and Linkable Lisp (Ell) Manual
+#+TITLE:  Generic Lisp Manual
 #+AUTHOR: Manuel J. Simoni
 #+EMAIL: msimoni@gmail.com
 #+TEXT: Weekend Edition.
@@ -18,15 +18,52 @@ the Ell compiler and type system, and into which all expressions are
 ultimately expanded.
 ** Contacting the Author
 Manuel J. Simoni <msimoni@gmail.com>
-* Language Overview
+* The Language
 Ell is a scripting language for programming in the POSIX and
 specifically GNU/Linux environment.  A typical use case would be to
 take a C library for writing HTTP servers, and an embeddable database
 written in C, and connect the two by some Lisp logic.
 
+Ell is not designed to be a language embedded into other applications,
+instead it's designed to write applications in the first place.
+Lisp's high level of abstraction, and transcendence of irrelevant
+issues such as syntax and memory management makes it ideal to write
+the /soft layer/ of an application, where convenience, deep
+functionality, and quick turnaround are important.  The /hard layer/,
+where high peformance and small space consumption are required, will
+usually be taken from existing operating systems services or
+libraries, or written in C, for which it is well suited.
+** Design Overview
+*** Approach
+**** /Lisp ain't broke, don't try to fix it./
+
 Ell tries to, as much as possible, /faithfully/ reuse and adapt
 modular functionality developed and proven in other languages, instead
-of inventing new features and solutions.
+of inventing new features and solutions.  Likewise, existing
+terminology, mostly from the common Lisp community, is embraced so
+that experienced Lispers will feel right at home, even when names such
+as =progn= may raise some eyebrows outside the Lisp scene.  But what's
+the point in giving a new name to something that's been used under
+that name for decades by a sizable group of programmers?
+
+
+*** Paradigms
+Ell is a /multi-paradigm/ language, featuring at least the following
+paradigms: 
+**** /Object-oriented/
+As in the original SmallTalk and Self systems, /all/ interactions with
+objects occur through /message sending/.
+**** /Functional/
+First-class functions are used pervasively for the convenient
+abstraction of functionality.
+**** /Generic/
+Algorithms are written in terms of abstract interfaces.
+**** /Typeful/
+Pervasive type annotations (at least in production code) and an
+optional advanced type system give additional trust in the codebase.
+**** /Language-oriented/
+The development of embedded domain specific languages, new binding and
+control structures, and syntactic sugar is a standard tool.
 *** Objects
 Object-oriented programming in Ell is modelled after the standard
 SmallTalk model: classes describe the slots (member variables) and
@@ -150,6 +187,9 @@ Ell derives its main thrust from *Common Lisp*'s core, but trims it
 down considerably, while striving to keep a lot of its power.  In the
 future, Ell may adopt additional features from Common Lisp as
 libraries.
+
+The second most important influence, after Common Lisp,
+is *SmallTalk*.
 
 Ell has probably the conceptual size of R6RS *Scheme*, so it's not a
 minimalist language.  A number of idioms and solutions are adopted
@@ -359,7 +399,7 @@ given name.
 Returns multiple values.  
 ** *multiple-value-call* function &rest forms -> result* [special]
 Calls a function with multiple values.
-** *if* test-form then-form else-form -> value* [special]
+** *if* test-form then-form &optional else-form -> value* [special]
 If the test form evaluates to true, evaluates the then form, otherwise
 evaluates the else form.
 ** *progn* &rest exprs -> value* [special]
