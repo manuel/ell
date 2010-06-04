@@ -34,36 +34,6 @@ where high peformance and small space consumption are required, will
 usually be taken from existing operating systems services or
 libraries, or written in C, for which it is well suited.
 ** Design Overview
-*** Approach
-**** /Lisp ain't broke, don't try to fix it./
-
-Ell tries to, as much as possible, /faithfully/ reuse and adapt
-modular functionality developed and proven in other languages, instead
-of inventing new features and solutions.  Likewise, existing
-terminology, mostly from the common Lisp community, is embraced so
-that experienced Lispers will feel right at home, even when names such
-as =progn= may raise some eyebrows outside the Lisp scene.  But what's
-the point in giving a new name to something that's been used under
-that name for decades by a sizable group of programmers?
-
-
-*** Paradigms
-Ell is a /multi-paradigm/ language, featuring at least the following
-paradigms: 
-**** /Object-oriented/
-As in the original SmallTalk and Self systems, /all/ interactions with
-objects occur through /message sending/.
-**** /Functional/
-First-class functions are used pervasively for the convenient
-abstraction of functionality.
-**** /Generic/
-Algorithms are written in terms of abstract interfaces.
-**** /Typeful/
-Pervasive type annotations (at least in production code) and an
-optional advanced type system give additional trust in the codebase.
-**** /Language-oriented/
-The development of embedded domain specific languages, new binding and
-control structures, and syntactic sugar is a standard tool.
 *** Objects
 Object-oriented programming in Ell is modelled after the standard
 SmallTalk model: classes describe the slots (member variables) and
