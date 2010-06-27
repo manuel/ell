@@ -13,7 +13,7 @@ unit       = exprs eof
 exprs      = spc? (expr spc?)+
 expr       = sym | lst
 
-sym-char   = [a-z] | "-"
+sym-char   = [a-zA-Z0-9&:] | "-"
 sym        = < sym-char+ >         { ellc_parser_add_sym(yytext); }
 
 lst        = OPEN exprs CLOSE

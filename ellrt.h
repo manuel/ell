@@ -4,9 +4,11 @@
 #define ELLRT_H
 
 #include <gc/gc.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "dict.h"
 #include "list.h"
@@ -16,8 +18,6 @@
 #define ell_alloc GC_MALLOC
 
 /**** Brands and Objects ****/
-
-struct ell_obj;
 
 struct ell_brand {
     dict_t methods;
@@ -56,6 +56,12 @@ ell_make_brand()
         ELL_BRAND(name) = ell_make_brand();                \
     }
 
+bool
+ell_eq(struct ell_obj *a, struct ell_obj *b)
+{
+    return a == b;
+}
+
 void
 ell_assert_brand(struct ell_obj *obj, struct ell_brand *brand)
 {
@@ -86,6 +92,23 @@ ell_str_chars(struct ell_obj *str)
 {
     ell_assert_brand(str, ELL_BRAND(str));
     return ((struct ell_str_data *) str->data)->chars;
+}
+
+size_t
+ell_str_len(struct ell_obj *str)
+{
+    return strlen(ell_str_chars(str));
+}
+
+char
+ell_str_char_at(struct ell_obj *str, size_t i)
+{
+    if (i < ell_str_len(str)) {
+        return ell_str_chars(str)[i];
+    } else {
+        printf("string index out of range\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 /**** Symbols ****/
@@ -154,7 +177,8 @@ ell_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **arg
 
 struct ell_clo_data {
     ell_code *code;
-    void *env;
+    struct ell_obj **parent_env;
+    struct ell_obj **env;
 };
 
 ELL_DEFBRAND(clo)
