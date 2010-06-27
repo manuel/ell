@@ -1,0 +1,27 @@
+%{
+void
+ellc_parser_add_sym(char *chars);
+
+void
+ellc_parser_push();
+
+void
+ellc_parser_pop();
+%}
+
+unit       = exprs eof
+exprs      = spc? (expr spc?)+
+expr       = sym | lst
+
+sym-char   = [a-z] | "-"
+sym        = < sym-char+ >         { ellc_parser_add_sym(yytext); }
+
+lst        = OPEN exprs CLOSE
+           | OPEN spc? CLOSE
+OPEN       = "("                   { ellc_parser_push(); }
+CLOSE      = ")"                   { ellc_parser_pop(); }
+
+spc-char   = [ \t] | eol
+spc        = spc-char+
+eol        = [\r\n]
+eof        = !.

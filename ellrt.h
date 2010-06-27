@@ -1,5 +1,8 @@
 /***** Executable and Linkable Lisp Runtime *****/
 
+#ifndef ELLRT_H
+#define ELLRT_H
+
 #include <gc/gc.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,6 +16,8 @@
 #define ell_alloc GC_MALLOC
 
 /**** Brands and Objects ****/
+
+struct ell_obj;
 
 struct ell_brand {
     dict_t methods;
@@ -124,14 +129,23 @@ ell_intern(struct ell_obj *str)
     }    
 }
 
-char *
-ell_sym_name_chars(struct ell_obj *sym)
+struct ell_obj *
+ell_sym_name(struct ell_obj *sym)
 {
-    ell_assert_brand(sym, ELL_BRAND(sym));
-    return ell_str_chars(((struct ell_sym_data *) sym->data)->name);
+    return ((struct ell_sym_data *) sym->data)->name;
 }
 
 #define ELL_SYM(name) __ell_sym_##name
+
+#define ELL_DEFSYM(name, lisp_name)                                     \
+    __attribute__((weak)) struct ell_obj *ELL_SYM(name);                \
+                                                                        \
+    __attribute__((constructor(203))) static void                       \
+    __ell_init_sym_##name()                                             \
+    {                                                                   \
+        if (!ELL_SYM(name))                                             \
+            ELL_SYM(name) = ell_intern(ell_make_str(lisp_name));        \
+    }
 
 /**** Closures ****/
 
@@ -187,7 +201,7 @@ void
 ell_put_method(struct ell_brand *brand, struct ell_obj *msg, struct ell_obj *clo)
 {
     ell_assert_brand(clo, ELL_BRAND(clo));
-    char *msg_chars = ell_sym_name_chars(msg);
+    char *msg_chars = ell_str_chars(ell_sym_name(msg));
     dnode_t *node = dict_lookup(&brand->methods, msg_chars);
     if (node) {
         dnode_put(node, clo);
@@ -201,7 +215,8 @@ ell_put_method(struct ell_brand *brand, struct ell_obj *msg, struct ell_obj *clo
 struct ell_obj *
 ell_find_method(struct ell_obj *rcv, struct ell_obj *msg)
 {
-    dnode_t *node = dict_lookup(&rcv->brand->methods, ell_sym_name_chars(msg));
+    dnode_t *node = dict_lookup(&rcv->brand->methods, 
+                                ell_str_chars(ell_sym_name(msg)));
     if (node) {
         return (struct ell_obj *) dnode_get(node);
     } else {
@@ -217,7 +232,7 @@ ell_send(struct ell_obj *rcv, struct ell_obj *msg,
     if (clo) {
         return ell_call_unchecked(clo, npos, nkey, args);
     } else {
-        printf("message not understood\n");
+        printf("message not understood: %s\n", ell_str_chars(ell_sym_name(msg)));
         exit(EXIT_FAILURE);
     }
 }
@@ -232,16 +247,12 @@ ell_send(struct ell_obj *rcv, struct ell_obj *msg,
 
 #define ELL_METHOD_CODE(brand, msg) __ell_method_code_##brand##_##msg
 
-#define ELL_DEFMETHOD(brand, msg, lisp_msg, formal_npos)                \
-    __attribute__((weak)) struct ell_obj *ELL_SYM(msg);                 \
-                                                                        \
+#define ELL_DEFMETHOD(brand, msg, formal_npos)                          \
     ell_code ELL_METHOD_CODE(brand, msg);                               \
                                                                         \
-    __attribute__((constructor(203))) static void                       \
+    __attribute__((constructor(204))) static void                       \
     __ell_init_method_##brand##_##msg()                                 \
     {                                                                   \
-        if (!ELL_SYM(msg))                                              \
-            ELL_SYM(msg) = ell_intern(ell_make_str(lisp_msg));          \
         struct ell_obj *clo =                                           \
             ell_make_clo(&ELL_METHOD_CODE(brand, msg), NULL);           \
         ell_put_method(ELL_BRAND(brand), ELL_SYM(msg), clo);            \
@@ -303,18 +314,53 @@ ell_make_stx_lst()
     return ell_make_obj(ELL_BRAND(stx_lst), data);
 }
 
-ELL_DEFMETHOD(stx_lst, add, "add", 2)
+struct ell_obj *
+ell_stx_sym_sym(struct ell_obj *stx_sym)
+{
+    ell_assert_brand(stx_sym, ELL_BRAND(stx_sym));
+    return ((struct ell_stx_sym_data *) stx_sym->data)->sym;
+}
+
+list_t *
+ell_stx_lst_elts(struct ell_obj *stx_lst)
+{
+    ell_assert_brand(stx_lst, ELL_BRAND(stx_lst));
+    return &((struct ell_stx_lst_data *) stx_lst->data)->elts;
+}
+
+/**** Standard Library ****/
+
+ELL_DEFSYM(add, "add")
+ELL_DEFSYM(print_object, "print-object")
+
+ELL_DEFMETHOD(stx_lst, add, 2)
 ELL_PARAM(stx_lst, 0)
 ELL_PARAM(elt, 1)
 lnode_t *node = (lnode_t *) ell_alloc(sizeof(*node));
 lnode_init(node, elt);
-list_append(&((struct ell_stx_lst_data *) stx_lst->data)->elts, node);
+list_append(ell_stx_lst_elts(stx_lst), node);
 return stx_lst;
 ELL_END
 
-ELL_DEFMETHOD(stx_lst, print, "print", 1)
-//ELL_PARAM(stx_lst, 0)
-printf("foo\n");
+static void
+ell_stx_lst_print_process(list_t *list, lnode_t *node, void *unused)
+{
+    ELL_SEND((struct ell_obj *) lnode_get(node), print_object);
+    printf(" ");
+}
+
+ELL_DEFMETHOD(stx_lst, print_object, 1)
+ELL_PARAM(stx_lst, 0)
+printf("(");
+list_process(ell_stx_lst_elts(stx_lst), NULL, &ell_stx_lst_print_process);
+printf(")");
 return NULL;
 ELL_END
 
+ELL_DEFMETHOD(stx_sym, print_object, 1)
+ELL_PARAM(stx_sym, 0)
+printf("%s", ell_str_chars(ell_sym_name(ell_stx_sym_sym(stx_sym))));
+return NULL;
+ELL_END
+
+#endif
