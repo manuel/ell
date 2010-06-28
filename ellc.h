@@ -48,7 +48,7 @@ struct ellc_ast_cond {
 };
 
 struct ellc_ast_seq {
-    list_t *exprs;
+    list_t *exprs; // ast
 };
 
 struct ellc_ast_app {
@@ -104,14 +104,8 @@ struct ellc_ast_loc_fset {
     struct ellc_ast *val;
 };
 
-struct ellc_ast_loc_app {
-    struct ellc_lex_addr *lex_addr;
-    struct ellc_args *args;
-};
-
 struct ellc_ast_clo {
-    unsigned *code_id;
-    list_t *env_vals;
+    unsigned code_id;
 };
 
 /**** Expression Representation ****/
@@ -137,7 +131,6 @@ enum ellc_ast_type {
     ELLC_AST_LOC_FREF,
     ELLC_AST_LOC_SET,
     ELLC_AST_LOC_FSET,
-    ELLC_AST_LOC_APP,
     ELLC_AST_CLO,
 };
 
@@ -164,7 +157,6 @@ struct ellc_ast {
         struct ellc_ast_loc_fref loc_fref;
         struct ellc_ast_loc_set  loc_set;
         struct ellc_ast_loc_fset loc_fset;
-        struct ellc_ast_loc_app  loc_app;
         struct ellc_ast_clo      clo;
     };
 };
@@ -181,8 +173,10 @@ struct ellc_params {
     struct ellc_id *all_keys;
 };
 
+enum ellc_param_type { ELLC_PARAM_VAR, ELLC_PARAM_FUN };
+
 struct ellc_param {
-    enum { ELLC_PARAM_VAR, ELLC_PARAM_FUN } type;
+    enum ellc_param_type type;
     struct ellc_id *id;
     struct ellc_ast *init;
 };
@@ -193,16 +187,27 @@ struct ellc_args {
 };
 
 struct ellc_lex_addr {
-    unsigned depth;
     unsigned pos;
+    unsigned depth;
 };
 
 /**** Compiler State ****/
 
 struct ellc_contour {
+    list_t *params; // param
     struct ellc_contour *up;
-    list_t formals; // id
 };
+
+struct ellc_st {
+    list_t codes; // code
+};
+
+struct ellc_code {
+    struct ellc_params *params;
+    struct ellc_ast *body;
+};
+
+static struct ellc_st ellc_st;
 
 /**** Symbols ****/
 

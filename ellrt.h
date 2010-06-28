@@ -16,6 +16,8 @@
 list_t *
 ell_util_sublist(list_t *list, listcount_t start);
 void
+ell_util_add_new(list_t *list, void *elt);
+void
 ell_util_assert_list_len(list_t *list, listcount_t len);
 void
 ell_util_assert_list_len_min(list_t *list, listcount_t len);
@@ -508,6 +510,14 @@ ell_util_sublist(list_t *list, listcount_t start)
     } while(i < ct);
 
     return res;
+}
+
+void
+ell_util_add_new(list_t *list, void *elt)
+{
+    lnode_t *new = (lnode_t *) ell_alloc(sizeof(*new));
+    lnode_init(new, elt);
+    list_append(list, new);
 }
 
 #endif
