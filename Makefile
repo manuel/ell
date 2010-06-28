@@ -1,12 +1,12 @@
-CC=gcc
-CFLAGS=-std=c99 -Wall
+CFLAGS=-std=c99 -Wall -g
+LD=gcc
 LDFLAGS=-lgc
 
 OBJECTS = ellc.o dict.o list.o
 
-ell: $(OBJECTS)
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+ellc: $(OBJECTS)
+	$(LD) $(LDFLAGS) $(OBJECTS) -o ellc
 
 .PHONY: clean
 clean:
-	@rm -f *.o ell
+	@rm -f *.o ellc

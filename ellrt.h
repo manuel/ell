@@ -13,6 +13,13 @@
 #include "dict.h"
 #include "list.h"
 
+list_t *
+ell_util_sublist(list_t *list, listcount_t start);
+void
+ell_util_assert_list_len(list_t *list, listcount_t len);
+void
+ell_util_assert_list_len_min(list_t *list, listcount_t len);
+
 /**** Allocation ****/
 
 #define ell_alloc GC_MALLOC
@@ -56,12 +63,6 @@ ell_make_brand()
         ELL_BRAND(name) = ell_make_brand();                \
     }
 
-bool
-ell_eq(struct ell_obj *a, struct ell_obj *b)
-{
-    return a == b;
-}
-
 void
 ell_assert_brand(struct ell_obj *obj, struct ell_brand *brand)
 {
@@ -80,11 +81,20 @@ struct ell_str_data {
 ELL_DEFBRAND(str)
 
 struct ell_obj *
+ell_make_strn(char *chars, size_t len)
+{
+    char *copy = (char *) ell_alloc(len + 1);
+    strncpy(copy, chars, len);
+    copy[len] = '\0';
+    struct ell_str_data *data = (struct ell_str_data *) ell_alloc(sizeof(*data));
+    data->chars = copy;
+    return ell_make_obj(ELL_BRAND(str), data);
+}
+
+struct ell_obj *
 ell_make_str(char *chars)
 {
-    struct ell_str_data *data = (struct ell_str_data *) ell_alloc(sizeof(*data));
-    data->chars = chars;
-    return ell_make_obj(ELL_BRAND(str), data);
+    return ell_make_strn(chars, strlen(chars));
 }
 
 char *
@@ -111,6 +121,17 @@ ell_str_char_at(struct ell_obj *str, size_t i)
     }
 }
 
+struct ell_obj *
+ell_str_poplast(struct ell_obj *str)
+{
+    char *chars = ell_str_chars(str);
+    size_t len = strlen(chars);
+    if (len <= 1)
+        return ell_make_str("");
+    else 
+        return ell_make_strn(chars, len - 1);
+}
+
 /**** Symbols ****/
 
 struct dict_t ell_sym_tab;
@@ -127,7 +148,7 @@ struct ell_sym_data {
 
 ELL_DEFBRAND(sym)
 
-struct ell_obj *
+static struct ell_obj *
 ell_make_sym(struct ell_obj *str)
 {
     ell_assert_brand(str, ELL_BRAND(str));
@@ -169,6 +190,12 @@ ell_sym_name(struct ell_obj *sym)
         if (!ELL_SYM(name))                                             \
             ELL_SYM(name) = ell_intern(ell_make_str(lisp_name));        \
     }
+
+int
+ell_sym_cmp(struct ell_obj *sym_a, struct ell_obj *sym_b)
+{
+    return sym_a - sym_b;
+}
 
 /**** Closures ****/
 
@@ -352,9 +379,27 @@ ell_stx_lst_elts(struct ell_obj *stx_lst)
     return &((struct ell_stx_lst_data *) stx_lst->data)->elts;
 }
 
-/**** Standard Library ****/
+void
+ell_assert_stx_lst_len(struct ell_obj *stx_lst, listcount_t len)
+{
+    ell_assert_brand(stx_lst, ELL_BRAND(stx_lst));
+    ell_util_assert_list_len(ell_stx_lst_elts(stx_lst), len);
+}
+
+void
+ell_assert_stx_lst_len_min(struct ell_obj *stx_lst, listcount_t len)
+{
+    ell_assert_brand(stx_lst, ELL_BRAND(stx_lst));
+    ell_util_assert_list_len_min(ell_stx_lst_elts(stx_lst), len);
+}
+
+/**** Syntax Objects Library ****/
 
 ELL_DEFSYM(add, "add")
+ELL_DEFSYM(first, "first")
+ELL_DEFSYM(second, "second")
+ELL_DEFSYM(third, "third")
+ELL_DEFSYM(fourth, "fourth")
 ELL_DEFSYM(print_object, "print-object")
 
 ELL_DEFMETHOD(stx_lst, add, 2)
@@ -386,5 +431,83 @@ ELL_PARAM(stx_sym, 0)
 printf("%s", ell_str_chars(ell_sym_name(ell_stx_sym_sym(stx_sym))));
 return NULL;
 ELL_END
+
+ELL_DEFMETHOD(stx_lst, first, 1)
+ELL_PARAM(stx_lst, 0)
+ell_assert_stx_lst_len_min(stx_lst, 1);
+lnode_t *node = list_first(ell_stx_lst_elts(stx_lst));
+return (struct ell_obj *) lnode_get(node);
+ELL_END
+
+ELL_DEFMETHOD(stx_lst, second, 1)
+ELL_PARAM(stx_lst, 0)
+ell_assert_stx_lst_len_min(stx_lst, 2);
+list_t *elts = ell_stx_lst_elts(stx_lst);
+lnode_t *node = list_next(elts, list_first(elts));
+return (struct ell_obj *) lnode_get(node);
+ELL_END
+
+ELL_DEFMETHOD(stx_lst, third, 1)
+ELL_PARAM(stx_lst, 0)
+ell_assert_stx_lst_len_min(stx_lst, 3);
+list_t *elts = ell_stx_lst_elts(stx_lst);
+lnode_t *node = list_next(elts, list_next(elts, list_first(elts)));
+return (struct ell_obj *) lnode_get(node);
+ELL_END
+
+ELL_DEFMETHOD(stx_lst, fourth, 1)
+ELL_PARAM(stx_lst, 0)
+ell_assert_stx_lst_len_min(stx_lst, 4);
+list_t *elts = ell_stx_lst_elts(stx_lst);
+lnode_t *node = list_next(elts, list_next(elts, list_next(elts, list_first(elts))));
+return (struct ell_obj *) lnode_get(node);
+ELL_END
+
+/***** Utilities *****/
+
+void
+ell_util_assert_list_len(list_t *list, listcount_t len)
+{
+    if (len != list_count(list)) {
+        printf("list length assertion failed\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void
+ell_util_assert_list_len_min(list_t *list, listcount_t len)
+{
+    if (len > list_count(list)) {
+        printf("list length assertion failed\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+list_t *
+ell_util_sublist(list_t *list, listcount_t start)
+{
+    listcount_t ct = list_count(list);
+    list_t *res = (list_t *) ell_alloc(sizeof(*res));
+    list_init(res, LISTCOUNT_T_MAX);
+
+    if (start >= ct) return res;
+
+    lnode_t *n = list_first(list);
+    int i = 0;
+    while (i < start) {
+        n = list_next(list, n);
+        i++;
+    }
+
+    do {
+        lnode_t *m = (lnode_t *) ell_alloc(sizeof(*m));
+        lnode_init(m, lnode_get(n));
+        list_append(res, m);
+        n = list_next(list, n);
+        i++;
+    } while(i < ct);
+
+    return res;
+}
 
 #endif

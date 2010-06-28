@@ -1,3 +1,1 @@
-(defun foo ()
-  (when t
-    (print woah)))
+(ell-def foo (ell-lam () foo))

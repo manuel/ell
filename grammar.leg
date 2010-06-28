@@ -1,11 +1,11 @@
 %{
-void
+static void
 ellc_parser_add_sym(char *chars);
 
-void
+static void
 ellc_parser_push();
 
-void
+static void
 ellc_parser_pop();
 %}
 

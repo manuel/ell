@@ -13,6 +13,14 @@ struct ellc_lex_addr;
 
 /**** Normal Form ****/
 
+struct ellc_ast_ref {
+    struct ellc_id *id;
+};
+
+struct ellc_ast_fref {
+    struct ellc_id *id;
+};
+
 struct ellc_ast_def {
     struct ellc_id *id;
     struct ellc_ast *val;
@@ -21,14 +29,6 @@ struct ellc_ast_def {
 struct ellc_ast_fdef {
     struct ellc_id *id;
     struct ellc_ast *val;
-};
-
-struct ellc_ast_ref {
-    struct ellc_id *id;
-};
-
-struct ellc_ast_fref {
-    struct ellc_id *id;
 };
 
 struct ellc_ast_set {
@@ -41,16 +41,6 @@ struct ellc_ast_fset {
     struct ellc_ast *val;
 };
 
-struct ellc_ast_lam {
-    struct ellc_params *params;
-    struct ellc_ast *body;
-};
-
-struct ellc_ast_app {
-    struct ellc_ast *op;
-    struct ellc_args *args;
-};
-
 struct ellc_ast_cond {
     struct ellc_ast *test;
     struct ellc_ast *consequent;
@@ -59,6 +49,16 @@ struct ellc_ast_cond {
 
 struct ellc_ast_seq {
     list_t *exprs;
+};
+
+struct ellc_ast_app {
+    struct ellc_ast *op;
+    struct ellc_args *args;
+};
+
+struct ellc_ast_lam {
+    struct ellc_params *params;
+    struct ellc_ast *body;
 };
 
 /**** Explicit Form ****/
@@ -116,42 +116,44 @@ struct ellc_ast_clo {
 
 /**** Expression Representation ****/
 
-struct ellc_ast {
-    enum {
-        ELLC_AST_DEF,
-        ELLC_AST_FDEF,
-        ELLC_AST_REF,
-        ELLC_AST_FREF,
-        ELLC_AST_SET,
-        ELLC_AST_FSET,
-        ELLC_AST_LAM,
-        ELLC_AST_APP,
-        ELLC_AST_COND,
-        ELLC_AST_SEQ,
+enum ellc_ast_type {
+    ELLC_AST_REF,
+    ELLC_AST_FREF,
+    ELLC_AST_DEF,
+    ELLC_AST_FDEF,
+    ELLC_AST_SET,
+    ELLC_AST_FSET,
+    ELLC_AST_COND,
+    ELLC_AST_SEQ,
+    ELLC_AST_APP,
+    ELLC_AST_LAM,
+    
+    ELLC_AST_GLO_REF,
+    ELLC_AST_GLO_FREF,
+    ELLC_AST_GLO_SET,
+    ELLC_AST_GLO_FSET,
+    ELLC_AST_GLO_APP,
+    ELLC_AST_LOC_REF,
+    ELLC_AST_LOC_FREF,
+    ELLC_AST_LOC_SET,
+    ELLC_AST_LOC_FSET,
+    ELLC_AST_LOC_APP,
+    ELLC_AST_CLO,
+};
 
-        ELLC_AST_GLO_REF,
-        ELLC_AST_GLO_FREF,
-        ELLC_AST_GLO_SET,
-        ELLC_AST_GLO_FSET,
-        ELLC_AST_GLO_APP,
-        ELLC_AST_LOC_REF,
-        ELLC_AST_LOC_FREF,
-        ELLC_AST_LOC_SET,
-        ELLC_AST_LOC_FSET,
-        ELLC_AST_LOC_APP,
-        ELLC_AST_CLO,
-    } type;
+struct ellc_ast {
+    enum ellc_ast_type type;
     __extension__ union {
-        struct ellc_ast_def  def;
-        struct ellc_ast_fdef fdef;
         struct ellc_ast_ref  ref;
         struct ellc_ast_fref fref;
+        struct ellc_ast_def  def;
+        struct ellc_ast_fdef fdef;
         struct ellc_ast_set  set;
         struct ellc_ast_fset fset;
-        struct ellc_ast_lam  lam;
-        struct ellc_ast_app  app;
         struct ellc_ast_cond cond;
         struct ellc_ast_seq  seq;
+        struct ellc_ast_app  app;
+        struct ellc_ast_lam  lam;
 
         struct ellc_ast_glo_ref  glo_ref;
         struct ellc_ast_glo_fref glo_fref;
@@ -172,11 +174,11 @@ struct ellc_id {
 };
 
 struct ellc_params {
-    list_t req; // param
-    list_t opt; // param
-    list_t key; // param
+    list_t *req; // param
+    list_t *opt; // param
+    list_t *key; // param
     struct ellc_id *rest;
-    struct ellc_id *keys;
+    struct ellc_id *all_keys;
 };
 
 struct ellc_param {
@@ -187,7 +189,7 @@ struct ellc_param {
 
 struct ellc_args {
     list_t pos; // ast
-    dict_t key; // id -> ast
+    dict_t key; // sym -> ast
 };
 
 struct ellc_lex_addr {
@@ -204,17 +206,19 @@ struct ellc_contour {
 
 /**** Symbols ****/
 
-ELL_DEFSYM(amp_optional, "&optional")
-ELL_DEFSYM(amp_key, "&key")
-ELL_DEFSYM(amp_rest, "&rest")
-ELL_DEFSYM(amp_all_keys, "&all-keys")
+ELL_DEFSYM(core_def,  "ell-def")
+ELL_DEFSYM(core_fdef, "ell-fdef")
+ELL_DEFSYM(core_fref, "ell-fref")
+ELL_DEFSYM(core_set,  "ell-set")
+ELL_DEFSYM(core_fset, "ell-fset")
+ELL_DEFSYM(core_lam,  "ell-lam")
+ELL_DEFSYM(core_app,  "ell-app")
+ELL_DEFSYM(core_cond, "ell-cond")
+ELL_DEFSYM(core_seq,  "ell-seq")
 
-bool
-ellc_is_key_sym(struct ell_obj *sym)
-{
-    ell_assert_brand(sym, ELL_BRAND(sym));
-    struct ell_obj *name = ell_sym_name(sym);
-    return (ell_str_len(name) > 0) && (ell_str_char_at(name, 0) == ':');
-}
+ELL_DEFSYM(param_optional, "&optional")
+ELL_DEFSYM(param_key, "&key")
+ELL_DEFSYM(param_rest, "&rest")
+ELL_DEFSYM(param_all_keys, "&all-keys")
 
 #endif

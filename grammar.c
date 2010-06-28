@@ -5,13 +5,13 @@
 #include <string.h>
 #define YYRULECOUNT 12
 
-void
+static void
 ellc_parser_add_sym(char *chars);
 
-void
+static void
 ellc_parser_push();
 
-void
+static void
 ellc_parser_pop();
 
 #ifndef YY_VARIABLE
