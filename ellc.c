@@ -86,7 +86,7 @@ ellc_make_ast(enum ellc_ast_type type)
     return ast;
 }
 
-/**** Normalization: Turns Syntax Objects into Normal Form AST ****/
+/**** Normalization: Syntax Objects -> Normal Form AST ****/
 
 static struct ellc_ast *
 ellc_norm_stx(struct ell_obj *stx);
@@ -107,8 +107,8 @@ ellc_norm_ref(struct ell_obj *stx_sym)
 static struct ellc_ast *
 ellc_norm_fref(struct ell_obj *stx_lst)
 {
-    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_FREF);
     ell_assert_stx_lst_len(stx_lst, 2);
+    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_FREF);
     ast->fref.id = ellc_make_id(ell_stx_sym_sym(ELL_SEND(stx_lst, second)));
     return ast;
 }
@@ -116,8 +116,8 @@ ellc_norm_fref(struct ell_obj *stx_lst)
 static struct ellc_ast *
 ellc_norm_def(struct ell_obj *stx_lst)
 {
-    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_DEF);
     ell_assert_stx_lst_len(stx_lst, 3);
+    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_DEF);
     ast->def.id = ellc_make_id(ell_stx_sym_sym(ELL_SEND(stx_lst, second)));
     ast->def.val = ellc_norm_stx(ELL_SEND(stx_lst, third));
     return ast;
@@ -126,8 +126,8 @@ ellc_norm_def(struct ell_obj *stx_lst)
 static struct ellc_ast *
 ellc_norm_fdef(struct ell_obj *stx_lst)
 {
-    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_FDEF);
     ell_assert_stx_lst_len(stx_lst, 3);
+    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_FDEF);
     ast->fdef.id = ellc_make_id(ell_stx_sym_sym(ELL_SEND(stx_lst, second)));
     ast->fdef.val = ellc_norm_stx(ELL_SEND(stx_lst, third));
     return ast;
@@ -136,8 +136,8 @@ ellc_norm_fdef(struct ell_obj *stx_lst)
 static struct ellc_ast *
 ellc_norm_set(struct ell_obj *stx_lst)
 {
-    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_SET);
     ell_assert_stx_lst_len(stx_lst, 3);
+    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_SET);
     ast->set.id = ellc_make_id(ell_stx_sym_sym(ELL_SEND(stx_lst, second)));
     ast->set.val = ellc_norm_stx(ELL_SEND(stx_lst, third));
     return ast;
@@ -146,8 +146,8 @@ ellc_norm_set(struct ell_obj *stx_lst)
 static struct ellc_ast *
 ellc_norm_fset(struct ell_obj *stx_lst)
 {
-    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_FSET);
     ell_assert_stx_lst_len(stx_lst, 3);
+    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_FSET);
     ast->fset.id = ellc_make_id(ell_stx_sym_sym(ELL_SEND(stx_lst, second)));
     ast->fset.val = ellc_norm_stx(ELL_SEND(stx_lst, third));
     return ast;
@@ -156,8 +156,8 @@ ellc_norm_fset(struct ell_obj *stx_lst)
 static struct ellc_ast *
 ellc_norm_cond(struct ell_obj *stx_lst)
 {
-    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_COND);
     ell_assert_stx_lst_len(stx_lst, 4);
+    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_COND);
     ast->cond.test = ellc_norm_stx(ELL_SEND(stx_lst, second));
     ast->cond.consequent = ellc_norm_stx(ELL_SEND(stx_lst, third));
     ast->cond.alternative = ellc_norm_stx(ELL_SEND(stx_lst, fourth));
@@ -167,6 +167,7 @@ ellc_norm_cond(struct ell_obj *stx_lst)
 static struct ellc_ast *
 ellc_norm_seq(struct ell_obj *stx_lst)
 {
+    ell_assert_stx_lst_len_min(stx_lst, 1);
     struct ellc_ast_seq *ast_seq = ellc_make_ast_seq();
     list_t *elts_stx = ell_util_sublist(ell_stx_lst_elts(stx_lst), 1);
     listcount_t len = list_count(elts_stx);
@@ -257,8 +258,8 @@ ellc_dissect_args(list_t *args_stx)
 static struct ellc_ast *
 ellc_norm_app(struct ell_obj *stx_lst)
 {
-    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_APP);
     ell_assert_stx_lst_len_min(stx_lst, 2);
+    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_APP);
     ast->app.op = ellc_norm_stx(ELL_SEND(stx_lst, second));
     ast->app.args = ellc_dissect_args(ell_util_sublist(ell_stx_lst_elts(stx_lst), 2));
     return ast;
@@ -267,8 +268,8 @@ ellc_norm_app(struct ell_obj *stx_lst)
 static struct ellc_ast *
 ellc_norm_ordinary_app(struct ell_obj *stx_lst)
 {
-    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_APP);
     ell_assert_stx_lst_len_min(stx_lst, 1);
+    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_APP);
     struct ell_obj *op_stx = ELL_SEND(stx_lst, first);
     ell_assert_brand(op_stx, ELL_BRAND(stx_sym));
     struct ellc_ast *op_ast = ellc_make_ast(ELLC_AST_FREF);
@@ -448,7 +449,7 @@ ellc_norm(struct ell_obj *stx_lst)
     return ast_seq;
 }
 
-/**** Explication: Turns Normal Form AST into Explicit Form AST ****/
+/**** Explication: Normal Form AST -> Explicit Form AST ****/
 
 /**** Emission: Produces "C" ****/
 
