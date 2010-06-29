@@ -7,7 +7,6 @@
 ** Make compiler state non-global
 OTOH, it isn't that bad, since ellc is used as a unix tool anyway.
 ** Cleanup all loops over lists, so that they don't use a counter (except where needed)
-This will require understanding list.h's nil concept, though. :)
 ** Make ellc_args contain pointers, for uniformity with other code
 * Compiler Optimizations
 ** Implement LOC_APP for faster local function calls
@@ -20,3 +19,5 @@ LOC_FREFs would need to check against this trap's address, similarly
 to LOC_REFs check against NULL.  However, some architectures seem to
 have trouble with comparing function pointers (although its valid
 C99), so maybe it's not such a good idea.
+* Environment Issues
+** Fix Makefile, so that changing ellrt.h isn't silently ignored
