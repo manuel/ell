@@ -71,17 +71,14 @@ static struct ellc_ast_seq *
 ellc_make_ast_seq()
 {
     struct ellc_ast_seq *ast_seq = ell_alloc(sizeof(*ast_seq));
-    ast_seq->exprs = (list_t *) ell_alloc(sizeof(list_t));
-    list_init(ast_seq->exprs, LISTCOUNT_T_MAX);
+    ast_seq->exprs = ell_util_make_list();
     return ast_seq;
 }
 
 static void
 ellc_ast_seq_add(struct ellc_ast_seq *ast_seq, struct ellc_ast *expr)
 {
-    lnode_t *node = (lnode_t *) ell_alloc(sizeof(*node));
-    lnode_init(node, expr);
-    list_append(ast_seq->exprs, node);
+    ell_util_list_add(ast_seq->exprs, expr);
 }
 
 static struct ellc_ast *
@@ -174,23 +171,15 @@ static struct ellc_ast *
 ellc_norm_seq(struct ell_obj *stx_lst)
 {
     ell_assert_stx_lst_len_min(stx_lst, 1);
-    struct ellc_ast_seq *ast_seq = ellc_make_ast_seq();
+    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_SEQ);
+    list_init(ast->seq.exprs, LISTCOUNT_T_MAX);
     list_t *elts_stx = ell_util_sublist(ell_stx_lst_elts(stx_lst), 1);
-    listcount_t len = list_count(elts_stx);
 
-    if (len > 0) {
-        lnode_t *n = list_first(elts_stx);
-        int i = 0;
-        do {
-            struct ell_obj *stx = (struct ell_obj *) lnode_get(n);
-            ellc_ast_seq_add(ast_seq, ellc_norm_stx(stx));
-            n = list_next(elts_stx, n);
-            i++;
-        } while(i < len);
+    for (lnode_t *n = list_first(elts_stx); n; n = list_next(elts_stx, n)) {
+        struct ell_obj *stx = (struct ell_obj *) lnode_get(n);
+        ellc_ast_seq_add(&ast->seq, ellc_norm_stx(stx));
     }
 
-    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_SEQ);
-    ast->seq.exprs = ast_seq->exprs;
     return ast;
 }
 
@@ -226,38 +215,25 @@ static struct ellc_args *
 ellc_dissect_args(list_t *args_stx)
 {
     struct ellc_args *args = ellc_make_args();
-    listcount_t ct = list_count(args_stx);
-    if (ct == 0) return args;
-    
-    lnode_t *n = list_first(args_stx);
-    int i = 0;
-    do {
+    for (lnode_t *n = list_first(args_stx); n; n = list_next(args_stx, n)) {
         struct ell_obj *arg_stx = lnode_get(n);
-        if ((arg_stx->brand == ELL_BRAND(stx_sym))
-                 && ellc_is_key_arg_sym(ell_stx_sym_sym(arg_stx))) {
-            i++;
-            if (i == ct) {
+        if ((arg_stx->brand == ELL_BRAND(stx_sym)) &&
+            ellc_is_key_arg_sym(ell_stx_sym_sym(arg_stx)))
+        {
+            n = list_next(args_stx, n);
+            if (!n) {
                 printf("missing value for keyword argument\n");
                 exit(EXIT_FAILURE);
             }
-            struct ell_obj *key_arg_sym = 
+            struct ell_obj *key_arg_sym =
                 ellc_clean_key_arg_sym(ell_stx_sym_sym(arg_stx));
-            n = list_next(args_stx, n);
-            struct ellc_ast *key_arg_ast = 
+            struct ellc_ast *key_arg_val_ast =
                 ellc_norm_stx((struct ell_obj *) lnode_get(n));
-            
-            dnode_t *dn = (dnode_t *) ell_alloc(sizeof(*dn));
-            dnode_init(dn, key_arg_ast);
-            dict_insert(&args->key, dn, key_arg_sym);
+            ell_util_dict_put(&args->key, key_arg_sym, key_arg_val_ast);
         } else {
-            lnode_t *m = (lnode_t *) ell_alloc(sizeof(*m));
-            lnode_init(m, ellc_norm_stx(arg_stx));
-            list_append(&args->pos, m);
+            ell_util_list_add(&args->pos, ellc_norm_stx(arg_stx));
         }
-        i++;
-        n = list_next(args_stx, n);
-    } while(i < ct);
-
+    }
     return args;
 }
 
@@ -307,18 +283,14 @@ ellc_dissect_param(struct ell_obj *p_stx)
 static struct ellc_params *
 ellc_dissect_params(list_t *params_stx)
 {
-    struct ellc_params *params = (struct ellc_params *) ell_alloc(sizeof(*params));
+    struct ellc_params *params =
+        (struct ellc_params *) ell_alloc(sizeof(*params));
 
-    list_t *req = (list_t *) ell_alloc(sizeof(list_t));
-    list_init(req, LISTCOUNT_T_MAX);
-    list_t *opt = (list_t *) ell_alloc(sizeof(list_t));
-    list_init(opt, LISTCOUNT_T_MAX);
-    list_t *key = (list_t *) ell_alloc(sizeof(list_t));
-    list_init(key, LISTCOUNT_T_MAX);
-    list_t *rest = (list_t *) ell_alloc(sizeof(list_t));
-    list_init(rest, LISTCOUNT_T_MAX);
-    list_t *all_keys = (list_t *) ell_alloc(sizeof(list_t));
-    list_init(all_keys, LISTCOUNT_T_MAX);
+    list_t *req = ell_util_make_list();
+    list_t *opt = ell_util_make_list();
+    list_t *key = ell_util_make_list();
+    list_t *rest = ell_util_make_list();
+    list_t *all_keys = ell_util_make_list();
 
     list_t *cur = req;
     for (lnode_t *n = list_first(params_stx); n; n = list_next(params_stx, n)) {
@@ -339,9 +311,7 @@ ellc_dissect_params(list_t *params_stx)
                 continue;
             }
         }
-        lnode_t *pn = (lnode_t *) ell_alloc(sizeof(*pn));
-        lnode_init(pn, ellc_dissect_param(p_stx));
-        list_append(cur, pn);
+        ell_util_list_add(cur, ellc_dissect_param(p_stx));
     }
 
     if ((list_count(rest) > 1) || (list_count(all_keys) > 1)) {
@@ -377,27 +347,19 @@ ellc_norm_lam(struct ell_obj *stx_lst)
 
 static struct dict_t ellc_norm_tab;
 
-static void
-ellc_norm_tab_put(struct ell_obj *sym, ellc_norm_fun *norm_fun)
-{
-    dnode_t *dn = (dnode_t *) ell_alloc(sizeof(*dn));
-    dnode_init(dn, norm_fun);
-    dict_insert(&ellc_norm_tab, dn, sym);
-}
-
 __attribute__((constructor(301))) static void
 ellc_init_norm_tab()
 {
     dict_init(&ellc_norm_tab, DICTCOUNT_T_MAX, (dict_comp_t) &ell_sym_cmp);
-    ellc_norm_tab_put(ELL_SYM(core_fref), &ellc_norm_fref);
-    ellc_norm_tab_put(ELL_SYM(core_def), &ellc_norm_def);
-    ellc_norm_tab_put(ELL_SYM(core_fdef), &ellc_norm_fdef);
-    ellc_norm_tab_put(ELL_SYM(core_set), &ellc_norm_set);
-    ellc_norm_tab_put(ELL_SYM(core_fset), &ellc_norm_fset);
-    ellc_norm_tab_put(ELL_SYM(core_cond), &ellc_norm_cond);
-    ellc_norm_tab_put(ELL_SYM(core_seq), &ellc_norm_seq);
-    ellc_norm_tab_put(ELL_SYM(core_app), &ellc_norm_app);
-    ellc_norm_tab_put(ELL_SYM(core_lam), &ellc_norm_lam);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_fref), &ellc_norm_fref);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_def), &ellc_norm_def);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_fdef), &ellc_norm_fdef);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_set), &ellc_norm_set);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_fset), &ellc_norm_fset);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_cond), &ellc_norm_cond);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_seq), &ellc_norm_seq);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_app), &ellc_norm_app);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_lam), &ellc_norm_lam);
 }
 
 static struct ellc_ast *
@@ -465,13 +427,10 @@ ellc_find_lex_addr(struct ellc_id *id, enum ellc_param_type type,
                    struct ellc_contour *contour, unsigned depth)
 {
     if (contour == NULL) return NULL;
-
-    dictcount_t len = list_count(contour->params);
-    if (len == 0) goto up;
+    if (list_count(contour->params) == 0) goto up;
 
     unsigned pos = 0;
-    lnode_t *n = list_first(contour->params);
-    do {
+    for (lnode_t *n = list_first(contour->params); n; n = list_next(contour->params, n)) {
         struct ellc_param *param = (struct ellc_param *) lnode_get(n);
         struct ellc_id* param_id = param->id;
         if (ellc_id_equal(id, param_id)) {
@@ -482,9 +441,8 @@ ellc_find_lex_addr(struct ellc_id *id, enum ellc_param_type type,
             return lex_addr;
         }
         pos++;
-        n = list_next(contour->params, n);
-    } while(pos < len);
-    
+    }
+
  up:
     return ellc_find_lex_addr(id, type, contour->up, depth + 1);
 }
@@ -620,7 +578,7 @@ ellc_expl_app(struct ellc_contour *contour, struct ellc_ast_app *in)
 static void
 ellc_make_contour_process(list_t *list, lnode_t *node, void *params_arg)
 {
-    ell_util_add_new((list_t *) params_arg, lnode_get(node));
+    ell_util_list_add((list_t *) params_arg, lnode_get(node));
 }
 
 static struct ellc_contour *
@@ -630,23 +588,18 @@ ellc_make_contour_from_lam(struct ellc_contour *up, struct ellc_ast_lam *lam)
     list_process(lam->params->req, contour->params, &ellc_make_contour_process);
     list_process(lam->params->opt, contour->params, &ellc_make_contour_process);
     list_process(lam->params->key, contour->params, &ellc_make_contour_process);
-    if (lam->params->rest) ell_util_add_new(contour->params, lam->params->rest);
-    if (lam->params->all_keys) ell_util_add_new(contour->params, lam->params->all_keys);
+    if (lam->params->rest) ell_util_list_add(contour->params, lam->params->rest);
+    if (lam->params->all_keys) ell_util_list_add(contour->params, lam->params->all_keys);
     return contour;
-}
-
-static void
-ellc_expl_param_init(struct ellc_contour *contour, struct ellc_param *param)
-{
-    if (param->init)
-        param->init = ellc_expl_ast(contour, param->init);
 }
 
 static void
 ellc_expl_param_inits_process(list_t *list, lnode_t *n, void *contour_arg)
 {
     struct ellc_contour *contour = (struct ellc_contour *) contour_arg;
-    ellc_expl_param_init(contour, (struct ellc_param *) lnode_get(n));
+    struct ellc_param *param = (struct ellc_param *) lnode_get(n);
+    if (param->init)
+        param->init = ellc_expl_ast(contour, param->init);
 }
 
 static struct ellc_params *
@@ -673,7 +626,7 @@ ellc_expl_lam(struct ellc_contour *contour, struct ellc_ast_lam *in)
     struct ellc_params *params = ellc_expl_param_inits(new_contour, in->params);
     struct ellc_ast *body = ellc_expl_ast(new_contour, in->body);
     unsigned code_id = list_count(&ellc_st.codes);
-    ell_util_add_new(&ellc_st.codes, ellc_make_code(params, body));
+    ell_util_list_add(&ellc_st.codes, ellc_make_code(params, body));
 
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_CLO);
     ast->clo.code_id = code_id;
@@ -723,9 +676,11 @@ ellc_expl(struct ellc_ast_seq *in_seq)
 
 int main()
 {
+    list_init(&ellc_st.glo_vars, LISTCOUNT_T_MAX);
+    list_init(&ellc_st.glo_funs, LISTCOUNT_T_MAX);
     list_init(&ellc_st.codes, LISTCOUNT_T_MAX);
+
     struct ell_obj *stx_lst = ellc_parse();
     struct ellc_ast_seq *norm_form = ellc_norm(stx_lst);
     struct ellc_ast_seq *expl_form = ellc_expl(norm_form);
-    ELL_SEND(stx_lst, print_object);
 }

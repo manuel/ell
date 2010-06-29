@@ -14,13 +14,17 @@
 #include "list.h"
 
 list_t *
-ell_util_sublist(list_t *list, listcount_t start);
+ell_util_make_list();
 void
-ell_util_add_new(list_t *list, void *elt);
+ell_util_list_add(list_t *list, void *elt);
+list_t *
+ell_util_sublist(list_t *list, listcount_t start);
 void
 ell_util_assert_list_len(list_t *list, listcount_t len);
 void
 ell_util_assert_list_len_min(list_t *list, listcount_t len);
+void
+ell_util_dict_put(dict_t *dict, void *key, void *val);
 
 /**** Allocation ****/
 
@@ -465,7 +469,52 @@ lnode_t *node = list_next(elts, list_next(elts, list_next(elts, list_first(elts)
 return (struct ell_obj *) lnode_get(node);
 ELL_END
 
-/***** Utilities *****/
+/**** Runtime Support ****/
+
+struct ell_obj *
+ell_unbound_function_trap(struct ell_obj *clo, unsigned npos,
+                          unsigned nkey, void *args)
+{
+    printf("unbound global function\n");
+    return NULL;
+}
+
+/**** Utilities ****/
+
+list_t *
+ell_util_make_list()
+{
+    list_t *list = (list_t *) ell_alloc(sizeof(*list));
+    list_init(list, LISTCOUNT_T_MAX);
+    return list;
+}
+
+void
+ell_util_list_add(list_t *list, void *elt)
+{
+    lnode_t *new = (lnode_t *) ell_alloc(sizeof(*new));
+    lnode_init(new, elt);
+    list_append(list, new);
+}
+
+list_t *
+ell_util_sublist(list_t *list, listcount_t start)
+{
+    list_t *res = ell_util_make_list();
+    if (start >= list_count(list))
+        return res;
+
+    lnode_t *n = list_first(list);
+    for (int i = 0; i < start; i++) {
+        n = list_next(list, n);
+    }
+
+    do {
+        ell_util_list_add(res, lnode_get(n));
+    } while((n = list_next(list, n)));
+
+    return res;
+}
 
 void
 ell_util_assert_list_len(list_t *list, listcount_t len)
@@ -485,39 +534,12 @@ ell_util_assert_list_len_min(list_t *list, listcount_t len)
     }
 }
 
-list_t *
-ell_util_sublist(list_t *list, listcount_t start)
-{
-    listcount_t ct = list_count(list);
-    list_t *res = (list_t *) ell_alloc(sizeof(*res));
-    list_init(res, LISTCOUNT_T_MAX);
-
-    if (start >= ct) return res;
-
-    lnode_t *n = list_first(list);
-    int i = 0;
-    while (i < start) {
-        n = list_next(list, n);
-        i++;
-    }
-
-    do {
-        lnode_t *m = (lnode_t *) ell_alloc(sizeof(*m));
-        lnode_init(m, lnode_get(n));
-        list_append(res, m);
-        n = list_next(list, n);
-        i++;
-    } while(i < ct);
-
-    return res;
-}
-
 void
-ell_util_add_new(list_t *list, void *elt)
+ell_util_dict_put(dict_t *dict, void *key, void *val)
 {
-    lnode_t *new = (lnode_t *) ell_alloc(sizeof(*new));
-    lnode_init(new, elt);
-    list_append(list, new);
+    dnode_t *dn = (dnode_t *) ell_alloc(sizeof(*dn));
+    dnode_init(dn, val);
+    dict_insert(dict, dn, key);
 }
 
 #endif

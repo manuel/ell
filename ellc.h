@@ -81,11 +81,6 @@ struct ellc_ast_glo_fset {
     struct ellc_ast *val;
 };
 
-struct ellc_ast_glo_app {
-    struct ellc_id *id;
-    struct ellc_args *args;
-};
-
 struct ellc_ast_loc_ref {
     struct ellc_lex_addr *lex_addr;
 };
@@ -104,33 +99,41 @@ struct ellc_ast_loc_fset {
     struct ellc_ast *val;
 };
 
+struct ellc_ast_glo_app {
+    struct ellc_id *id;
+    struct ellc_args *args;
+};
+
 struct ellc_ast_clo {
     unsigned code_id;
 };
 
 /**** Expression Representation ****/
 
+/* Explicit Form consists of the second group of AST types, plus the
+   types from the first group marked with an asterisk. */
+
 enum ellc_ast_type {
     ELLC_AST_REF,
     ELLC_AST_FREF,
-    ELLC_AST_DEF,
-    ELLC_AST_FDEF,
+    ELLC_AST_DEF,  // *
+    ELLC_AST_FDEF, // *
     ELLC_AST_SET,
     ELLC_AST_FSET,
-    ELLC_AST_COND,
-    ELLC_AST_SEQ,
-    ELLC_AST_APP,
+    ELLC_AST_COND, // *
+    ELLC_AST_SEQ,  // *
+    ELLC_AST_APP,  // *
     ELLC_AST_LAM,
     
     ELLC_AST_GLO_REF,
     ELLC_AST_GLO_FREF,
     ELLC_AST_GLO_SET,
     ELLC_AST_GLO_FSET,
-    ELLC_AST_GLO_APP,
     ELLC_AST_LOC_REF,
     ELLC_AST_LOC_FREF,
     ELLC_AST_LOC_SET,
     ELLC_AST_LOC_FSET,
+    ELLC_AST_GLO_APP,
     ELLC_AST_CLO,
 };
 
@@ -152,11 +155,11 @@ struct ellc_ast {
         struct ellc_ast_glo_fref glo_fref;
         struct ellc_ast_glo_set  glo_set;
         struct ellc_ast_glo_fset glo_fset;
-        struct ellc_ast_glo_app  glo_app;
         struct ellc_ast_loc_ref  loc_ref;
         struct ellc_ast_loc_fref loc_fref;
         struct ellc_ast_loc_set  loc_set;
         struct ellc_ast_loc_fset loc_fset;
+        struct ellc_ast_glo_app  glo_app;
         struct ellc_ast_clo      clo;
     };
 };
@@ -198,13 +201,15 @@ struct ellc_contour {
     struct ellc_contour *up;
 };
 
-struct ellc_st {
-    list_t codes; // code
-};
-
 struct ellc_code {
     struct ellc_params *params;
     struct ellc_ast *body;
+};
+
+struct ellc_st {
+    list_t glo_vars; // id
+    list_t glo_funs; // id
+    list_t codes; // code
 };
 
 static struct ellc_st ellc_st;
