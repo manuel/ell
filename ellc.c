@@ -308,7 +308,6 @@ static struct ellc_params *
 ellc_dissect_params(list_t *params_stx)
 {
     struct ellc_params *params = (struct ellc_params *) ell_alloc(sizeof(*params));
-    dictcount_t len = list_count(params_stx);
 
     list_t *req = (list_t *) ell_alloc(sizeof(list_t));
     list_init(req, LISTCOUNT_T_MAX);
@@ -321,45 +320,35 @@ ellc_dissect_params(list_t *params_stx)
     list_t *all_keys = (list_t *) ell_alloc(sizeof(list_t));
     list_init(all_keys, LISTCOUNT_T_MAX);
 
-    if (len == 0) 
-        goto end;
-
     list_t *cur = req;
-
-    int i = 0;
-    lnode_t *n = list_first(params_stx);
-    do {
+    for (lnode_t *n = list_first(params_stx); n; n = list_next(params_stx, n)) {
         struct ell_obj *p_stx = lnode_get(n);
         if (p_stx->brand == ELL_BRAND(stx_sym)) {
             struct ell_obj *p_sym = ell_stx_sym_sym(p_stx);
             if (p_sym == ELL_SYM(param_optional)) {
                 cur = opt;
-                goto next;
+                continue;
             } else if (p_sym == ELL_SYM(param_key)) {
                 cur = key;
-                goto next;
+                continue;
             } else if (p_sym == ELL_SYM(param_rest)) {
                 cur = rest;
-                goto next;
+                continue;
             } else if (p_sym == ELL_SYM(param_all_keys)) {
                 cur = all_keys;
-                goto next;
+                continue;
             }
         }
         lnode_t *pn = (lnode_t *) ell_alloc(sizeof(*pn));
         lnode_init(pn, ellc_dissect_param(p_stx));
         list_append(cur, pn);
-    next:
-        i++;
-        n = list_next(params_stx, n);
-    } while(i < len);
+    }
 
     if ((list_count(rest) > 1) || (list_count(all_keys) > 1)) {
         printf("more than one rest or all-keys parameter\n");
         exit(EXIT_FAILURE);
     }
 
- end:
     params->req = req;
     params->opt = opt;
     params->key = key;
