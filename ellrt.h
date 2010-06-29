@@ -210,14 +210,13 @@ ell_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **arg
 
 struct ell_clo_data {
     ell_code *code;
-    struct ell_obj **parent_env;
     struct ell_obj **env;
 };
 
 ELL_DEFBRAND(clo)
 
 struct ell_obj *
-ell_make_clo(ell_code *code, void *env)
+ell_make_clo(ell_code *code, struct ell_obj **env)
 {
     struct ell_clo_data *data = (struct ell_clo_data *) ell_alloc(sizeof(*data));
     data->code = code;
@@ -468,16 +467,6 @@ list_t *elts = ell_stx_lst_elts(stx_lst);
 lnode_t *node = list_next(elts, list_next(elts, list_next(elts, list_first(elts))));
 return (struct ell_obj *) lnode_get(node);
 ELL_END
-
-/**** Runtime Support ****/
-
-struct ell_obj *
-ell_unbound_function_trap(struct ell_obj *clo, unsigned npos,
-                          unsigned nkey, void *args)
-{
-    printf("unbound global function\n");
-    return NULL;
-}
 
 /**** Utilities ****/
 

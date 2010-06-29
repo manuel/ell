@@ -9,15 +9,10 @@ struct ellc_id;
 struct ellc_ast;
 struct ellc_params;
 struct ellc_args;
-struct ellc_lex_addr;
 
 /**** Normal Form ****/
 
 struct ellc_ast_ref {
-    struct ellc_id *id;
-};
-
-struct ellc_ast_fref {
     struct ellc_id *id;
 };
 
@@ -26,17 +21,7 @@ struct ellc_ast_def {
     struct ellc_ast *val;
 };
 
-struct ellc_ast_fdef {
-    struct ellc_id *id;
-    struct ellc_ast *val;
-};
-
 struct ellc_ast_set {
-    struct ellc_id *id;
-    struct ellc_ast *val;
-};
-
-struct ellc_ast_fset {
     struct ellc_id *id;
     struct ellc_ast *val;
 };
@@ -62,7 +47,7 @@ struct ellc_ast_lam {
 };
 
 /**** Explicit Form ****/
-
+/*
 struct ellc_ast_glo_ref {
     struct ellc_id *id;
 };
@@ -107,7 +92,7 @@ struct ellc_ast_glo_app {
 struct ellc_ast_clo {
     unsigned code_id;
 };
-
+*/
 /**** Expression Representation ****/
 
 /* Explicit Form consists of the second group of AST types, plus the
@@ -115,16 +100,13 @@ struct ellc_ast_clo {
 
 enum ellc_ast_type {
     ELLC_AST_REF,
-    ELLC_AST_FREF,
     ELLC_AST_DEF,  // *
-    ELLC_AST_FDEF, // *
     ELLC_AST_SET,
-    ELLC_AST_FSET,
     ELLC_AST_COND, // *
     ELLC_AST_SEQ,  // *
     ELLC_AST_APP,  // *
     ELLC_AST_LAM,
-    
+    /*    
     ELLC_AST_GLO_REF,
     ELLC_AST_GLO_FREF,
     ELLC_AST_GLO_SET,
@@ -135,22 +117,20 @@ enum ellc_ast_type {
     ELLC_AST_LOC_FSET,
     ELLC_AST_GLO_APP,
     ELLC_AST_CLO,
+    */
 };
 
 struct ellc_ast {
     enum ellc_ast_type type;
     __extension__ union {
         struct ellc_ast_ref  ref;
-        struct ellc_ast_fref fref;
         struct ellc_ast_def  def;
-        struct ellc_ast_fdef fdef;
         struct ellc_ast_set  set;
-        struct ellc_ast_fset fset;
         struct ellc_ast_cond cond;
         struct ellc_ast_seq  seq;
         struct ellc_ast_app  app;
         struct ellc_ast_lam  lam;
-
+        /*
         struct ellc_ast_glo_ref  glo_ref;
         struct ellc_ast_glo_fref glo_fref;
         struct ellc_ast_glo_set  glo_set;
@@ -161,11 +141,16 @@ struct ellc_ast {
         struct ellc_ast_loc_fset loc_fset;
         struct ellc_ast_glo_app  glo_app;
         struct ellc_ast_clo      clo;
+        */
     };
 };
 
+/* "Lisp-1/2" Namespace */
+enum ellc_ns { ELLC_NS_VAR, ELLC_NS_FUN };
+
 struct ellc_id {
     struct ell_obj *sym;
+    enum ellc_ns ns;
 };
 
 struct ellc_params {
@@ -176,10 +161,7 @@ struct ellc_params {
     struct ellc_id *all_keys;
 };
 
-enum ellc_param_type { ELLC_PARAM_VAR, ELLC_PARAM_FUN };
-
 struct ellc_param {
-    enum ellc_param_type type;
     struct ellc_id *id;
     struct ellc_ast *init;
 };
@@ -189,13 +171,15 @@ struct ellc_args {
     dict_t key; // sym -> ast
 };
 
+/*
 struct ellc_lex_addr {
     unsigned pos;
     unsigned depth;
 };
+*/
 
 /**** Compiler State ****/
-
+/*
 struct ellc_contour {
     list_t *params; // param
     struct ellc_contour *up;
@@ -213,14 +197,14 @@ struct ellc_st {
 };
 
 static struct ellc_st ellc_st;
-
+*/
 /**** Symbols ****/
 
+ELL_DEFSYM(core_fref,  "ell-fref")
 ELL_DEFSYM(core_def,  "ell-def")
-ELL_DEFSYM(core_fdef, "ell-fdef")
-ELL_DEFSYM(core_fref, "ell-fref")
+ELL_DEFSYM(core_fdef,  "ell-fdef")
 ELL_DEFSYM(core_set,  "ell-set")
-ELL_DEFSYM(core_fset, "ell-fset")
+ELL_DEFSYM(core_fset,  "ell-fset")
 ELL_DEFSYM(core_lam,  "ell-lam")
 ELL_DEFSYM(core_app,  "ell-app")
 ELL_DEFSYM(core_cond, "ell-cond")
