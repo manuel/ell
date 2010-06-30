@@ -450,9 +450,9 @@ ellc_params_lookup(struct ellc_params *params, struct ellc_id *id)
     if ((p = ellc_params_list_lookup(params->req, id))) return p;
     if ((p = ellc_params_list_lookup(params->opt, id))) return p;
     if ((p = ellc_params_list_lookup(params->key, id))) return p;
+    if (params->rest && ellc_id_equal(params->rest->id, id)) return params->rest;
+    if (params->all_keys && ellc_id_equal(params->all_keys->id, id)) return params->all_keys;
     return NULL;
-        //        ((params->rest && ellc_id_equal(params->rest->id, id)) ? params->rest : NULL) ||
-        //        ((params->all_keys && ellc_id_equal(params->all_keys->id, id)) ? params->all_keys : NULL);
 }
 
 // Returns the contour containing a parameter with the given ID,

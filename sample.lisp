@@ -1,1 +1,3 @@
-(ell-def foo (ell-lam () foo))
+(ell-lam (x)
+  (ell-lam ()
+    (ell-seq x g)))

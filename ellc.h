@@ -133,8 +133,8 @@ struct ellc_params {
 struct ellc_param {
     struct ellc_id *id;
     struct ellc_ast *init; // maybe NULL
-    int mutable;
-    int closed;
+    bool mutable;
+    bool closed;
 };
 
 struct ellc_args {
