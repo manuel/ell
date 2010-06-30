@@ -96,7 +96,7 @@ ellc_make_ast(enum ellc_ast_type type)
     return ast;
 }
 
-/**** Syntax Objects -> AST ****/
+/**** Normalization: Syntax Objects -> AST ****/
 
 static struct ellc_ast *
 ellc_norm_stx(struct ell_obj *stx);
@@ -168,7 +168,7 @@ ellc_norm_set(struct ell_obj *stx_lst)
 static struct ellc_ast *
 ellc_norm_fset(struct ell_obj *stx_lst)
 {
-    return ellc_make_set(stx_lst, ELLC_NS_VAR);
+    return ellc_make_set(stx_lst, ELLC_NS_FUN);
 }
 
 static struct ellc_ast *
@@ -187,7 +187,7 @@ ellc_norm_seq(struct ell_obj *stx_lst)
 {
     ell_assert_stx_lst_len_min(stx_lst, 1);
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_SEQ);
-    list_init(ast->seq.exprs, LISTCOUNT_T_MAX);
+    ast->seq.exprs = ell_util_make_list();
     list_t *elts_stx = ell_util_sublist(ell_stx_lst_elts(stx_lst), 1);
 
     for (lnode_t *n = list_first(elts_stx); n; n = list_next(elts_stx, n)) {
@@ -427,7 +427,7 @@ ellc_norm(struct ell_obj *stx_lst)
     return ast_seq;
 }
 
-/**** Explication ****/
+/**** Explication: Closure Conversion ****/
 
 static void
 ellc_expl_ast(struct ellc_st *st, struct ellc_ast *ast);
@@ -437,23 +437,22 @@ ellc_params_list_lookup(list_t *list, struct ellc_id *id)
 {
     for (lnode_t *n = list_first(list); n; n = list_next(list, n)) {
         struct ellc_param *p = (struct ellc_param *) lnode_get(n);
-        if (ellc_id_equal(p->id, id)) 
+        if (ellc_id_equal(p->id, id))
             return p;
     }
     return NULL;
 }
 
-// Returns the parameter with the given ID in the lambda's
-// parameters, or NULL if the lambda has no such parameter.
 static struct ellc_param *
 ellc_params_lookup(struct ellc_params *params, struct ellc_id *id)
 {
-    return 
-        ellc_params_list_lookup(params->req, id) ||
-        ellc_params_list_lookup(params->opt, id) ||
-        ellc_params_list_lookup(params->key, id) ||
-        ((params->rest && ellc_id_equal(params->rest->id, id)) ? params->rest : NULL) ||
-        ((params->all_keys && ellc_id_equal(params->all_keys->id, id)) ? params->all_keys : NULL);
+    struct ellc_param *p;
+    if ((p = ellc_params_list_lookup(params->req, id))) return p;
+    if ((p = ellc_params_list_lookup(params->opt, id))) return p;
+    if ((p = ellc_params_list_lookup(params->key, id))) return p;
+    return NULL;
+        //        ((params->rest && ellc_id_equal(params->rest->id, id)) ? params->rest : NULL) ||
+        //        ((params->all_keys && ellc_id_equal(params->all_keys->id, id)) ? params->all_keys : NULL);
 }
 
 // Returns the contour containing a parameter with the given ID,
@@ -465,7 +464,7 @@ ellc_contour_lookup(struct ellc_contour *c, struct ellc_id *id, struct ellc_para
     if (!c) return NULL;
     struct ellc_param *p = ellc_params_lookup(c->lam->params, id);
     if (p) {
-        out = &p;
+        *out = p;
         return c;
     } else {
         return ellc_contour_lookup(c->up, id, out);
@@ -485,17 +484,21 @@ ellc_env_add_ref(struct ellc_ast_lam *lam, struct ellc_id *id)
 static void
 ellc_expl_ref(struct ellc_st *st, struct ellc_ast *ast)
 {
-    struct ellc_param *p;
+    struct ellc_param *p = NULL;
     struct ellc_contour *c = ellc_contour_lookup(st->bottom_contour, ast->ref.id, &p);
     if (!c) {
         struct ellc_id *tmp_id = ast->ref.id;
         ast->type = ELLC_AST_GLO_REF;
         ast->glo_ref.id = tmp_id;
-        ell_util_set_add(st->globals, tmp_id, &ellc_id_equal);
+        ell_util_set_add(st->globals, tmp_id, &ellc_id_cmp);
     } else if (c == st->bottom_contour) {
         ast->type = ELLC_AST_ARG_REF;
         ast->arg_ref.param = p;
     } else {
+        if (!st->bottom_contour) {
+            printf("contour bug\n");
+            exit(EXIT_FAILURE);
+        }
         ast->type = ELLC_AST_ENV_REF;
         ast->env_ref.param = p;
         p->closed = 1;
@@ -506,6 +509,7 @@ ellc_expl_ref(struct ellc_st *st, struct ellc_ast *ast)
 static void
 ellc_expl_def(struct ellc_st *st, struct ellc_ast *ast)
 {
+    ell_util_set_add(st->globals, ast->def.id, &ellc_id_cmp);
     ellc_expl_ast(st, ast->def.val);
 }
 
@@ -519,7 +523,7 @@ ellc_expl_set(struct ellc_st *st, struct ellc_ast *ast)
         struct ellc_id *tmp_id = ast->set.id;
         ast->type = ELLC_AST_GLO_SET;
         ast->glo_set.id = tmp_id;
-        ell_util_set_add(st->globals, tmp_id, &ellc_id_equal);
+        ell_util_set_add(st->globals, tmp_id, &ellc_id_cmp);
     } else if (c == st->bottom_contour) {
         struct ellc_ast *tmp_val = ast->set.val;
         ast->type = ELLC_AST_ARG_SET;
@@ -527,6 +531,10 @@ ellc_expl_set(struct ellc_st *st, struct ellc_ast *ast)
         ast->arg_set.val = tmp_val;
         p->mutable = 1;
     } else {
+        if (!st->bottom_contour) {
+            printf("contour bug\n");
+            exit(EXIT_FAILURE);
+        }
         struct ellc_ast *tmp_val = ast->set.val;
         ast->type = ELLC_AST_ENV_SET;
         ast->env_set.param = p;
@@ -581,7 +589,6 @@ ellc_expl_params_list_inits(struct ellc_st *st, list_t *params)
 static void
 ellc_expl_param_inits(struct ellc_st *st, struct ellc_params *params)
 {
-    ellc_expl_params_list_inits(st, params->req);
     ellc_expl_params_list_inits(st, params->opt);
     ellc_expl_params_list_inits(st, params->key);
 }
@@ -590,8 +597,8 @@ static void
 ellc_expl_lam(struct ellc_st *st, struct ellc_ast *ast)
 {
     struct ellc_contour *c = (struct ellc_contour *) ell_alloc(sizeof(*c));
-    c->up = st->bottom_contour;
     c->lam = &ast->lam;
+    c->up = st->bottom_contour;
     st->bottom_contour = c;
     ellc_expl_param_inits(st, ast->lam.params);
     ellc_expl_ast(st, ast->lam.body);
@@ -612,30 +619,188 @@ ellc_expl_ast(struct ellc_st *st, struct ellc_ast *ast)
     case ELLC_AST_APP: ellc_expl_app(st, ast); break;
     case ELLC_AST_LAM: ellc_expl_lam(st, ast); break;
     default:
-        printf("explication error\n");
+        printf("explication error: %d\n", ast->type);
         exit(EXIT_FAILURE);
     }
 }
 
 static void
-ellc_expl_process(list_t *exprs, lnode_t *n, void *st_arg)
+ellc_expl(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
 {
-    struct ellc_st *st = st_arg;
-    struct ellc_ast *ast = (struct ellc_ast *) lnode_get(n);
-    ellc_expl_ast(st, ast);
+    for (lnode_t *n = list_first(ast_seq->exprs); n; n = list_next(ast_seq->exprs, n))
+        ellc_expl_ast(st, (struct ellc_ast *) lnode_get(n));
+}
+
+/**** Emission ****/
+
+static void
+ellc_emit_ast(struct ellc_st *st, struct ellc_ast *ast);
+
+static char *
+ellc_mangle_glo_id(struct ellc_id *id)
+{
+    return ell_str_chars(ell_sym_name(id->sym));
 }
 
 static void
-ellc_expl(struct ellc_ast_seq *ast_seq)
+ellc_emit_glo_ref(struct ellc_st *st, struct ellc_ast *ast)
 {
-    struct ellc_st *st = (struct ellc_st *) ell_alloc(sizeof(*st));
-    st->globals = ell_util_make_list();
-    list_process(ast_seq->exprs, st, &ellc_expl_process);
+    char *s = ellc_mangle_glo_id(ast->glo_ref.id);
+    printf("GLO(%s)", s);
+}
+
+static void
+ellc_emit_arg_ref(struct ellc_st *st, struct ellc_ast *ast)
+{
+    printf("ARG(%s)", ell_str_chars(ell_sym_name(ast->arg_ref.param->id->sym)));
+}
+
+static void
+ellc_emit_env_ref(struct ellc_st *st, struct ellc_ast *ast)
+{
+    printf("ENV(%s)", ell_str_chars(ell_sym_name(ast->env_ref.param->id->sym)));
+}
+
+static void
+ellc_emit_def(struct ellc_st *st, struct ellc_ast *ast)
+{
+    printf("\nDEF(%s = ", ell_str_chars(ell_sym_name(ast->def.id->sym)));
+    ellc_emit_ast(st, ast->def.val);
+    printf(")\n");
+}
+
+static void
+ellc_emit_glo_set(struct ellc_st *st, struct ellc_ast *ast)
+{
+    char *s = ellc_mangle_glo_id(ast->glo_ref.id);
+    printf("GLO_SET(%s = ", s);
+    ellc_emit_ast(st, ast->glo_set.val);
+    printf(")");
+}
+
+static void
+ellc_emit_arg_set(struct ellc_st *st, struct ellc_ast *ast)
+{
+    printf("ARG_SET(%s = ", ell_str_chars(ell_sym_name(ast->arg_set.param->id->sym)));
+    ellc_emit_ast(st, ast->arg_set.val);
+    printf(")");
+}
+
+static void
+ellc_emit_env_set(struct ellc_st *st, struct ellc_ast *ast)
+{
+    printf("ENV_SET(%s = ", ell_str_chars(ell_sym_name(ast->env_set.param->id->sym)));
+    ellc_emit_ast(st, ast->env_set.val);
+    printf(")");
+}
+
+static void
+ellc_emit_cond(struct ellc_st *st, struct ellc_ast *ast)
+{
+    printf("(if(");
+    ellc_emit_ast(st, ast->cond.test);
+    printf("){");
+    ellc_emit_ast(st, ast->cond.consequent);
+    printf("}else{");
+    ellc_emit_ast(st, ast->cond.alternative);
+    printf("})");
+}
+
+static void
+ellc_emit_seq(struct ellc_st *st, struct ellc_ast *ast)
+{
+    printf("({");
+    for (lnode_t *n = list_first(ast->seq.exprs); n; n = list_next(ast->seq.exprs, n)) {
+        ellc_emit_ast(st, (struct ellc_ast *) lnode_get(n));
+    }
+    printf("})");
+}
+
+static void
+ellc_emit_args(struct ellc_st *st, struct ellc_args *args)
+{
+    for (lnode_t *n = list_first(&args->pos); n; n = list_next(&args->pos, n)) {
+        ellc_emit_ast(st, (struct ellc_ast *) lnode_get(n));
+        printf(", ");
+    }
+    for (dnode_t *n = dict_first(&args->key); n; n = dict_next(&args->key, n)) {
+        printf("%s: ", ell_str_chars(ell_sym_name((struct ell_obj *) dnode_getkey(n))));
+        ellc_emit_ast(st, (struct ellc_ast *) dnode_get(n));
+        printf(", ");
+    }
+}
+
+static void
+ellc_emit_app(struct ellc_st *st, struct ellc_ast *ast)
+{
+    printf("ell_call(");
+    ellc_emit_ast(st, ast->app.op);
+    printf(",");
+    ellc_emit_args(st, ast->app.args);
+    printf(")");
+}
+
+static void
+ellc_emit_lam(struct ellc_st *st, struct ellc_ast *ast)
+{
+    printf("[[LAM(){");
+    ellc_emit_ast(st, ast->lam.body);
+    printf("} ENV=");
+    for (dnode_t *n = dict_first(ast->lam.env); n; n = dict_next(ast->lam.env, n)) {
+        printf("%s: ", ell_str_chars(ell_sym_name(((struct ellc_id *) dnode_getkey(n))->sym)));
+        ellc_emit_ast(st, (struct ellc_ast *) dnode_get(n));
+        printf(", ");
+    }
+    printf("]]");
+}
+
+static void
+ellc_emit_ast(struct ellc_st *st, struct ellc_ast *ast)
+{
+    switch(ast->type) {
+    case ELLC_AST_GLO_REF: ellc_emit_glo_ref(st, ast); break;
+    case ELLC_AST_ARG_REF: ellc_emit_arg_ref(st, ast); break;
+    case ELLC_AST_ENV_REF: ellc_emit_env_ref(st, ast); break;
+    case ELLC_AST_DEF: ellc_emit_def(st, ast); break;
+    case ELLC_AST_GLO_SET: ellc_emit_glo_set(st, ast); break;
+    case ELLC_AST_ARG_SET: ellc_emit_arg_set(st, ast); break;
+    case ELLC_AST_ENV_SET: ellc_emit_env_set(st, ast); break;
+    case ELLC_AST_COND: ellc_emit_cond(st, ast); break;
+    case ELLC_AST_SEQ: ellc_emit_seq(st, ast); break;
+    case ELLC_AST_APP: ellc_emit_app(st, ast); break;
+    case ELLC_AST_LAM: ellc_emit_lam(st, ast); break;
+    default:
+        printf("emission error\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+static void
+ellc_emit_globals_symbols(list_t *globals)
+{
+    printf("// GLOBALS\n");
+    for (lnode_t *n = list_first(globals); n; n = list_next(globals, n)) {
+        struct ellc_id *id = (struct ellc_id *) lnode_get(n);
+        printf("__attribute__((weak)) struct ell_obj *%s;\n", ellc_mangle_glo_id(id));
+    }
+}
+
+static void
+ellc_emit(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
+{
+    ellc_emit_globals_symbols(st->globals);
+    for (lnode_t *n = list_first(ast_seq->exprs); n; n = list_next(ast_seq->exprs, n))
+        ellc_emit_ast(st, (struct ellc_ast *) lnode_get(n));
 }
 
 /**** Main ****/
 
 int main()
 {
-    ellc_expl(ellc_norm(ellc_parse()));
+    struct ellc_st *st = (struct ellc_st *) ell_alloc(sizeof(*st));
+    st->globals = ell_util_make_list();
+
+    struct ellc_ast_seq *ast_seq = ellc_norm(ellc_parse());
+    ellc_expl(st, ast_seq);
+    ellc_emit(st, ast_seq);
 }

@@ -79,20 +79,20 @@ struct ellc_ast_env_set {
 // AST Representation
 
 enum ellc_ast_type {
-    ELLC_AST_REF, // -> glo_ref | arg_ref | env_ref
-    ELLC_AST_DEF,
-    ELLC_AST_SET, // -> glo_set | arg_set | env_set
-    ELLC_AST_COND,
-    ELLC_AST_SEQ,
-    ELLC_AST_APP,
-    ELLC_AST_LAM,
+    ELLC_AST_REF  = 1, // -> glo_ref | arg_ref | env_ref
+    ELLC_AST_DEF  = 2,
+    ELLC_AST_SET  = 3, // -> glo_set | arg_set | env_set
+    ELLC_AST_COND = 4,
+    ELLC_AST_SEQ  = 5,
+    ELLC_AST_APP  = 6,
+    ELLC_AST_LAM  = 7,
 
-    ELLC_AST_GLO_REF,
-    ELLC_AST_GLO_SET,
-    ELLC_AST_ARG_REF,
-    ELLC_AST_ARG_SET,
-    ELLC_AST_ENV_REF,
-    ELLC_AST_ENV_SET,
+    ELLC_AST_GLO_REF = 101,
+    ELLC_AST_GLO_SET = 102,
+    ELLC_AST_ARG_REF = 103,
+    ELLC_AST_ARG_SET = 104,
+    ELLC_AST_ENV_REF = 105,
+    ELLC_AST_ENV_SET = 106,
 };
 
 struct ellc_ast {
@@ -133,8 +133,8 @@ struct ellc_params {
 struct ellc_param {
     struct ellc_id *id;
     struct ellc_ast *init; // maybe NULL
-    bool mutable;
-    bool closed;
+    int mutable;
+    int closed;
 };
 
 struct ellc_args {

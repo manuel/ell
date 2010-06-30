@@ -547,7 +547,8 @@ void
 ell_util_set_add(list_t *set, void *elt, int (*compare)(void *, void *))
 {
     for (lnode_t *n = list_first(set); n; n = list_next(set, n))
-        if (compare(elt, lnode_get(n))) return;
+        if (compare(elt, lnode_get(n)) == 0)
+            return;
     ell_util_list_add(set, elt);
 }
 
