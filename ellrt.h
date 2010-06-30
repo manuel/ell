@@ -23,6 +23,8 @@ void
 ell_util_assert_list_len(list_t *list, listcount_t len);
 void
 ell_util_assert_list_len_min(list_t *list, listcount_t len);
+dict_t *
+ell_util_make_dict(dict_comp_t comp);
 void
 ell_util_dict_put(dict_t *dict, void *key, void *val);
 
@@ -521,6 +523,14 @@ ell_util_assert_list_len_min(list_t *list, listcount_t len)
         printf("list length assertion failed\n");
         exit(EXIT_FAILURE);
     }
+}
+
+dict_t *
+ell_util_make_dict(dict_comp_t comp)
+{
+    dict_t *dict = (dict_t *) ell_alloc(sizeof(*dict));
+    dict_init(dict, DICTCOUNT_T_MAX, comp);
+    return dict;
 }
 
 void

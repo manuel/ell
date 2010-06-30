@@ -4,9 +4,8 @@
 ** Ensure that function parameters names' are unique
 ** Ensure that only optional and keyword parameters have init forms
 * Code Enhancements
-** Make compiler state non-global
-OTOH, it isn't that bad, since ellc is used as a unix tool anyway.
 ** Cleanup all loops over lists, so that they don't use a counter (except where needed)
+** Transform convoluted list_process's and dict_process's to for loops
 ** Make ellc_args contain pointers, for uniformity with other code
 * Compiler Optimizations
 ** Implement LOC_APP for faster local function calls
