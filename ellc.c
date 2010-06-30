@@ -495,10 +495,6 @@ ellc_expl_ref(struct ellc_st *st, struct ellc_ast *ast)
         ast->type = ELLC_AST_ARG_REF;
         ast->arg_ref.param = p;
     } else {
-        if (!st->bottom_contour) {
-            printf("contour bug\n");
-            exit(EXIT_FAILURE);
-        }
         ast->type = ELLC_AST_ENV_REF;
         ast->env_ref.param = p;
         p->closed = 1;
@@ -531,10 +527,6 @@ ellc_expl_set(struct ellc_st *st, struct ellc_ast *ast)
         ast->arg_set.val = tmp_val;
         p->mutable = 1;
     } else {
-        if (!st->bottom_contour) {
-            printf("contour bug\n");
-            exit(EXIT_FAILURE);
-        }
         struct ellc_ast *tmp_val = ast->set.val;
         ast->type = ELLC_AST_ENV_SET;
         ast->env_set.param = p;
