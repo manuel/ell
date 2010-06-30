@@ -491,6 +491,7 @@ ellc_expl_ref(struct ellc_st *st, struct ellc_ast *ast)
         struct ellc_id *tmp_id = ast->ref.id;
         ast->type = ELLC_AST_GLO_REF;
         ast->glo_ref.id = tmp_id;
+        ell_util_set_add(st->globals, tmp_id, &ellc_id_equal);
     } else if (c == st->bottom_contour) {
         ast->type = ELLC_AST_ARG_REF;
         ast->arg_ref.param = p;
@@ -518,6 +519,7 @@ ellc_expl_set(struct ellc_st *st, struct ellc_ast *ast)
         struct ellc_id *tmp_id = ast->set.id;
         ast->type = ELLC_AST_GLO_SET;
         ast->glo_set.id = tmp_id;
+        ell_util_set_add(st->globals, tmp_id, &ellc_id_equal);
     } else if (c == st->bottom_contour) {
         struct ellc_ast *tmp_val = ast->set.val;
         ast->type = ELLC_AST_ARG_SET;

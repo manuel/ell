@@ -27,6 +27,8 @@ dict_t *
 ell_util_make_dict(dict_comp_t comp);
 void
 ell_util_dict_put(dict_t *dict, void *key, void *val);
+void
+ell_util_set_add(list_t *set, void *elt, int (*compare)(void *, void *));
 
 /**** Allocation ****/
 
@@ -539,6 +541,14 @@ ell_util_dict_put(dict_t *dict, void *key, void *val)
     dnode_t *dn = (dnode_t *) ell_alloc(sizeof(*dn));
     dnode_init(dn, val);
     dict_insert(dict, dn, key);
+}
+
+void
+ell_util_set_add(list_t *set, void *elt, int (*compare)(void *, void *))
+{
+    for (lnode_t *n = list_first(set); n; n = list_next(set, n))
+        if (compare(elt, lnode_get(n))) return;
+    ell_util_list_add(set, elt);
 }
 
 #endif
