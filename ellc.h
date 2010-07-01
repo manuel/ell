@@ -45,6 +45,7 @@ struct ellc_ast_lam {
     struct ellc_params *params;
     struct ellc_ast *body;
     dict_t *env; // id -> ref
+    unsigned code_id;
 };
 
 // Explicit Form
@@ -152,6 +153,7 @@ struct ellc_contour {
 struct ellc_st {
     struct ellc_contour *bottom_contour; // maybe NULL
     list_t *globals; // id
+    list_t *lambdas; // lam
 };
 
 // Symbols

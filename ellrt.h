@@ -214,13 +214,13 @@ ell_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **arg
 
 struct ell_clo_data {
     ell_code *code;
-    struct ell_obj **env;
+    void *env;
 };
 
 ELL_DEFBRAND(clo)
 
 struct ell_obj *
-ell_make_clo(ell_code *code, struct ell_obj **env)
+ell_make_clo(ell_code *code, void *env)
 {
     struct ell_clo_data *data = (struct ell_clo_data *) ell_alloc(sizeof(*data));
     data->code = code;
@@ -550,6 +550,35 @@ ell_util_set_add(list_t *set, void *elt, dict_comp_t compare)
         if (compare(elt, lnode_get(n)) == 0)
             return;
     ell_util_list_add(set, elt);
+}
+
+/**** Utilities for Generated Code ****/
+
+void
+ell_arity_error()
+{
+    printf("arity error\n");
+    exit(EXIT_FAILURE);
+}
+
+struct ell_obj **
+ell_make_box(struct ell_obj *value)
+{
+    struct ell_obj **box = ell_alloc(sizeof(struct ell_obj *));
+    *box = value;
+    return box;
+}
+
+struct ell_obj *
+ell_box_read(struct ell_obj **box)
+{
+    return *box;
+}
+
+void
+ell_box_write(struct ell_obj **box, struct ell_obj *value)
+{
+    *box = value;
 }
 
 #endif
