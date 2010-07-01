@@ -959,6 +959,7 @@ ellc_emit(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
     ellc_emit_globals(st->globals);
     ellc_emit_codes(st, st->lambdas);
     printf("// INIT\n");
+    printf("__attribute__((weak)) struct ell_obj *ell_result;\n");
     printf("__attribute__((constructor(401))) static void init() {\n");
     // glo fun traps
     for (lnode_t *n = list_first(st->globals); n; n = list_next(st->globals, n)) {
@@ -968,7 +969,7 @@ ellc_emit(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
     }
     // body
     for (lnode_t *n = list_first(ast_seq->exprs); n; n = list_next(ast_seq->exprs, n)) {
-        printf("\t");
+        printf("\tell_result = ");
         ellc_emit_ast(st, (struct ellc_ast *) lnode_get(n));
         printf(";\n");
     }
