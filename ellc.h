@@ -48,6 +48,10 @@ struct ellc_ast_lam {
     unsigned code_id;
 };
 
+struct ellc_ast_lit_str {
+    struct ell_obj *str;
+};
+
 // Explicit Form
 
 struct ellc_ast_glo_ref {
@@ -94,6 +98,8 @@ enum ellc_ast_type {
     ELLC_AST_ARG_SET = 104,
     ELLC_AST_ENV_REF = 105,
     ELLC_AST_ENV_SET = 106,
+
+    ELLC_AST_LIT_STR = 201,
 };
 
 struct ellc_ast {
@@ -113,6 +119,8 @@ struct ellc_ast {
         struct ellc_ast_arg_set arg_set;
         struct ellc_ast_env_ref env_ref;
         struct ellc_ast_env_set env_set;
+
+        struct ellc_ast_lit_str lit_str;
     };
 };
 

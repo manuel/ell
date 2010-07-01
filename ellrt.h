@@ -381,6 +381,13 @@ ell_stx_sym_sym(struct ell_obj *stx_sym)
     return ((struct ell_stx_sym_data *) stx_sym->data)->sym;
 }
 
+struct ell_obj *
+ell_stx_str_str(struct ell_obj *stx_str)
+{
+    ell_assert_brand(stx_str, ELL_BRAND(stx_str));
+    return ((struct ell_stx_str_data *) stx_str->data)->str;
+}
+
 list_t *
 ell_stx_lst_elts(struct ell_obj *stx_lst)
 {

@@ -33,6 +33,13 @@ ellc_parser_add_sym(char *chars)
 }
 
 static void
+ellc_parser_add_str(char *chars)
+{
+    struct ell_obj *stx_str = ell_make_stx_str(ell_make_str(chars));
+    ELL_SEND(ellc_parser_stack_top->stx_lst, add, stx_str);
+}
+
+static void
 ellc_parser_push()
 {
     struct ellc_parser_stack *new = 
@@ -404,12 +411,22 @@ ellc_norm_stx_lst(struct ell_obj *stx_lst)
 }
 
 static struct ellc_ast *
+ellc_norm_stx_str(struct ell_obj *stx)
+{
+    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_LIT_STR);
+    ast->lit_str.str = ell_stx_str_str(stx);
+    return ast;
+}
+
+static struct ellc_ast *
 ellc_norm_stx(struct ell_obj *stx)
 {
     if (stx->brand == ELL_BRAND(stx_sym)) {
         return ellc_norm_ref(stx);
     } else if (stx->brand == ELL_BRAND(stx_lst)) {
         return ellc_norm_stx_lst(stx);
+    } else if (stx->brand == ELL_BRAND(stx_str)) {
+        return ellc_norm_stx_str(stx);
     } else {
         printf("syntax normalization failure\n");
         exit(EXIT_FAILURE);
@@ -618,6 +635,7 @@ ellc_expl_ast(struct ellc_st *st, struct ellc_ast *ast)
     case ELLC_AST_SEQ: ellc_expl_seq(st, ast); break;
     case ELLC_AST_APP: ellc_expl_app(st, ast); break;
     case ELLC_AST_LAM: ellc_expl_lam(st, ast); break;
+    case ELLC_AST_LIT_STR: break;
     default:
         printf("explication error: %d\n", ast->type);
         exit(EXIT_FAILURE);
@@ -808,6 +826,12 @@ ellc_emit_lam(struct ellc_st *st, struct ellc_ast *ast)
 }
 
 static void
+ellc_emit_lit_str(struct ellc_st *st, struct ellc_ast *ast)
+{
+    printf("ell_make_str(\"%s\")", ell_str_chars(ast->lit_str.str));
+}
+
+static void
 ellc_emit_ast(struct ellc_st *st, struct ellc_ast *ast)
 {
     switch(ast->type) {
@@ -822,6 +846,7 @@ ellc_emit_ast(struct ellc_st *st, struct ellc_ast *ast)
     case ELLC_AST_SEQ: ellc_emit_seq(st, ast); break;
     case ELLC_AST_APP: ellc_emit_app(st, ast); break;
     case ELLC_AST_LAM: ellc_emit_lam(st, ast); break;
+    case ELLC_AST_LIT_STR: ellc_emit_lit_str(st, ast); break;
     default:
         printf("emission error\n");
         exit(EXIT_FAILURE);

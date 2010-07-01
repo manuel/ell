@@ -3,6 +3,9 @@ static void
 ellc_parser_add_sym(char *chars);
 
 static void
+ellc_parser_add_str(char *chars);
+
+static void
 ellc_parser_push();
 
 static void
@@ -11,7 +14,9 @@ ellc_parser_pop();
 
 unit       = exprs eof
 exprs      = spc? (expr spc?)+
-expr       = sym | lst
+expr       = str | sym | lst
+
+str        = "\"" < [^"]* > "\""    { ellc_parser_add_str(yytext); }
 
 sym-char   = [a-zA-Z0-9&:] | "-"
 sym        = < sym-char+ >         { ellc_parser_add_sym(yytext); }
