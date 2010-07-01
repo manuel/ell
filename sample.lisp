@@ -1,3 +1,3 @@
 (ell-lam (x)
-  (ell-lam ()
-    (ell-seq x g)))
+  (ell-lam (y)
+    (ell-seq (ell-set x y) x)))

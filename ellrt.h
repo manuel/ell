@@ -554,6 +554,20 @@ ell_util_set_add(list_t *set, void *elt, dict_comp_t compare)
 
 /**** Utilities for Generated Code ****/
 
+struct ell_obj *ell_glo_fun_trap;
+
+static struct ell_obj *
+ell_glo_fun_trap_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    printf("undefined function\n");
+    exit(EXIT_FAILURE);
+}
+
+__attribute__((constructor(205))) static void ell_init_glo_fun_trap()
+{
+    ell_glo_fun_trap = ell_make_clo(&ell_glo_fun_trap_code, NULL);
+}
+
 void
 ell_arity_error()
 {
