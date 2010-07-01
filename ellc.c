@@ -741,13 +741,13 @@ ellc_emit_env_set(struct ellc_st *st, struct ellc_ast *ast)
 static void
 ellc_emit_cond(struct ellc_st *st, struct ellc_ast *ast)
 {
-    printf("(if(");
+    printf("(");
     ellc_emit_ast(st, ast->cond.test);
-    printf("){");
+    printf(") ? (");
     ellc_emit_ast(st, ast->cond.consequent);
-    printf("}else{");
+    printf(") : (");
     ellc_emit_ast(st, ast->cond.alternative);
-    printf("})");
+    printf(")");
 }
 
 static void
