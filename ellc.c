@@ -1,5 +1,7 @@
 #include "ellc.h"
 
+/**** Main ****/
+
 int main()
 {
     struct ellc_st *st = (struct ellc_st *) ell_alloc(sizeof(*st));
