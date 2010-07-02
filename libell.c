@@ -2,20 +2,6 @@
 
 #include "ell.h"
 
-/**** Initialization ****/
-
-__attribute__((constructor(200))) static void
-ell_init_early()
-{
-    dict_init(&ell_sym_tab, DICTCOUNT_T_MAX, (dict_comp_t) &strcmp);
-}
-
-__attribute__((constructor(299))) static void
-ell_init_late()
-{
-    ell_glo_fun_trap = ell_make_clo(&ell_glo_fun_trap_code, NULL);
-}
-
 /**** Parsing ****/
 
 int yyparse();
@@ -101,15 +87,6 @@ ell_assert_brand(struct ell_obj *obj, struct ell_brand *brand)
     }
 }
 
-#define ELL_DEFBRAND(name)                                 \
-    __attribute__((constructor(201))) static void          \
-    __ell_init_brand_##name()                              \
-    {                                                      \
-        ELL_BRAND(name) = ell_make_brand();                \
-    }
-#include "brands.h"
-#undef ELL_DEFBRAND
-
 /**** Strings ****/
 
 struct ell_obj *
@@ -165,16 +142,6 @@ ell_str_poplast(struct ell_obj *str)
 }
 
 /**** Symbols ****/
-
-#define ELL_DEFSYM(name, lisp_name)                                     \
-    __attribute__((constructor(202))) static void                       \
-    __ell_init_sym_##name()                                             \
-    {                                                                   \
-        if (!ELL_SYM(name))                                             \
-            ELL_SYM(name) = ell_intern(ell_make_str(lisp_name));        \
-    }
-#include "syms.h"
-#undef ELL_DEFSYM
 
 static struct ell_obj *
 ell_make_sym(struct ell_obj *str)
@@ -540,4 +507,23 @@ ell_util_set_add(list_t *set, void *elt, dict_comp_t compare)
         if (compare(elt, lnode_get(n)) == 0)
             return;
     ell_util_list_add(set, elt);
+}
+
+/**** Initialization ****/
+
+__attribute__((constructor(200))) static void
+ell_init()
+{
+#define ELL_DEFBRAND(name) ELL_BRAND(name) = ell_make_brand();
+#include "brands.h"
+#undef ELL_DEFBRAND
+
+    dict_init(&ell_sym_tab, DICTCOUNT_T_MAX, (dict_comp_t) &strcmp);
+
+#define ELL_DEFSYM(name, lisp_name) \
+    if (!ELL_SYM(name)) ELL_SYM(name) = ell_intern(ell_make_str(lisp_name));
+#include "syms.h"
+#undef ELL_DEFSYM
+
+    ell_glo_fun_trap = ell_make_clo(&ell_glo_fun_trap_code, NULL);
 }

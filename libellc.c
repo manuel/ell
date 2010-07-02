@@ -324,8 +324,8 @@ ellc_norm_lam(struct ell_obj *stx_lst)
 
 static struct dict_t ellc_norm_tab;
 
-__attribute__((constructor(301))) static void
-ellc_init_norm_tab()
+__attribute__((constructor(300))) static void
+ellc_init()
 {
     dict_init(&ellc_norm_tab, DICTCOUNT_T_MAX, (dict_comp_t) &ell_sym_cmp);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_fref), &ellc_norm_fref);
