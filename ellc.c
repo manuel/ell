@@ -1,5 +1,7 @@
 #include "ellc.h"
 
+#include "grammar.c"
+
 /**** Main ****/
 
 int main()

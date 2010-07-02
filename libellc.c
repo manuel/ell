@@ -632,16 +632,16 @@ ellc_mangle_arg_id(struct ellc_id *id)
 static void
 ellc_emit_glo_ref(struct ellc_st *st, struct ellc_ast *ast)
 {
-    printf("%s", ellc_mangle_glo_id(ast->glo_ref.id));
+    fprintf(st->f, "%s", ellc_mangle_glo_id(ast->glo_ref.id));
 }
 
 static void
 ellc_emit_arg_ref(struct ellc_st *st, struct ellc_ast *ast)
 {
     if (ellc_param_boxed(ast->arg_ref.param)) {
-        printf("ell_box_read(%s)", ellc_mangle_arg_id(ast->arg_ref.param->id));
+        fprintf(st->f, "ell_box_read(%s)", ellc_mangle_arg_id(ast->arg_ref.param->id));
     } else {
-        printf("%s", ellc_mangle_arg_id(ast->arg_ref.param->id));
+        fprintf(st->f, "%s", ellc_mangle_arg_id(ast->arg_ref.param->id));
     }
 }
 
@@ -649,26 +649,26 @@ static void
 ellc_emit_env_ref(struct ellc_st *st, struct ellc_ast *ast)
 {
     if (ellc_param_boxed(ast->env_ref.param)) {
-        printf("ell_box_read(env->%s)", ellc_mangle_env_id(ast->env_ref.param->id));
+        fprintf(st->f, "ell_box_read(env->%s)", ellc_mangle_env_id(ast->env_ref.param->id));
     } else {
-        printf("(env->%s)", ellc_mangle_env_id(ast->env_ref.param->id));
+        fprintf(st->f, "(env->%s)", ellc_mangle_env_id(ast->env_ref.param->id));
     }
 }
 
 static void
 ellc_emit_def(struct ellc_st *st, struct ellc_ast *ast)
 {
-    printf("(%s = ", ellc_mangle_glo_id(ast->def.id));
+    fprintf(st->f, "(%s = ", ellc_mangle_glo_id(ast->def.id));
     ellc_emit_ast(st, ast->def.val);
-    printf(")");
+    fprintf(st->f, ")");
 }
 
 static void
 ellc_emit_glo_set(struct ellc_st *st, struct ellc_ast *ast)
 {
-    printf("(%s = ", ellc_mangle_glo_id(ast->glo_set.id));
+    fprintf(st->f, "(%s = ", ellc_mangle_glo_id(ast->glo_set.id));
     ellc_emit_ast(st, ast->glo_set.val);
-    printf(")");
+    fprintf(st->f, ")");
 }
 
 static void
@@ -676,13 +676,13 @@ ellc_emit_arg_set(struct ellc_st *st, struct ellc_ast *ast)
 {
     struct ellc_ast_arg_set *arg_set = &ast->arg_set;
     if (ellc_param_boxed(arg_set->param)) {
-        printf("(ell_box_write(%s, ", ellc_mangle_arg_id(arg_set->param->id));
+        fprintf(st->f, "(ell_box_write(%s, ", ellc_mangle_arg_id(arg_set->param->id));
         ellc_emit_ast(st, arg_set->val);
-        printf("))");
+        fprintf(st->f, "))");
     } else {
-        printf("(%s = ", ellc_mangle_arg_id(arg_set->param->id));
+        fprintf(st->f, "(%s = ", ellc_mangle_arg_id(arg_set->param->id));
         ellc_emit_ast(st, arg_set->val);
-        printf(")");
+        fprintf(st->f, ")");
     }
 }
 
@@ -691,37 +691,37 @@ ellc_emit_env_set(struct ellc_st *st, struct ellc_ast *ast)
 {
     struct ellc_ast_env_set *env_set = &ast->env_set;
     if (ellc_param_boxed(env_set->param)) {
-        printf("(ell_box_write(env->%s, ", ellc_mangle_env_id(env_set->param->id));
+        fprintf(st->f, "(ell_box_write(env->%s, ", ellc_mangle_env_id(env_set->param->id));
         ellc_emit_ast(st, env_set->val);
-        printf("))");
+        fprintf(st->f, "))");
     } else {
-        printf("(env->%s = ", ellc_mangle_env_id(env_set->param->id));
+        fprintf(st->f, "(env->%s = ", ellc_mangle_env_id(env_set->param->id));
         ellc_emit_ast(st, env_set->val);
-        printf(")");
+        fprintf(st->f, ")");
     }
 }
 
 static void
 ellc_emit_cond(struct ellc_st *st, struct ellc_ast *ast)
 {
-    printf("(");
+    fprintf(st->f, "(");
     ellc_emit_ast(st, ast->cond.test);
-    printf(") ? (");
+    fprintf(st->f, ") ? (");
     ellc_emit_ast(st, ast->cond.consequent);
-    printf(") : (");
+    fprintf(st->f, ") : (");
     ellc_emit_ast(st, ast->cond.alternative);
-    printf(")");
+    fprintf(st->f, ")");
 }
 
 static void
 ellc_emit_seq(struct ellc_st *st, struct ellc_ast *ast)
 {
-    printf("({");
+    fprintf(st->f, "({");
     for (lnode_t *n = list_first(ast->seq.exprs); n; n = list_next(ast->seq.exprs, n)) {
         ellc_emit_ast(st, (struct ellc_ast *) lnode_get(n));
-        printf("; ");
+        fprintf(st->f, "; ");
     }
-    printf("})");
+    fprintf(st->f, "})");
 }
 
 static void
@@ -729,51 +729,51 @@ ellc_emit_app(struct ellc_st *st, struct ellc_ast *ast)
 {
     struct ellc_ast_app *app = &ast->app;
     listcount_t npos = list_count(&app->args->pos);
-    printf("({");
+    fprintf(st->f, "({");
     if (npos > 0) {
-        printf("struct ell_obj *args[] = {");
+        fprintf(st->f, "struct ell_obj *args[] = {");
         for (lnode_t *n = list_first(&app->args->pos); n; n = list_next(&app->args->pos, n)) {
             struct ellc_ast *arg_ast = (struct ellc_ast *) lnode_get(n);
             ellc_emit_ast(st, arg_ast);
-            printf(", ");
+            fprintf(st->f, ", ");
         }
-        printf("}; ");
+        fprintf(st->f, "}; ");
     }
-    printf("ell_call(");
+    fprintf(st->f, "ell_call(");
     ellc_emit_ast(st, app->op);
-    printf(", %u, 0, %s);", npos, (npos > 0 ? "args" : "NULL"));
-    printf("})");
+    fprintf(st->f, ", %u, 0, %s);", npos, (npos > 0 ? "args" : "NULL"));
+    fprintf(st->f, "})");
 }
 
 static void
 ellc_emit_lam(struct ellc_st *st, struct ellc_ast *ast)
 {
     struct ellc_ast_lam *lam = &ast->lam;
-    printf("({");
+    fprintf(st->f, "({");
     // populate env
     if (dict_count(lam->env) > 0) {
-        printf("struct __ell_env_%u *__lam_env = ell_alloc(sizeof(struct __ell_env_%u));",
+        fprintf(st->f, "struct __ell_env_%u *__lam_env = ell_alloc(sizeof(struct __ell_env_%u));",
                lam->code_id, lam->code_id);
         for (dnode_t *n = dict_first(lam->env); n; n = dict_next(lam->env, n)) {
             struct ellc_id *env_id = (struct ellc_id *) dnode_getkey(n);
-            printf("__lam_env->%s = ", ellc_mangle_env_id(env_id));
+            fprintf(st->f, "__lam_env->%s = ", ellc_mangle_env_id(env_id));
             ellc_emit_ast(st, (struct ellc_ast *) dnode_get(n));
-            printf("; ");
+            fprintf(st->f, "; ");
         }
     }
     // create closure
     if (dict_count(lam->env) > 0) {
-        printf("ell_make_clo(&__ell_code_%u, __lam_env);", lam->code_id);
+        fprintf(st->f, "ell_make_clo(&__ell_code_%u, __lam_env);", lam->code_id);
     } else {
-        printf("ell_make_clo(&__ell_code_%u, NULL);", lam->code_id);
+        fprintf(st->f, "ell_make_clo(&__ell_code_%u, NULL);", lam->code_id);
     }
-    printf("})");
+    fprintf(st->f, "})");
 }
 
 static void
 ellc_emit_lit_str(struct ellc_st *st, struct ellc_ast *ast)
 {
-    printf("ell_make_str(\"%s\")", ell_str_chars(ast->lit_str.str));
+    fprintf(st->f, "ell_make_str(\"%s\")", ell_str_chars(ast->lit_str.str));
 }
 
 static void
@@ -799,58 +799,58 @@ ellc_emit_ast(struct ellc_st *st, struct ellc_ast *ast)
 }
 
 static void
-ellc_emit_globals(list_t *globals)
+ellc_emit_globals(struct ellc_st *st)
 {
-    printf("// GLOBALS\n");
-    for (lnode_t *n = list_first(globals); n; n = list_next(globals, n)) {
+    fprintf(st->f, "// GLOBALS\n");
+    for (lnode_t *n = list_first(st->globals); n; n = list_next(st->globals, n)) {
         struct ellc_id *id = (struct ellc_id *) lnode_get(n);
-        printf("__attribute__((weak)) struct ell_obj *%s;\n", ellc_mangle_glo_id(id));
+        fprintf(st->f, "__attribute__((weak)) struct ell_obj *%s;\n", ellc_mangle_glo_id(id));
     }
-    printf("\n");
+    fprintf(st->f, "\n");
 }
 
 static void
-ellc_emit_req_param_val(struct ellc_param *p, unsigned pos)
+ellc_emit_req_param_val(struct ellc_st *st, struct ellc_param *p, unsigned pos)
 {
     if (ellc_param_boxed(p))
-        printf("ell_make_box(args[%u])", pos);
+        fprintf(st->f, "ell_make_box(args[%u])", pos);
     else
-        printf("args[%u]", pos);
+        fprintf(st->f, "args[%u]", pos);
 }
 
 static void
 ellc_emit_opt_param_val(struct ellc_st *st, struct ellc_param *p, unsigned pos)
 {
     if (ellc_param_boxed(p))
-        printf("npos >= %u ? ell_make_box(args[%u]) : ", pos, pos);
+        fprintf(st->f, "npos >= %u ? ell_make_box(args[%u]) : ", pos, pos);
     else
-        printf("npos >= %u ? args[%u] : ", pos, pos);
+        fprintf(st->f, "npos >= %u ? args[%u] : ", pos, pos);
 
     if (p->init)
         ellc_emit_ast(st, p->init);
     else
-        printf("NULL");
+        fprintf(st->f, "NULL");
 }
 
 static void
 ellc_emit_params(struct ellc_st *st, struct ellc_ast_lam *lam)
 {
     listcount_t nreq = list_count(lam->params->req);
-    if (nreq > 0) printf("\tif (npos < %u) { ell_arity_error(); }\n", nreq);
+    if (nreq > 0) fprintf(st->f, "\tif (npos < %u) { ell_arity_error(); }\n", nreq);
     
     unsigned pos = 0;
     for (lnode_t *n = list_first(lam->params->req); n; n = list_next(lam->params->req, n)) {
         struct ellc_param *p = (struct ellc_param *) lnode_get(n);
-        printf("\tvoid *%s = ", ellc_mangle_param_id(p->id));
-        ellc_emit_req_param_val(p, pos);
-        printf(";\n");
+        fprintf(st->f, "\tvoid *%s = ", ellc_mangle_param_id(p->id));
+        ellc_emit_req_param_val(st, p, pos);
+        fprintf(st->f, ";\n");
         pos++;
     }
     for (lnode_t *n = list_first(lam->params->opt); n; n = list_next(lam->params->opt, n)) {
         struct ellc_param *p = (struct ellc_param *) lnode_get(n);
-        printf("\tvoid *%s = ", ellc_mangle_param_id(p->id));
+        fprintf(st->f, "\tvoid *%s = ", ellc_mangle_param_id(p->id));
         ellc_emit_opt_param_val(st, p, pos);
-        printf(";\n");
+        fprintf(st->f, ";\n");
         pos++;
     }
 
@@ -866,32 +866,32 @@ ellc_emit_params(struct ellc_st *st, struct ellc_ast_lam *lam)
 }
 
 static void
-ellc_emit_codes(struct ellc_st *st, list_t *lambdas)
+ellc_emit_codes(struct ellc_st *st)
 {
     unsigned code_id = 0;
-    for (lnode_t *n = list_first(lambdas); n; n = list_next(lambdas, n)) {
+    for (lnode_t *n = list_first(st->lambdas); n; n = list_next(st->lambdas, n)) {
         struct ellc_ast_lam *lam = (struct ellc_ast_lam *) lnode_get(n);
-        printf("// CLOSURE %u\n", code_id);
+        fprintf(st->f, "// CLOSURE %u\n", code_id);
         // env
         if (dict_count(lam->env) > 0) {
-            printf("struct __ell_env_%u {\n", code_id);
+            fprintf(st->f, "struct __ell_env_%u {\n", code_id);
             for (dnode_t *en = dict_first(lam->env); en; en = dict_next(lam->env, en)) {
                 struct ellc_id *env_id = (struct ellc_id *) dnode_getkey(en);
-                printf("\tvoid *%s;\n", ellc_mangle_env_id(env_id));
+                fprintf(st->f, "\tvoid *%s;\n", ellc_mangle_env_id(env_id));
             }
-            printf("};\n");
+            fprintf(st->f, "};\n");
         }
         // code
-        printf("static struct ell_obj *");
-        printf("__ell_code_%u(struct ell_obj *clo, unsigned npos, "
+        fprintf(st->f, "static struct ell_obj *");
+        fprintf(st->f, "__ell_code_%u(struct ell_obj *clo, unsigned npos, "
                "unsigned nkey, struct ell_obj **args) {\n", code_id);
         ellc_emit_params(st, lam);
-        printf("\tstruct __ell_env_%u *env = (struct __ell_env_%u *)"
+        fprintf(st->f, "\tstruct __ell_env_%u *env = (struct __ell_env_%u *)"
                "((struct ell_clo_data *) clo->data)->env;\n", code_id, code_id);
-        printf("\treturn ");
+        fprintf(st->f, "\treturn ");
         ellc_emit_ast(st, lam->body);
-        printf(";");
-        printf("\n}\n\n");
+        fprintf(st->f, ";");
+        fprintf(st->f, "\n}\n\n");
 
         code_id++;
     }
@@ -900,23 +900,52 @@ ellc_emit_codes(struct ellc_st *st, list_t *lambdas)
 void
 ellc_emit(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
 {
-    printf("#include \"ellrt.h\"\n");
-    ellc_emit_globals(st->globals);
-    ellc_emit_codes(st, st->lambdas);
-    printf("// INIT\n");
-    printf("__attribute__((constructor(401))) static void init() {\n");
+    fprintf(st->f, "#include \"ell.h\"\n");
+    ellc_emit_globals(st);
+    ellc_emit_codes(st);
+    fprintf(st->f, "// INIT\n");
+    fprintf(st->f, "__attribute__((constructor)) static void init() {\n");
     // glo fun traps
     for (lnode_t *n = list_first(st->globals); n; n = list_next(st->globals, n)) {
         struct ellc_id *id = (struct ellc_id *) lnode_get(n);
         if (id->ns == ELLC_NS_FUN)
-            printf("\t%s = ell_glo_fun_trap;\n", ellc_mangle_glo_id(id));
+            fprintf(st->f, "\t%s = ell_glo_fun_trap;\n", ellc_mangle_glo_id(id));
     }
     // body
     for (lnode_t *n = list_first(ast_seq->exprs); n; n = list_next(ast_seq->exprs, n)) {
-        printf("\t");
+        fprintf(st->f, "\t");
         ellc_emit_ast(st, (struct ellc_ast *) lnode_get(n));
-        printf(";\n");
+        fprintf(st->f, ";\n");
     }
-    printf("}\n");
+    fprintf(st->f, "}\n");
 }
 
+struct ellc_st *
+ellc_make_st(FILE *f)
+{
+    struct ellc_st *st = (struct ellc_st *) ell_alloc(sizeof(*st));
+    st->f = f;
+    st->globals = ell_util_make_list();
+    st->lambdas = ell_util_make_list();
+    return st;
+}
+
+struct ellc_ast_seq *
+ellc_wrap_for_repl(struct ellc_ast_seq *ast_seq)
+{
+    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_SEQ);
+    ast->seq.exprs = ast_seq->exprs;
+
+    struct ellc_ast *lam = ellc_make_ast(ELLC_AST_LAM);
+    lam->lam.params = ellc_dissect_params(ell_util_make_list());
+    lam->lam.body = ast;
+    lam->lam.env = ell_util_make_dict((dict_comp_t) &ellc_id_cmp);
+    
+    struct ellc_ast *fdef = ellc_make_ast(ELLC_AST_DEF);
+    fdef->def.id = ellc_make_id(ell_intern(ell_make_str("ell_repl_fun")), ELLC_NS_FUN);
+    fdef->def.val = lam;
+
+    struct ellc_ast_seq *res = ellc_make_ast_seq();
+    ellc_ast_seq_add(res, fdef);
+    return res;
+}

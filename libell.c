@@ -18,7 +18,7 @@ ell_init_late()
 
 /**** Parsing ****/
 
-#include "grammar.c"
+int yyparse();
 
 struct ell_parser_stack {
     struct ell_parser_stack *down;
@@ -351,7 +351,13 @@ ell_assert_stx_lst_len_min(struct ell_obj *stx_lst, listcount_t len)
     ell_util_assert_list_len_min(ell_stx_lst_elts(stx_lst), len);
 }
 
-/**** Syntax Objects Library ****/
+/**** Library ****/
+
+ELL_DEFMETHOD(clo, print_object, 1)
+ELL_PARAM(stx_sym, 0)
+printf("%s", "#<function>");
+return NULL;
+ELL_END
 
 ELL_DEFMETHOD(stx_lst, add, 2)
 ELL_PARAM(stx_lst, 0)
