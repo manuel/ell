@@ -632,7 +632,8 @@ ellc_mangle_arg_id(struct ellc_id *id)
 static void
 ellc_emit_glo_ref(struct ellc_st *st, struct ellc_ast *ast)
 {
-    fprintf(st->f, "%s", ellc_mangle_glo_id(ast->glo_ref.id));
+    char *id = ellc_mangle_glo_id(ast->glo_ref.id);
+    fprintf(st->f, "(%s != NULL ? %s : ell_unbound_var(\"%s\"))", id, id, id);
 }
 
 static void

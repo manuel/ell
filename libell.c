@@ -409,6 +409,14 @@ ell_arity_error()
     exit(EXIT_FAILURE);
 }
 
+struct ell_obj *
+ell_unbound_var(char *name)
+{
+    printf("unbound variable: %s\n", name);
+    exit(EXIT_FAILURE);
+    return NULL;
+}
+
 struct ell_obj **
 ell_make_box(struct ell_obj *value)
 {

@@ -37,8 +37,7 @@ ell_assert_brand(struct ell_obj *obj, struct ell_brand *brand);
 
 #define ELL_BRAND(name) __ell_brand_##name
 
-#define ELL_DEFBRAND(name)                                 \
-    struct ell_brand *ELL_BRAND(name);
+#define ELL_DEFBRAND(name) struct ell_brand *ELL_BRAND(name);
 #include "brands.h"
 #undef ELL_DEFBRAND
 
@@ -71,8 +70,7 @@ struct ell_sym_data {
 
 #define ELL_SYM(name) __ell_sym_##name
 
-#define ELL_DEFSYM(name, lisp_name)                             \
-    __attribute__((weak)) struct ell_obj *ELL_SYM(name);
+#define ELL_DEFSYM(name, lisp_name) __attribute__((weak)) struct ell_obj *ELL_SYM(name);
 #include "syms.h"
 #undef ELL_DEFSYM
 
@@ -132,7 +130,7 @@ ell_send(struct ell_obj *rcv, struct ell_obj *msg,
 #define ELL_DEFMETHOD(brand, msg, formal_npos)                          \
     ell_code ELL_METHOD_CODE(brand, msg);                               \
                                                                         \
-    __attribute__((constructor(203))) static void                       \
+    __attribute__((constructor(201))) static void                       \
     __ell_init_method_##brand##_##msg()                                 \
     {                                                                   \
         struct ell_obj *clo =                                           \
@@ -214,6 +212,8 @@ ell_glo_fun_trap_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct 
 
 void
 ell_arity_error();
+struct ell_obj *
+ell_unbound_var(char *name);
 struct ell_obj **
 ell_make_box(struct ell_obj *value);
 struct ell_obj *
