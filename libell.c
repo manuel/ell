@@ -34,8 +34,10 @@ ell_parse()
         (struct ell_parser_stack *) ell_alloc(sizeof(*ell_parser_stack_top));
     ell_parser_stack_top->down = NULL;
     ell_parser_stack_top->stx_lst = ell_make_stx_lst();
-    while(yyparse())
-        ;
+    if(!yyparse()) {
+        printf("parsing error\n");
+        exit(EXIT_FAILURE);
+    }
     return ell_parser_stack_top->stx_lst;
 }
 

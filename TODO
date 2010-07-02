@@ -4,6 +4,7 @@
 ** Ensure that function parameters names' are unique
 ** Ensure that only optional and keyword parameters have init forms
 * Code Enhancements
+** Remove complex __attribute__((constructor())) stuff in favor of one central init routine 
 ** Cleanup all loops over lists, so that they don't use a counter (except where needed)
 ** Transform convoluted list_process's and dict_process's to for loops
 ** Make ellc_args contain pointers, for uniformity with other code
