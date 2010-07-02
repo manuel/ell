@@ -1,6 +1,6 @@
 /***** Executable and Linkable Lisp Runtime *****/
 
-#include "ell.h"
+#include "ellrt.h"
 
 /**** Parsing ****/
 

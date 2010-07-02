@@ -3,7 +3,7 @@
 #ifndef ELLC_H
 #define ELLC_H
 
-#include "ell.h"
+#include "ellrt.h"
 
 struct ellc_id;
 struct ellc_ast;

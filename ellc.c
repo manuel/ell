@@ -901,7 +901,7 @@ ellc_emit_codes(struct ellc_st *st)
 void
 ellc_emit(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
 {
-    fprintf(st->f, "#include \"ell.h\"\n");
+    fprintf(st->f, "#include \"ellrt.h\"\n");
     ellc_emit_globals(st);
     ellc_emit_codes(st);
     fprintf(st->f, "// INIT\n");
