@@ -1,11 +1,11 @@
-CFLAGS=-std=c99 -Wall -g
+CFLAGS=-std=c99 -g
 LD=gcc
-LDFLAGS=-lgc
+LDFLAGS=-lgc -ldl -rdynamic
 
-OBJECTS = ellc.o dict.o list.o
+ELLC_OBJECTS = ellc.o libellc.o libell.o dict.o list.o
 
-ellc: $(OBJECTS)
-	$(LD) $(LDFLAGS) $(OBJECTS) -o ellc
+ellc: $(ELLC_OBJECTS)
+	$(LD) $(LDFLAGS) $(ELLC_OBJECTS) -o ellc
 
 .PHONY: clean
 clean:

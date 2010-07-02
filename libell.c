@@ -1,49 +1,77 @@
 /***** Executable and Linkable Lisp Runtime *****/
 
-#ifndef ELLRT_H
-#define ELLRT_H
+#include "ell.h"
 
-#include <gc/gc.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+/**** Initialization ****/
 
-#include "dict.h"
-#include "list.h"
+__attribute__((constructor(200))) static void
+ell_init_early()
+{
+    dict_init(&ell_sym_tab, DICTCOUNT_T_MAX, (dict_comp_t) &strcmp);
+}
 
-list_t *
-ell_util_make_list();
-void
-ell_util_list_add(list_t *list, void *elt);
-list_t *
-ell_util_sublist(list_t *list, listcount_t start);
-void
-ell_util_assert_list_len(list_t *list, listcount_t len);
-void
-ell_util_assert_list_len_min(list_t *list, listcount_t len);
-dict_t *
-ell_util_make_dict(dict_comp_t comp);
-void
-ell_util_dict_put(dict_t *dict, void *key, void *val);
-void
-ell_util_set_add(list_t *set, void *elt, dict_comp_t compare);
+__attribute__((constructor(299))) static void
+ell_init_late()
+{
+    ell_glo_fun_trap = ell_make_clo(&ell_glo_fun_trap_code, NULL);
+}
 
-/**** Allocation ****/
+/**** Parsing ****/
 
-#define ell_alloc GC_MALLOC
+#include "grammar.c"
+
+struct ell_parser_stack {
+    struct ell_parser_stack *down;
+    struct ell_obj *stx_lst;
+};
+
+static struct ell_parser_stack *ell_parser_stack_top;
+
+struct ell_obj *
+ell_parse()
+{
+    ell_parser_stack_top = 
+        (struct ell_parser_stack *) ell_alloc(sizeof(*ell_parser_stack_top));
+    ell_parser_stack_top->down = NULL;
+    ell_parser_stack_top->stx_lst = ell_make_stx_lst();
+    while(yyparse())
+        ;
+    return ell_parser_stack_top->stx_lst;
+}
+
+void
+ell_parser_add_sym(char *chars)
+{
+    struct ell_obj *stx_sym = ell_make_stx_sym(ell_intern(ell_make_str(chars)));
+    ELL_SEND(ell_parser_stack_top->stx_lst, add, stx_sym);
+}
+
+void
+ell_parser_add_str(char *chars)
+{
+    struct ell_obj *stx_str = ell_make_stx_str(ell_make_str(chars));
+    ELL_SEND(ell_parser_stack_top->stx_lst, add, stx_str);
+}
+
+void
+ell_parser_push()
+{
+    struct ell_parser_stack *new = 
+        (struct ell_parser_stack *) ell_alloc(sizeof(*new));
+    struct ell_obj *new_stx_lst = ell_make_stx_lst();
+    new->down = ell_parser_stack_top;
+    new->stx_lst = new_stx_lst;
+    ELL_SEND(ell_parser_stack_top->stx_lst, add, new_stx_lst);
+    ell_parser_stack_top = new;
+}
+
+void
+ell_parser_pop()
+{
+    ell_parser_stack_top = ell_parser_stack_top->down;
+}
 
 /**** Brands and Objects ****/
-
-struct ell_brand {
-    dict_t methods;
-};
-
-struct ell_obj {
-    struct ell_brand *brand;
-    void *data;
-};
 
 struct ell_obj *
 ell_make_obj(struct ell_brand *brand, void *data)
@@ -62,17 +90,6 @@ ell_make_brand()
     return brand;
 }
 
-#define ELL_BRAND(name) __ell_brand_##name
-
-#define ELL_DEFBRAND(name)                                 \
-    struct ell_brand *ELL_BRAND(name);                     \
-                                                           \
-    __attribute__((constructor(202))) static void          \
-    __ell_init_brand_##name()                              \
-    {                                                      \
-        ELL_BRAND(name) = ell_make_brand();                \
-    }
-
 void
 ell_assert_brand(struct ell_obj *obj, struct ell_brand *brand)
 {
@@ -82,13 +99,16 @@ ell_assert_brand(struct ell_obj *obj, struct ell_brand *brand)
     }
 }
 
+#define ELL_DEFBRAND(name)                                 \
+    __attribute__((constructor(201))) static void          \
+    __ell_init_brand_##name()                              \
+    {                                                      \
+        ELL_BRAND(name) = ell_make_brand();                \
+    }
+#include "brands.h"
+#undef ELL_DEFBRAND
+
 /**** Strings ****/
-
-struct ell_str_data {
-    char *chars;
-};
-
-ELL_DEFBRAND(str)
 
 struct ell_obj *
 ell_make_strn(char *chars, size_t len)
@@ -144,19 +164,15 @@ ell_str_poplast(struct ell_obj *str)
 
 /**** Symbols ****/
 
-struct dict_t ell_sym_tab;
-
-__attribute__((constructor(201))) static void
-ell_init_sym_tab()
-{
-    dict_init(&ell_sym_tab, DICTCOUNT_T_MAX, (dict_comp_t) &strcmp);
-}
-
-struct ell_sym_data {
-    struct ell_obj *name;
-};
-
-ELL_DEFBRAND(sym)
+#define ELL_DEFSYM(name, lisp_name)                                     \
+    __attribute__((constructor(202))) static void                       \
+    __ell_init_sym_##name()                                             \
+    {                                                                   \
+        if (!ELL_SYM(name))                                             \
+            ELL_SYM(name) = ell_intern(ell_make_str(lisp_name));        \
+    }
+#include "syms.h"
+#undef ELL_DEFSYM
 
 static struct ell_obj *
 ell_make_sym(struct ell_obj *str)
@@ -189,18 +205,6 @@ ell_sym_name(struct ell_obj *sym)
     return ((struct ell_sym_data *) sym->data)->name;
 }
 
-#define ELL_SYM(name) __ell_sym_##name
-
-#define ELL_DEFSYM(name, lisp_name)                                     \
-    __attribute__((weak)) struct ell_obj *ELL_SYM(name);                \
-                                                                        \
-    __attribute__((constructor(203))) static void                       \
-    __ell_init_sym_##name()                                             \
-    {                                                                   \
-        if (!ELL_SYM(name))                                             \
-            ELL_SYM(name) = ell_intern(ell_make_str(lisp_name));        \
-    }
-
 int
 ell_sym_cmp(struct ell_obj *sym_a, struct ell_obj *sym_b)
 {
@@ -208,16 +212,6 @@ ell_sym_cmp(struct ell_obj *sym_a, struct ell_obj *sym_b)
 }
 
 /**** Closures ****/
-
-typedef struct ell_obj *
-ell_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args);
-
-struct ell_clo_data {
-    ell_code *code;
-    void *env;
-};
-
-ELL_DEFBRAND(clo)
 
 struct ell_obj *
 ell_make_clo(ell_code *code, void *env)
@@ -229,22 +223,17 @@ ell_make_clo(ell_code *code, void *env)
 }
 
 struct ell_obj *
-ell_call_unchecked(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args) {
+ell_call_unchecked(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
     return ((struct ell_clo_data *) clo->data)->code(clo, npos, nkey, args);
 }
 
 struct ell_obj *
-ell_call(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args) {
+ell_call(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
     ell_assert_brand(clo, ELL_BRAND(clo));
     return ell_call_unchecked(clo, npos, nkey, args);
 }
-
-#define ELL_CALL(clo, ...)                                              \
-    ({                                                                  \
-        struct ell_obj *__ell_args[] = { __VA_ARGS__ };                 \
-        unsigned npos = sizeof(__ell_args) / sizeof(struct ell_obj *);  \
-        return ell_call(clo, npos, 0, __ell_args);                      \
-    })
 
 void
 ell_check_npos(unsigned formal_npos, unsigned actual_npos)
@@ -297,56 +286,7 @@ ell_send(struct ell_obj *rcv, struct ell_obj *msg,
     }
 }
 
-#define ELL_SEND(rcv, msg, ...)                                         \
-    ({                                                                  \
-        struct ell_obj *__ell_rcv = rcv;                                \
-        struct ell_obj *__ell_args[] = { __ell_rcv, __VA_ARGS__ };      \
-        unsigned npos = sizeof(__ell_args) / sizeof(struct ell_obj *);  \
-        ell_send(__ell_rcv, ELL_SYM(msg), npos, 0, __ell_args);         \
-    })
-
-#define ELL_METHOD_CODE(brand, msg) __ell_method_code_##brand##_##msg
-
-#define ELL_DEFMETHOD(brand, msg, formal_npos)                          \
-    ell_code ELL_METHOD_CODE(brand, msg);                               \
-                                                                        \
-    __attribute__((constructor(204))) static void                       \
-    __ell_init_method_##brand##_##msg()                                 \
-    {                                                                   \
-        struct ell_obj *clo =                                           \
-            ell_make_clo(&ELL_METHOD_CODE(brand, msg), NULL);           \
-        ell_put_method(ELL_BRAND(brand), ELL_SYM(msg), clo);            \
-    }                                                                   \
-                                                                        \
-    struct ell_obj *                                                    \
-    ELL_METHOD_CODE(brand, msg)(struct ell_obj *clo, unsigned npos,     \
-                                unsigned nkey, struct ell_obj **args)   \
-    {                                                                   \
-        ell_check_npos(formal_npos, npos);
-
-#define ELL_PARAM(name, i) \
-    struct ell_obj *name = args[i];
-
-#define ELL_END \
-    }
-
 /**** Syntax Objects ****/
-
-struct ell_stx_sym_data {
-    struct ell_obj *sym;
-};
-
-struct ell_stx_str_data {
-    struct ell_obj *str;
-};
-
-struct ell_stx_lst_data {
-    list_t elts;
-};
-
-ELL_DEFBRAND(stx_sym)
-ELL_DEFBRAND(stx_str)
-ELL_DEFBRAND(stx_lst)
 
 struct ell_obj *
 ell_make_stx_sym(struct ell_obj *sym)
@@ -411,13 +351,6 @@ ell_assert_stx_lst_len_min(struct ell_obj *stx_lst, listcount_t len)
 
 /**** Syntax Objects Library ****/
 
-ELL_DEFSYM(add, "add")
-ELL_DEFSYM(first, "first")
-ELL_DEFSYM(second, "second")
-ELL_DEFSYM(third, "third")
-ELL_DEFSYM(fourth, "fourth")
-ELL_DEFSYM(print_object, "print-object")
-
 ELL_DEFMETHOD(stx_lst, add, 2)
 ELL_PARAM(stx_lst, 0)
 ELL_PARAM(elt, 1)
@@ -445,6 +378,12 @@ ELL_END
 ELL_DEFMETHOD(stx_sym, print_object, 1)
 ELL_PARAM(stx_sym, 0)
 printf("%s", ell_str_chars(ell_sym_name(ell_stx_sym_sym(stx_sym))));
+return NULL;
+ELL_END
+
+ELL_DEFMETHOD(str, print_object, 1)
+ELL_PARAM(str, 0)
+printf("%s", ell_str_chars(str));
 return NULL;
 ELL_END
 
@@ -479,7 +418,43 @@ lnode_t *node = list_next(elts, list_next(elts, list_next(elts, list_first(elts)
 return (struct ell_obj *) lnode_get(node);
 ELL_END
 
-/**** Utilities ****/
+/**** Utilities used by Generated Code ****/
+
+struct ell_obj *
+ell_glo_fun_trap_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    printf("undefined function\n");
+    exit(EXIT_FAILURE);
+}
+
+void
+ell_arity_error()
+{
+    printf("arity error\n");
+    exit(EXIT_FAILURE);
+}
+
+struct ell_obj **
+ell_make_box(struct ell_obj *value)
+{
+    struct ell_obj **box = ell_alloc(sizeof(struct ell_obj *));
+    *box = value;
+    return box;
+}
+
+struct ell_obj *
+ell_box_read(struct ell_obj **box)
+{
+    return *box;
+}
+
+void
+ell_box_write(struct ell_obj **box, struct ell_obj *value)
+{
+    *box = value;
+}
+
+/**** Data Structure Utilities ****/
 
 list_t *
 ell_util_make_list()
@@ -558,48 +533,3 @@ ell_util_set_add(list_t *set, void *elt, dict_comp_t compare)
             return;
     ell_util_list_add(set, elt);
 }
-
-/**** Utilities for Generated Code ****/
-
-struct ell_obj *ell_glo_fun_trap;
-
-static struct ell_obj *
-ell_glo_fun_trap_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
-{
-    printf("undefined function\n");
-    exit(EXIT_FAILURE);
-}
-
-__attribute__((constructor(205))) static void ell_init_glo_fun_trap()
-{
-    ell_glo_fun_trap = ell_make_clo(&ell_glo_fun_trap_code, NULL);
-}
-
-void
-ell_arity_error()
-{
-    printf("arity error\n");
-    exit(EXIT_FAILURE);
-}
-
-struct ell_obj **
-ell_make_box(struct ell_obj *value)
-{
-    struct ell_obj **box = ell_alloc(sizeof(struct ell_obj *));
-    *box = value;
-    return box;
-}
-
-struct ell_obj *
-ell_box_read(struct ell_obj **box)
-{
-    return *box;
-}
-
-void
-ell_box_write(struct ell_obj **box, struct ell_obj *value)
-{
-    *box = value;
-}
-
-#endif

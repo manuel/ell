@@ -3,7 +3,7 @@
 #ifndef ELLC_H
 #define ELLC_H
 
-#include "ellrt.h"
+#include "ell.h"
 
 struct ellc_id;
 struct ellc_ast;
@@ -164,21 +164,13 @@ struct ellc_st {
     list_t *lambdas; // lam
 };
 
-// Symbols
+// API
 
-ELL_DEFSYM(core_fref, "ell-fref")
-ELL_DEFSYM(core_def,  "ell-def")
-ELL_DEFSYM(core_fdef, "ell-fdef")
-ELL_DEFSYM(core_set,  "ell-set")
-ELL_DEFSYM(core_fset, "ell-fset")
-ELL_DEFSYM(core_cond, "ell-cond")
-ELL_DEFSYM(core_seq,  "ell-seq")
-ELL_DEFSYM(core_lam,  "ell-lam")
-ELL_DEFSYM(core_app,  "ell-app")
-
-ELL_DEFSYM(param_optional, "&optional")
-ELL_DEFSYM(param_key, "&key")
-ELL_DEFSYM(param_rest, "&rest")
-ELL_DEFSYM(param_all_keys, "&all-keys")
+struct ellc_ast_seq *
+ellc_norm(struct ell_obj *stx_lst);
+void
+ellc_expl(struct ellc_st *st, struct ellc_ast_seq *ast_seq);
+void
+ellc_emit(struct ellc_st *st, struct ellc_ast_seq *ast_seq);
 
 #endif

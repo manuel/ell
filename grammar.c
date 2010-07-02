@@ -6,16 +6,16 @@
 #define YYRULECOUNT 13
 
 static void
-ellc_parser_add_sym(char *chars);
+ell_parser_add_sym(char *chars);
 
 static void
-ellc_parser_add_str(char *chars);
+ell_parser_add_str(char *chars);
 
 static void
-ellc_parser_push();
+ell_parser_push();
 
 static void
-ellc_parser_pop();
+ell_parser_pop();
 
 #ifndef YY_VARIABLE
 #define YY_VARIABLE(T)	static T
@@ -244,22 +244,22 @@ YY_RULE(int) yy_unit(); /* 1 */
 YY_ACTION(void) yy_1_CLOSE(char *yytext, int yyleng)
 {
   yyprintf((stderr, "do yy_1_CLOSE\n"));
-   ellc_parser_pop(); ;
+   ell_parser_pop(); ;
 }
 YY_ACTION(void) yy_1_OPEN(char *yytext, int yyleng)
 {
   yyprintf((stderr, "do yy_1_OPEN\n"));
-   ellc_parser_push(); ;
+   ell_parser_push(); ;
 }
 YY_ACTION(void) yy_1_sym(char *yytext, int yyleng)
 {
   yyprintf((stderr, "do yy_1_sym\n"));
-   ellc_parser_add_sym(yytext); ;
+   ell_parser_add_sym(yytext); ;
 }
 YY_ACTION(void) yy_1_str(char *yytext, int yyleng)
 {
   yyprintf((stderr, "do yy_1_str\n"));
-   ellc_parser_add_str(yytext); ;
+   ell_parser_add_str(yytext); ;
 }
 
 YY_RULE(int) yy_eol()

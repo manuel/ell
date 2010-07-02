@@ -1,30 +1,30 @@
 %{
 static void
-ellc_parser_add_sym(char *chars);
+ell_parser_add_sym(char *chars);
 
 static void
-ellc_parser_add_str(char *chars);
+ell_parser_add_str(char *chars);
 
 static void
-ellc_parser_push();
+ell_parser_push();
 
 static void
-ellc_parser_pop();
+ell_parser_pop();
 %}
 
 unit       = exprs eof
 exprs      = spc? (expr spc?)+
 expr       = str | sym | lst
 
-str        = "\"" < [^"]* > "\""    { ellc_parser_add_str(yytext); }
+str        = "\"" < [^"]* > "\""    { ell_parser_add_str(yytext); }
 
 sym-char   = [a-zA-Z0-9&:] | "-"
-sym        = < sym-char+ >         { ellc_parser_add_sym(yytext); }
+sym        = < sym-char+ >         { ell_parser_add_sym(yytext); }
 
 lst        = OPEN exprs CLOSE
            | OPEN spc? CLOSE
-OPEN       = "("                   { ellc_parser_push(); }
-CLOSE      = ")"                   { ellc_parser_pop(); }
+OPEN       = "("                   { ell_parser_push(); }
+CLOSE      = ")"                   { ell_parser_pop(); }
 
 spc-char   = [ \t] | eol
 spc        = spc-char+
