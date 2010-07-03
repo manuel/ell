@@ -662,9 +662,9 @@ static void
 ellc_emit_env_ref(struct ellc_st *st, struct ellc_ast *ast)
 {
     if (ellc_param_boxed(ast->env_ref.param)) {
-        fprintf(st->f, "ell_box_read(env->%s)", ellc_mangle_env_id(ast->env_ref.param->id));
+        fprintf(st->f, "ell_box_read(__ell_env->%s)", ellc_mangle_env_id(ast->env_ref.param->id));
     } else {
-        fprintf(st->f, "(env->%s)", ellc_mangle_env_id(ast->env_ref.param->id));
+        fprintf(st->f, "(__ell_env->%s)", ellc_mangle_env_id(ast->env_ref.param->id));
     }
 }
 
@@ -708,7 +708,7 @@ ellc_emit_env_set(struct ellc_st *st, struct ellc_ast *ast)
         ellc_emit_ast(st, env_set->val);
         fprintf(st->f, "))");
     } else {
-        fprintf(st->f, "(env->%s = ", ellc_mangle_env_id(env_set->param->id));
+        fprintf(st->f, "(__ell_env->%s = ", ellc_mangle_env_id(env_set->param->id));
         ellc_emit_ast(st, env_set->val);
         fprintf(st->f, ")");
     }
@@ -744,7 +744,7 @@ ellc_emit_app(struct ellc_st *st, struct ellc_ast *ast)
     listcount_t npos = list_count(&app->args->pos);
     fprintf(st->f, "({");
     if (npos > 0) {
-        fprintf(st->f, "struct ell_obj *args[] = {");
+        fprintf(st->f, "struct ell_obj *__ell_args[] = {");
         for (lnode_t *n = list_first(&app->args->pos); n; n = list_next(&app->args->pos, n)) {
             struct ellc_ast *arg_ast = (struct ellc_ast *) lnode_get(n);
             ellc_emit_ast(st, arg_ast);
@@ -754,7 +754,7 @@ ellc_emit_app(struct ellc_st *st, struct ellc_ast *ast)
     }
     fprintf(st->f, "ell_call(");
     ellc_emit_ast(st, app->op);
-    fprintf(st->f, ", %u, 0, %s);", npos, (npos > 0 ? "args" : "NULL"));
+    fprintf(st->f, ", %u, 0, %s);", npos, (npos > 0 ? "__ell_args" : "NULL"));
     fprintf(st->f, "})");
 }
 
@@ -826,18 +826,18 @@ static void
 ellc_emit_req_param_val(struct ellc_st *st, struct ellc_param *p, unsigned pos)
 {
     if (ellc_param_boxed(p))
-        fprintf(st->f, "ell_make_box(args[%u])", pos);
+        fprintf(st->f, "ell_make_box(__ell_args[%u])", pos);
     else
-        fprintf(st->f, "args[%u]", pos);
+        fprintf(st->f, "__ell_args[%u]", pos);
 }
 
 static void
 ellc_emit_opt_param_val(struct ellc_st *st, struct ellc_param *p, unsigned pos)
 {
     if (ellc_param_boxed(p))
-        fprintf(st->f, "npos >= %u ? ell_make_box(args[%u]) : ", pos, pos);
+        fprintf(st->f, "__ell_npos >= %u ? ell_make_box(__ell_args[%u]) : ", pos, pos);
     else
-        fprintf(st->f, "npos >= %u ? args[%u] : ", pos, pos);
+        fprintf(st->f, "__ell_npos >= %u ? __ell_args[%u] : ", pos, pos);
 
     if (p->init)
         ellc_emit_ast(st, p->init);
@@ -849,7 +849,7 @@ static void
 ellc_emit_params(struct ellc_st *st, struct ellc_ast_lam *lam)
 {
     listcount_t nreq = list_count(lam->params->req);
-    if (nreq > 0) fprintf(st->f, "\tif (npos < %u) { ell_arity_error(); }\n", nreq);
+    if (nreq > 0) fprintf(st->f, "\tif (__ell_npos < %u) { ell_arity_error(); }\n", nreq);
     
     unsigned pos = 0;
     for (lnode_t *n = list_first(lam->params->req); n; n = list_next(lam->params->req, n)) {
@@ -896,11 +896,11 @@ ellc_emit_codes(struct ellc_st *st)
         }
         // code
         fprintf(st->f, "static struct ell_obj *");
-        fprintf(st->f, "__ell_code_%u(struct ell_obj *clo, unsigned npos, "
-               "unsigned nkey, struct ell_obj **args) {\n", code_id);
+        fprintf(st->f, "__ell_code_%u(struct ell_obj *__ell_clo, unsigned __ell_npos, "
+               "unsigned __ell_nkey, struct ell_obj **__ell_args) {\n", code_id);
         ellc_emit_params(st, lam);
-        fprintf(st->f, "\tstruct __ell_env_%u *env = (struct __ell_env_%u *)"
-               "((struct ell_clo_data *) clo->data)->env;\n", code_id, code_id);
+        fprintf(st->f, "\tstruct __ell_env_%u *__ell_env = (struct __ell_env_%u *)"
+               "((struct ell_clo_data *) __ell_clo->data)->env;\n", code_id, code_id);
         fprintf(st->f, "\treturn ");
         ellc_emit_ast(st, lam->body);
         fprintf(st->f, ";");
@@ -917,7 +917,7 @@ ellc_emit(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
     ellc_emit_globals(st);
     ellc_emit_codes(st);
     fprintf(st->f, "// INIT\n");
-    fprintf(st->f, "__attribute__((constructor)) static void init() {\n");
+    fprintf(st->f, "__attribute__((constructor)) static void ell_init() {\n");
     for (lnode_t *n = list_first(ast_seq->exprs); n; n = list_next(ast_seq->exprs, n)) {
         fprintf(st->f, "\t");
         ellc_emit_ast(st, (struct ellc_ast *) lnode_get(n));
