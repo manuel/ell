@@ -757,7 +757,7 @@ ellc_emit_app(struct ellc_st *st, struct ellc_ast *ast)
     }
     fprintf(st->f, "ell_call(");
     ellc_emit_ast(st, app->op);
-    fprintf(st->f, ", %u, 0, %s);", npos, (npos > 0 ? "__ell_args" : "NULL"));
+    fprintf(st->f, ", %lu, 0, %s);", npos, (npos > 0 ? "__ell_args" : "NULL"));
     fprintf(st->f, "})");
 }
 
@@ -852,7 +852,7 @@ static void
 ellc_emit_params(struct ellc_st *st, struct ellc_ast_lam *lam)
 {
     listcount_t nreq = list_count(lam->params->req);
-    if (nreq > 0) fprintf(st->f, "\tif (__ell_npos < %u) { ell_arity_error(); }\n", nreq);
+    if (nreq > 0) fprintf(st->f, "\tif (__ell_npos < %lu) { ell_arity_error(); }\n", nreq);
     
     unsigned pos = 0;
     for (lnode_t *n = list_first(lam->params->req); n; n = list_next(lam->params->req, n)) {
