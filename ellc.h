@@ -167,16 +167,7 @@ struct ellc_st {
 
 // API
 
-struct ellc_st *
-ellc_make_st(FILE *f);
-struct ellc_ast_seq *
-ellc_norm(struct ell_obj *stx_lst);
-void
-ellc_expl(struct ellc_st *st, struct ellc_ast_seq *ast_seq);
-void
-ellc_emit(struct ellc_st *st, struct ellc_ast_seq *ast_seq);
-
-struct ellc_ast_seq *
-ellc_wrap_for_repl(struct ellc_ast_seq *ast_seq);
+struct ell_obj *
+ellc_eval(struct ell_obj *stx_lst);
 
 #endif

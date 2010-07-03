@@ -1,5 +1,8 @@
 /***** Executable and Linkable Lisp Compiler *****/
 
+#include <stdio.h>
+#include <dlfcn.h>
+
 #include "ellc.h"
 
 /**** AST Utilities ****/
@@ -386,7 +389,7 @@ ellc_norm_process(list_t *list, lnode_t *node, void *ast_seq_arg)
     ellc_ast_seq_add(ast_seq, ellc_norm_stx(stx));
 }
 
-struct ellc_ast_seq *
+static struct ellc_ast_seq *
 ellc_norm(struct ell_obj *stx_lst)
 {
     ell_assert_brand(stx_lst, ELL_BRAND(stx_lst));
@@ -587,7 +590,7 @@ ellc_expl_ast(struct ellc_st *st, struct ellc_ast *ast)
     }
 }
 
-void
+static void
 ellc_expl(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
 {
     for (lnode_t *n = list_first(ast_seq->exprs); n; n = list_next(ast_seq->exprs, n))
@@ -910,7 +913,7 @@ ellc_emit_codes(struct ellc_st *st)
     }
 }
 
-void
+static void
 ellc_emit(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
 {
     fprintf(st->f, "#include \"ellrt.h\"\n");
@@ -926,7 +929,9 @@ ellc_emit(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
     fprintf(st->f, "}\n");
 }
 
-struct ellc_st *
+/**** API ****/
+
+static struct ellc_st *
 ellc_make_st(FILE *f)
 {
     struct ellc_st *st = (struct ellc_st *) ell_alloc(sizeof(*st));
@@ -936,7 +941,7 @@ ellc_make_st(FILE *f)
     return st;
 }
 
-struct ellc_ast_seq *
+static struct ellc_ast_seq *
 ellc_wrap_for_repl(struct ellc_ast_seq *ast_seq)
 {
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_SEQ);
@@ -948,10 +953,66 @@ ellc_wrap_for_repl(struct ellc_ast_seq *ast_seq)
     lam->lam.env = ell_util_make_dict((dict_comp_t) &ellc_id_cmp);
     
     struct ellc_ast *fdef = ellc_make_ast(ELLC_AST_DEF);
-    fdef->def.id = ellc_make_id(ell_intern(ell_make_str("ell_repl_fun")), ELLC_NS_FUN);
+    fdef->def.id = ellc_make_id(ell_intern(ell_make_str("ellc_repl_fun")), ELLC_NS_FUN);
     fdef->def.val = lam;
 
     struct ellc_ast_seq *res = ellc_make_ast_seq();
     ellc_ast_seq_add(res, fdef);
     return res;
+}
+
+__attribute__((weak)) struct ell_obj *ellc_repl_fun;
+
+struct ell_obj *
+ellc_eval(struct ell_obj *stx_lst)
+{
+    ell_assert_brand(stx_lst, ELL_BRAND(stx_lst));
+
+    char cnam[L_tmpnam];
+    if (!tmpnam(cnam)) {
+        printf("cannot name temp file\n");
+        exit(EXIT_FAILURE);
+    }
+
+    char onam[L_tmpnam];
+    if (!tmpnam(onam)) {
+        printf("cannot name temp file\n");
+        exit(EXIT_FAILURE);
+    }
+
+    FILE *f = fopen(cnam, "w");
+    if (!f) {
+        printf("cannot open temp file\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    struct ellc_st *st = ellc_make_st(f);
+    struct ellc_ast_seq *ast_seq = ellc_wrap_for_repl(ellc_norm(stx_lst));
+    ellc_expl(st, ast_seq);
+    ellc_emit(st, ast_seq);
+    
+    if (fclose(f) != 0) {
+        printf("cannot close temp file\n");
+        exit(EXIT_FAILURE);        
+    }
+    
+    char cmdline[256];
+    sprintf(cmdline, "gcc -std=c99 -shared -fPIC -I. -o %s -x c %s", onam, cnam);
+
+    if (system(cmdline) == -1) {
+        printf("error compiling file\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (!dlopen(onam, RTLD_NOW | RTLD_GLOBAL)) {
+        printf("load error: %s\n", dlerror());
+        exit(EXIT_FAILURE);
+    }
+    
+    if (ellc_repl_fun) {
+        return ell_call(ellc_repl_fun, 0, 0, NULL);
+    } else {
+        printf("unknown error\n");
+        exit(EXIT_FAILURE);
+    }
 }
