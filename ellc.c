@@ -942,7 +942,7 @@ ellc_make_st(FILE *f)
 }
 
 static struct ellc_ast_seq *
-ellc_wrap_for_repl(struct ellc_ast_seq *ast_seq)
+ellc_wrap_for_eval(struct ellc_ast_seq *ast_seq)
 {
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_SEQ);
     ast->seq.exprs = ast_seq->exprs;
@@ -987,7 +987,7 @@ ellc_eval(struct ell_obj *stx_lst)
     }
     
     struct ellc_st *st = ellc_make_st(f);
-    struct ellc_ast_seq *ast_seq = ellc_wrap_for_repl(ellc_norm(stx_lst));
+    struct ellc_ast_seq *ast_seq = ellc_wrap_for_eval(ellc_norm(stx_lst));
     ellc_expl(st, ast_seq);
     ellc_emit(st, ast_seq);
     
