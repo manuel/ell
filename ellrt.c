@@ -391,13 +391,6 @@ ELL_END
 
 /**** Utilities used by Generated Code ****/
 
-struct ell_obj *
-ell_glo_fun_trap_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
-{
-    printf("undefined function\n");
-    exit(EXIT_FAILURE);
-}
-
 void
 ell_arity_error()
 {
@@ -409,6 +402,14 @@ struct ell_obj *
 ell_unbound_var(char *name)
 {
     printf("unbound variable: %s\n", name);
+    exit(EXIT_FAILURE);
+    return NULL;
+}
+
+struct ell_obj *
+ell_unbound_fun(char *name)
+{
+    printf("unbound function: %s\n", name);
     exit(EXIT_FAILURE);
     return NULL;
 }
@@ -533,6 +534,4 @@ ell_init()
     if (!ELL_SYM(name)) ELL_SYM(name) = ell_intern(ell_make_str(lisp_name));
 #include "syms.h"
 #undef ELL_DEFSYM
-
-    ell_glo_fun_trap = ell_make_clo(&ell_glo_fun_trap_code, NULL);
 }

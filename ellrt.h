@@ -205,15 +205,12 @@ ell_util_set_add(list_t *set, void *elt, dict_comp_t compare);
 
 /**** Utilities for Generated Code ****/
 
-struct ell_obj *ell_glo_fun_trap;
-
-struct ell_obj *
-ell_glo_fun_trap_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args);
-
 void
 ell_arity_error();
 struct ell_obj *
 ell_unbound_var(char *name);
+struct ell_obj *
+ell_unbound_fun(char *name);
 struct ell_obj **
 ell_make_box(struct ell_obj *value);
 struct ell_obj *

@@ -632,8 +632,20 @@ ellc_mangle_arg_id(struct ellc_id *id)
 static void
 ellc_emit_glo_ref(struct ellc_st *st, struct ellc_ast *ast)
 {
-    char *id = ellc_mangle_glo_id(ast->glo_ref.id);
-    fprintf(st->f, "(%s != NULL ? %s : ell_unbound_var(\"%s\"))", id, id, id);
+    struct ellc_id *id = ast->glo_ref.id;
+    char *sid = ell_str_chars(ell_sym_name(id->sym));
+    char *mid = ellc_mangle_glo_id(id);
+    switch(id->ns) {
+    case ELLC_NS_VAR:
+        fprintf(st->f, "(%s != NULL ? %s : ell_unbound_var(\"%s\"))", mid, mid, sid);
+        break;
+    case ELLC_NS_FUN:
+        fprintf(st->f, "(%s != NULL ? %s : ell_unbound_fun(\"%s\"))", mid, mid, sid);
+        break;
+    default:
+        printf("unknown namespace\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 static void
@@ -906,13 +918,6 @@ ellc_emit(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
     ellc_emit_codes(st);
     fprintf(st->f, "// INIT\n");
     fprintf(st->f, "__attribute__((constructor)) static void init() {\n");
-    // glo fun traps
-    for (lnode_t *n = list_first(st->globals); n; n = list_next(st->globals, n)) {
-        struct ellc_id *id = (struct ellc_id *) lnode_get(n);
-        if (id->ns == ELLC_NS_FUN)
-            fprintf(st->f, "\t%s = ell_glo_fun_trap;\n", ellc_mangle_glo_id(id));
-    }
-    // body
     for (lnode_t *n = list_first(ast_seq->exprs); n; n = list_next(ast_seq->exprs, n)) {
         fprintf(st->f, "\t");
         ellc_emit_ast(st, (struct ellc_ast *) lnode_get(n));
