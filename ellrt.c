@@ -316,8 +316,20 @@ ell_assert_stx_lst_len_min(struct ell_obj *stx_lst, listcount_t len)
 
 /**** Library ****/
 
+ELL_DEFMETHOD(sym, print_object, 1)
+ELL_PARAM(sym, 0)
+printf("%s", ell_str_chars(ell_sym_name(sym)));
+return NULL;
+ELL_END
+
+ELL_DEFMETHOD(str, print_object, 1)
+ELL_PARAM(str, 0)
+printf("\"%s\"", ell_str_chars(str));
+return NULL;
+ELL_END
+
 ELL_DEFMETHOD(clo, print_object, 1)
-ELL_PARAM(stx_sym, 0)
+ELL_PARAM(self, 0)
 printf("%s", "#<function>");
 return NULL;
 ELL_END
@@ -349,12 +361,6 @@ ELL_END
 ELL_DEFMETHOD(stx_sym, print_object, 1)
 ELL_PARAM(stx_sym, 0)
 printf("%s", ell_str_chars(ell_sym_name(ell_stx_sym_sym(stx_sym))));
-return NULL;
-ELL_END
-
-ELL_DEFMETHOD(str, print_object, 1)
-ELL_PARAM(str, 0)
-printf("%s", ell_str_chars(str));
 return NULL;
 ELL_END
 
