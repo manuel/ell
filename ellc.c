@@ -23,7 +23,8 @@ ellc_id_equal(struct ellc_id *a, struct ellc_id *b)
 static int
 ellc_id_cmp(struct ellc_id *a, struct ellc_id *b)
 {
-    return ell_sym_cmp(a->sym, b->sym) || (a->ns - b->ns);
+    int sym_cmp = ell_sym_cmp(a->sym, b->sym);
+    return (sym_cmp != 0) ? sym_cmp : (a->ns - b->ns);
 }
 
 static struct ellc_ast_seq *
@@ -161,7 +162,6 @@ ellc_norm_seq(struct ell_obj *stx_lst)
 static bool
 ellc_is_key_arg_sym(struct ell_obj *sym)
 {
-    ell_assert_brand(sym, ELL_BRAND(sym));
     struct ell_obj *name_str = ell_sym_name(sym);
     size_t len = ell_str_len(name_str);
     return (len > 1) && (ell_str_char_at(name_str, len - 1) == ':');

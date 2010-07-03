@@ -74,7 +74,7 @@ struct ell_brand *
 ell_make_brand()
 {
     struct ell_brand *brand = (struct ell_brand *) ell_alloc(sizeof(*brand));
-    dict_init(&brand->methods, DICTCOUNT_T_MAX, (dict_comp_t) &strcmp);
+    dict_init(&brand->methods, DICTCOUNT_T_MAX, (dict_comp_t) &ell_sym_cmp);
     return brand;
 }
 
@@ -83,6 +83,73 @@ ell_assert_brand(struct ell_obj *obj, struct ell_brand *brand)
 {
     if (obj->brand != brand) {
         printf("brand assertion failed\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+/**** Closures ****/
+
+struct ell_obj *
+ell_make_clo(ell_code *code, void *env)
+{
+    struct ell_clo_data *data = (struct ell_clo_data *) ell_alloc(sizeof(*data));
+    data->code = code;
+    data->env = env;
+    return ell_make_obj(ELL_BRAND(clo), data);
+}
+
+struct ell_obj *
+ell_call_unchecked(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    return ((struct ell_clo_data *) clo->data)->code(clo, npos, nkey, args);
+}
+
+struct ell_obj *
+ell_call(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    ell_assert_brand(clo, ELL_BRAND(clo));
+    return ell_call_unchecked(clo, npos, nkey, args);
+}
+
+void
+ell_check_npos(unsigned formal_npos, unsigned actual_npos)
+{
+    if (formal_npos != actual_npos) {
+        printf("wrong number of arguments");
+        exit(EXIT_FAILURE);
+    }
+}
+
+/**** Methods ****/
+
+void
+ell_put_method(struct ell_brand *brand, struct ell_obj *msg_sym, struct ell_obj *clo)
+{
+    ell_assert_brand(clo, ELL_BRAND(clo));
+    ell_assert_brand(msg_sym, ELL_BRAND(sym));
+    ell_util_dict_put(&brand->methods, msg_sym, clo);
+}
+
+struct ell_obj *
+ell_find_method(struct ell_obj *rcv, struct ell_obj *msg_sym)
+{
+    dnode_t *node = dict_lookup(&rcv->brand->methods, msg_sym);
+    if (node) {
+        return (struct ell_obj *) dnode_get(node);
+    } else {
+        return NULL;
+    }
+}
+
+struct ell_obj *
+ell_send(struct ell_obj *rcv, struct ell_obj *msg_sym, 
+         unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    struct ell_obj *clo = ell_find_method(rcv, msg_sym);
+    if (clo) {
+        return ell_call_unchecked(clo, npos, nkey, args);
+    } else {
+        printf("message not understood: %s\n", ell_str_chars(ell_sym_name(msg_sym)));
         exit(EXIT_FAILURE);
     }
 }
@@ -116,6 +183,7 @@ ell_str_chars(struct ell_obj *str)
 size_t
 ell_str_len(struct ell_obj *str)
 {
+    ell_assert_brand(str, ELL_BRAND(str));
     return strlen(ell_str_chars(str));
 }
 
@@ -171,88 +239,16 @@ ell_intern(struct ell_obj *str)
 struct ell_obj *
 ell_sym_name(struct ell_obj *sym)
 {
+    ell_assert_brand(sym, ELL_BRAND(sym));
     return ((struct ell_sym_data *) sym->data)->name;
 }
 
 int
 ell_sym_cmp(struct ell_obj *sym_a, struct ell_obj *sym_b)
 {
+    ell_assert_brand(sym_a, ELL_BRAND(sym));
+    ell_assert_brand(sym_b, ELL_BRAND(sym));
     return sym_a - sym_b;
-}
-
-/**** Closures ****/
-
-struct ell_obj *
-ell_make_clo(ell_code *code, void *env)
-{
-    struct ell_clo_data *data = (struct ell_clo_data *) ell_alloc(sizeof(*data));
-    data->code = code;
-    data->env = env;
-    return ell_make_obj(ELL_BRAND(clo), data);
-}
-
-struct ell_obj *
-ell_call_unchecked(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
-{
-    return ((struct ell_clo_data *) clo->data)->code(clo, npos, nkey, args);
-}
-
-struct ell_obj *
-ell_call(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
-{
-    ell_assert_brand(clo, ELL_BRAND(clo));
-    return ell_call_unchecked(clo, npos, nkey, args);
-}
-
-void
-ell_check_npos(unsigned formal_npos, unsigned actual_npos)
-{
-    if (formal_npos != actual_npos) {
-        printf("wrong number of arguments");
-        exit(EXIT_FAILURE);
-    }
-}
-
-/**** Methods ****/
-
-void
-ell_put_method(struct ell_brand *brand, struct ell_obj *msg, struct ell_obj *clo)
-{
-    ell_assert_brand(clo, ELL_BRAND(clo));
-    char *msg_chars = ell_str_chars(ell_sym_name(msg));
-    dnode_t *node = dict_lookup(&brand->methods, msg_chars);
-    if (node) {
-        dnode_put(node, clo);
-    } else {
-        node = (dnode_t *) ell_alloc(sizeof(*node));
-        dnode_init(node, clo);
-        dict_insert(&brand->methods, node, msg_chars);
-    }
-}
-
-struct ell_obj *
-ell_find_method(struct ell_obj *rcv, struct ell_obj *msg)
-{
-    dnode_t *node = dict_lookup(&rcv->brand->methods, 
-                                ell_str_chars(ell_sym_name(msg)));
-    if (node) {
-        return (struct ell_obj *) dnode_get(node);
-    } else {
-        return NULL;
-    }
-}
-
-struct ell_obj *
-ell_send(struct ell_obj *rcv, struct ell_obj *msg, 
-         unsigned npos, unsigned nkey, struct ell_obj **args)
-{
-    struct ell_obj *clo = ell_find_method(rcv, msg);
-    if (clo) {
-        return ell_call_unchecked(clo, npos, nkey, args);
-    } else {
-        printf("message not understood: %s\n", ell_str_chars(ell_sym_name(msg)));
-        exit(EXIT_FAILURE);
-    }
 }
 
 /**** Syntax Objects ****/
@@ -503,9 +499,14 @@ ell_util_make_dict(dict_comp_t comp)
 void
 ell_util_dict_put(dict_t *dict, void *key, void *val)
 {
-    dnode_t *dn = (dnode_t *) ell_alloc(sizeof(*dn));
-    dnode_init(dn, val);
-    dict_insert(dict, dn, key);
+    dnode_t *node = dict_lookup(dict, key);
+    if (node) {
+        dnode_put(node, val);
+    } else {
+        node = (dnode_t *) ell_alloc(sizeof(*node));
+        dnode_init(node, val);
+        dict_insert(dict, node, key);
+    }
 }
 
 void

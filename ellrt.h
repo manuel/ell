@@ -41,6 +41,75 @@ ell_assert_brand(struct ell_obj *obj, struct ell_brand *brand);
 #include "brands.h"
 #undef ELL_DEFBRAND
 
+/**** Closures ****/
+
+typedef struct ell_obj *
+ell_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args);
+
+struct ell_clo_data {
+    ell_code *code;
+    void *env;
+};
+
+struct ell_obj *
+ell_make_clo(ell_code *code, void *env);
+struct ell_obj *
+ell_call_unchecked(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args);
+struct ell_obj *
+ell_call(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args);
+void
+ell_check_npos(unsigned formal_npos, unsigned actual_npos);
+
+#define ELL_CALL(clo, ...)                                              \
+    ({                                                                  \
+        struct ell_obj *__ell_args[] = { __VA_ARGS__ };                 \
+        unsigned npos = sizeof(__ell_args) / sizeof(struct ell_obj *);  \
+        return ell_call(clo, npos, 0, __ell_args);                      \
+    })
+
+/**** Methods ****/
+
+void
+ell_put_method(struct ell_brand *brand, struct ell_obj *msg_sym, struct ell_obj *clo);
+struct ell_obj *
+ell_find_method(struct ell_obj *rcv, struct ell_obj *msg_sym);
+struct ell_obj *
+ell_send(struct ell_obj *rcv, struct ell_obj *msg_sym,
+         unsigned npos, unsigned nkey, struct ell_obj **args);
+
+#define ELL_SEND(rcv, msg, ...)                                         \
+    ({                                                                  \
+        struct ell_obj *__ell_rcv = rcv;                                \
+        struct ell_obj *__ell_args[] = { __ell_rcv, __VA_ARGS__ };      \
+        unsigned npos = sizeof(__ell_args) / sizeof(struct ell_obj *);  \
+        ell_send(__ell_rcv, ELL_SYM(msg), npos, 0, __ell_args);         \
+    })
+
+#define ELL_METHOD_CODE(brand, msg) __ell_method_code_##brand##_##msg
+
+#define ELL_DEFMETHOD(brand, msg, formal_npos)                          \
+    ell_code ELL_METHOD_CODE(brand, msg);                               \
+                                                                        \
+    __attribute__((constructor(201))) static void                       \
+    __ell_init_method_##brand##_##msg()                                 \
+    {                                                                   \
+        struct ell_obj *clo =                                           \
+            ell_make_clo(&ELL_METHOD_CODE(brand, msg), NULL);           \
+        ell_put_method(ELL_BRAND(brand), ELL_SYM(msg), clo);            \
+    }                                                                   \
+                                                                        \
+    struct ell_obj *                                                    \
+    ELL_METHOD_CODE(brand, msg)(struct ell_obj *clo, unsigned npos,     \
+                                unsigned nkey, struct ell_obj **args)   \
+    {                                                                   \
+        ell_check_npos(formal_npos, npos);
+
+#define ELL_PARAM(name, i) \
+    struct ell_obj *name = args[i];
+
+#define ELL_END \
+    }
+
 /**** Strings ****/
 
 struct ell_str_data {
@@ -80,75 +149,6 @@ struct ell_obj *
 ell_sym_name(struct ell_obj *sym);
 int
 ell_sym_cmp(struct ell_obj *sym_a, struct ell_obj *sym_b);
-
-/**** Closures ****/
-
-typedef struct ell_obj *
-ell_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args);
-
-struct ell_clo_data {
-    ell_code *code;
-    void *env;
-};
-
-struct ell_obj *
-ell_make_clo(ell_code *code, void *env);
-struct ell_obj *
-ell_call_unchecked(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args);
-struct ell_obj *
-ell_call(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args);
-void
-ell_check_npos(unsigned formal_npos, unsigned actual_npos);
-
-#define ELL_CALL(clo, ...)                                              \
-    ({                                                                  \
-        struct ell_obj *__ell_args[] = { __VA_ARGS__ };                 \
-        unsigned npos = sizeof(__ell_args) / sizeof(struct ell_obj *);  \
-        return ell_call(clo, npos, 0, __ell_args);                      \
-    })
-
-/**** Methods ****/
-
-void
-ell_put_method(struct ell_brand *brand, struct ell_obj *msg, struct ell_obj *clo);
-struct ell_obj *
-ell_find_method(struct ell_obj *rcv, struct ell_obj *msg);
-struct ell_obj *
-ell_send(struct ell_obj *rcv, struct ell_obj *msg, 
-         unsigned npos, unsigned nkey, struct ell_obj **args);
-
-#define ELL_SEND(rcv, msg, ...)                                         \
-    ({                                                                  \
-        struct ell_obj *__ell_rcv = rcv;                                \
-        struct ell_obj *__ell_args[] = { __ell_rcv, __VA_ARGS__ };      \
-        unsigned npos = sizeof(__ell_args) / sizeof(struct ell_obj *);  \
-        ell_send(__ell_rcv, ELL_SYM(msg), npos, 0, __ell_args);         \
-    })
-
-#define ELL_METHOD_CODE(brand, msg) __ell_method_code_##brand##_##msg
-
-#define ELL_DEFMETHOD(brand, msg, formal_npos)                          \
-    ell_code ELL_METHOD_CODE(brand, msg);                               \
-                                                                        \
-    __attribute__((constructor(201))) static void                       \
-    __ell_init_method_##brand##_##msg()                                 \
-    {                                                                   \
-        struct ell_obj *clo =                                           \
-            ell_make_clo(&ELL_METHOD_CODE(brand, msg), NULL);           \
-        ell_put_method(ELL_BRAND(brand), ELL_SYM(msg), clo);            \
-    }                                                                   \
-                                                                        \
-    struct ell_obj *                                                    \
-    ELL_METHOD_CODE(brand, msg)(struct ell_obj *clo, unsigned npos,     \
-                                unsigned nkey, struct ell_obj **args)   \
-    {                                                                   \
-        ell_check_npos(formal_npos, npos);
-
-#define ELL_PARAM(name, i) \
-    struct ell_obj *name = args[i];
-
-#define ELL_END \
-    }
 
 /**** Syntax Objects ****/
 
