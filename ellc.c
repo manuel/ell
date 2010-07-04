@@ -398,10 +398,10 @@ ellc_norm(struct ell_obj *stx_lst)
     return ast_seq;
 }
 
-/**** Explication: Closure Conversion ****/
+/**** Closure Conversion ****/
 
 static void
-ellc_expl_ast(struct ellc_st *st, struct ellc_ast *ast);
+ellc_conv_ast(struct ellc_st *st, struct ellc_ast *ast);
 
 static struct ellc_param *
 ellc_params_list_lookup(list_t *list, struct ellc_id *id)
@@ -453,7 +453,7 @@ ellc_env_add_ref(struct ellc_ast_lam *lam, struct ellc_id *id)
 }
 
 static void
-ellc_expl_ref(struct ellc_st *st, struct ellc_ast *ast)
+ellc_conv_ref(struct ellc_st *st, struct ellc_ast *ast)
 {
     struct ellc_param *p = NULL;
     struct ellc_contour *c = ellc_contour_lookup(st->bottom_contour, ast->ref.id, &p);
@@ -474,16 +474,16 @@ ellc_expl_ref(struct ellc_st *st, struct ellc_ast *ast)
 }
 
 static void
-ellc_expl_def(struct ellc_st *st, struct ellc_ast *ast)
+ellc_conv_def(struct ellc_st *st, struct ellc_ast *ast)
 {
     ell_util_set_add(st->globals, ast->def.id, (dict_comp_t) &ellc_id_cmp);
-    ellc_expl_ast(st, ast->def.val);
+    ellc_conv_ast(st, ast->def.val);
 }
 
 static void
-ellc_expl_set(struct ellc_st *st, struct ellc_ast *ast)
+ellc_conv_set(struct ellc_st *st, struct ellc_ast *ast)
 {
-    ellc_expl_ast(st, ast->set.val);
+    ellc_conv_ast(st, ast->set.val);
     struct ellc_param *p;
     struct ellc_contour *c = ellc_contour_lookup(st->bottom_contour, ast->set.id, &p);
     if (!c) {
@@ -509,92 +509,92 @@ ellc_expl_set(struct ellc_st *st, struct ellc_ast *ast)
 }
 
 static void
-ellc_expl_cond(struct ellc_st *st, struct ellc_ast *ast)
+ellc_conv_cond(struct ellc_st *st, struct ellc_ast *ast)
 {
-    ellc_expl_ast(st, ast->cond.test);
-    ellc_expl_ast(st, ast->cond.consequent);
-    ellc_expl_ast(st, ast->cond.alternative);
+    ellc_conv_ast(st, ast->cond.test);
+    ellc_conv_ast(st, ast->cond.consequent);
+    ellc_conv_ast(st, ast->cond.alternative);
 }
 
 static void
-ellc_expl_seq(struct ellc_st *st, struct ellc_ast *ast)
+ellc_conv_seq(struct ellc_st *st, struct ellc_ast *ast)
 {
     for (lnode_t *n = list_first(ast->seq.exprs); n; n = list_next(ast->seq.exprs, n))
-        ellc_expl_ast(st, (struct ellc_ast *) lnode_get(n));
+        ellc_conv_ast(st, (struct ellc_ast *) lnode_get(n));
 }
 
 static void
-ellc_expl_args(struct ellc_st *st, struct ellc_args *args)
+ellc_conv_args(struct ellc_st *st, struct ellc_args *args)
 {
     for (lnode_t *n = list_first(&args->pos); n; n = list_next(&args->pos, n))
-        ellc_expl_ast(st, (struct ellc_ast *) lnode_get(n));
+        ellc_conv_ast(st, (struct ellc_ast *) lnode_get(n));
     for (dnode_t *n = dict_first(&args->key); n; n = dict_next(&args->key, n))
-        ellc_expl_ast(st, (struct ellc_ast *) dnode_get(n));
+        ellc_conv_ast(st, (struct ellc_ast *) dnode_get(n));
 }
 
 static void
-ellc_expl_app(struct ellc_st *st, struct ellc_ast *ast)
+ellc_conv_app(struct ellc_st *st, struct ellc_ast *ast)
 {
-    ellc_expl_ast(st, ast->app.op);
-    ellc_expl_args(st, ast->app.args);
+    ellc_conv_ast(st, ast->app.op);
+    ellc_conv_args(st, ast->app.args);
 }
 
 static void
-ellc_expl_params_list_inits(struct ellc_st *st, list_t *params)
+ellc_conv_params_list_inits(struct ellc_st *st, list_t *params)
 {
     for (lnode_t *n = list_first(params); n; n = list_next(params, n)) {
         struct ellc_param *p = (struct ellc_param *) lnode_get(n);
         if (p->init)
-            ellc_expl_ast(st, p->init);
+            ellc_conv_ast(st, p->init);
     }
 }
 
 static void
-ellc_expl_param_inits(struct ellc_st *st, struct ellc_params *params)
+ellc_conv_param_inits(struct ellc_st *st, struct ellc_params *params)
 {
-    ellc_expl_params_list_inits(st, params->opt);
-    ellc_expl_params_list_inits(st, params->key);
+    ellc_conv_params_list_inits(st, params->opt);
+    ellc_conv_params_list_inits(st, params->key);
 }
 
 static void
-ellc_expl_lam(struct ellc_st *st, struct ellc_ast *ast)
+ellc_conv_lam(struct ellc_st *st, struct ellc_ast *ast)
 {
     struct ellc_contour *c = (struct ellc_contour *) ell_alloc(sizeof(*c));
     c->lam = &ast->lam;
     c->up = st->bottom_contour;
     st->bottom_contour = c;
-    ellc_expl_param_inits(st, ast->lam.params);
-    ellc_expl_ast(st, ast->lam.body);
+    ellc_conv_param_inits(st, ast->lam.params);
+    ellc_conv_ast(st, ast->lam.body);
     st->bottom_contour = c->up;
     for (dnode_t *n = dict_first(ast->lam.env); n; n = dict_next(ast->lam.env, n))
-        ellc_expl_ast(st, (struct ellc_ast *) dnode_get(n));
+        ellc_conv_ast(st, (struct ellc_ast *) dnode_get(n));
     ast->lam.code_id = list_count(st->lambdas);
     ell_util_list_add(st->lambdas, &ast->lam);
 }
 
 static void
-ellc_expl_ast(struct ellc_st *st, struct ellc_ast *ast)
+ellc_conv_ast(struct ellc_st *st, struct ellc_ast *ast)
 {
     switch(ast->type) {
-    case ELLC_AST_REF: ellc_expl_ref(st, ast); break;
-    case ELLC_AST_DEF: ellc_expl_def(st, ast); break;
-    case ELLC_AST_SET: ellc_expl_set(st, ast); break;
-    case ELLC_AST_COND: ellc_expl_cond(st, ast); break;
-    case ELLC_AST_SEQ: ellc_expl_seq(st, ast); break;
-    case ELLC_AST_APP: ellc_expl_app(st, ast); break;
-    case ELLC_AST_LAM: ellc_expl_lam(st, ast); break;
+    case ELLC_AST_REF: ellc_conv_ref(st, ast); break;
+    case ELLC_AST_DEF: ellc_conv_def(st, ast); break;
+    case ELLC_AST_SET: ellc_conv_set(st, ast); break;
+    case ELLC_AST_COND: ellc_conv_cond(st, ast); break;
+    case ELLC_AST_SEQ: ellc_conv_seq(st, ast); break;
+    case ELLC_AST_APP: ellc_conv_app(st, ast); break;
+    case ELLC_AST_LAM: ellc_conv_lam(st, ast); break;
     case ELLC_AST_LIT_STR: break;
     default:
-        printf("explication error: %d\n", ast->type);
+        printf("convication error: %d\n", ast->type);
         exit(EXIT_FAILURE);
     }
 }
 
 static void
-ellc_expl(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
+ellc_conv(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
 {
     for (lnode_t *n = list_first(ast_seq->exprs); n; n = list_next(ast_seq->exprs, n))
-        ellc_expl_ast(st, (struct ellc_ast *) lnode_get(n));
+        ellc_conv_ast(st, (struct ellc_ast *) lnode_get(n));
 }
 
 /**** Emission ****/
@@ -988,7 +988,7 @@ ellc_eval(struct ell_obj *stx_lst)
     
     struct ellc_st *st = ellc_make_st(f);
     struct ellc_ast_seq *ast_seq = ellc_wrap_for_eval(ellc_norm(stx_lst));
-    ellc_expl(st, ast_seq);
+    ellc_conv(st, ast_seq);
     ellc_emit(st, ast_seq);
     
     if (fclose(f) != 0) {
