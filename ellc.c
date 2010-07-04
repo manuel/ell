@@ -922,7 +922,7 @@ ellc_emit(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
     fprintf(st->f, "// INIT\n");
     fprintf(st->f, "__attribute__((constructor)) static void ell_init() {\n");
     for (lnode_t *n = list_first(ast_seq->exprs); n; n = list_next(ast_seq->exprs, n)) {
-        fprintf(st->f, "\t");
+        fprintf(st->f, "\tell_result = ");
         ellc_emit_ast(st, (struct ellc_ast *) lnode_get(n));
         fprintf(st->f, ";\n");
     }
@@ -940,28 +940,6 @@ ellc_make_st(FILE *f)
     st->lambdas = ell_util_make_list();
     return st;
 }
-
-static struct ellc_ast_seq *
-ellc_wrap_for_eval(struct ellc_ast_seq *ast_seq)
-{
-    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_SEQ);
-    ast->seq.exprs = ast_seq->exprs;
-
-    struct ellc_ast *lam = ellc_make_ast(ELLC_AST_LAM);
-    lam->lam.params = ellc_dissect_params(ell_util_make_list());
-    lam->lam.body = ast;
-    lam->lam.env = ell_util_make_dict((dict_comp_t) &ellc_id_cmp);
-    
-    struct ellc_ast *fdef = ellc_make_ast(ELLC_AST_DEF);
-    fdef->def.id = ellc_make_id(ell_intern(ell_make_str("ellc_repl_fun")), ELLC_NS_FUN);
-    fdef->def.val = lam;
-
-    struct ellc_ast_seq *res = ellc_make_ast_seq();
-    ellc_ast_seq_add(res, fdef);
-    return res;
-}
-
-__attribute__((weak)) struct ell_obj *ellc_repl_fun;
 
 struct ell_obj *
 ellc_eval(struct ell_obj *stx_lst)
@@ -987,7 +965,7 @@ ellc_eval(struct ell_obj *stx_lst)
     }
     
     struct ellc_st *st = ellc_make_st(f);
-    struct ellc_ast_seq *ast_seq = ellc_wrap_for_eval(ellc_norm(stx_lst));
+    struct ellc_ast_seq *ast_seq = ellc_norm(stx_lst);
     ellc_conv(st, ast_seq);
     ellc_emit(st, ast_seq);
     
@@ -1004,13 +982,15 @@ ellc_eval(struct ell_obj *stx_lst)
         exit(EXIT_FAILURE);
     }
 
+    ell_result = NULL;
+
     if (!dlopen(onam, RTLD_NOW | RTLD_GLOBAL)) {
         printf("load error: %s\n", dlerror());
         exit(EXIT_FAILURE);
     }
     
-    if (ellc_repl_fun) {
-        return ell_call(ellc_repl_fun, 0, 0, NULL);
+    if (ell_result) {
+        return ell_result;
     } else {
         printf("unknown error\n");
         exit(EXIT_FAILURE);

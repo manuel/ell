@@ -205,6 +205,8 @@ ell_util_set_add(list_t *set, void *elt, dict_comp_t compare);
 
 /**** Utilities for Generated Code ****/
 
+__attribute__((weak)) struct ell_obj *ell_result;
+
 void
 ell_arity_error();
 struct ell_obj *
