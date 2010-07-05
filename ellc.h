@@ -52,6 +52,10 @@ struct ellc_ast_lit_str {
     struct ell_obj *str;
 };
 
+struct ellc_ast_lit_stx {
+    struct ell_obj *stx;
+};
+
 // Explicit Form
 
 struct ellc_ast_glo_ref {
@@ -100,6 +104,7 @@ enum ellc_ast_type {
     ELLC_AST_ENV_SET = 106,
 
     ELLC_AST_LIT_STR = 201,
+    ELLC_AST_LIT_STX = 202,
 };
 
 struct ellc_ast {
@@ -121,6 +126,7 @@ struct ellc_ast {
         struct ellc_ast_env_set env_set;
 
         struct ellc_ast_lit_str lit_str;
+        struct ellc_ast_lit_stx lit_stx;
     };
 };
 

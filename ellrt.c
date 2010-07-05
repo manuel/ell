@@ -300,6 +300,12 @@ ell_stx_lst_elts(struct ell_obj *stx_lst)
     return &((struct ell_stx_lst_data *) stx_lst->data)->elts;
 }
 
+listcount_t
+ell_stx_lst_len(struct ell_obj *stx_lst)
+{
+    return list_count(ell_stx_lst_elts(stx_lst));
+}
+
 void
 ell_assert_stx_lst_len(struct ell_obj *stx_lst, listcount_t len)
 {
@@ -361,6 +367,12 @@ ELL_END
 ELL_DEFMETHOD(stx_sym, print_object, 1)
 ELL_PARAM(stx_sym, 0)
 printf("%s", ell_str_chars(ell_sym_name(ell_stx_sym_sym(stx_sym))));
+return NULL;
+ELL_END
+
+ELL_DEFMETHOD(stx_str, print_object, 1)
+ELL_PARAM(stx_str, 0)
+printf("%s", ell_str_chars(ell_stx_str_str(stx_str)));
 return NULL;
 ELL_END
 
@@ -525,6 +537,36 @@ ell_util_set_add(list_t *set, void *elt, dict_comp_t compare)
     ell_util_list_add(set, elt);
 }
 
+struct ell_obj *ell_syntax_list;
+
+struct ell_obj *
+ell_syntax_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    struct ell_obj *res = ell_make_stx_lst();
+    for (int i = 0; i < npos; i++) {
+        ELL_SEND(res, add, args[i]);
+    }
+    return res;
+}
+
+struct ell_obj *ell_append_syntax_lists;
+
+struct ell_obj *
+ell_append_syntax_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    struct ell_obj *res = ell_make_stx_lst();
+    for (int i = 0; i < npos; i++) {
+        struct ell_obj *lst = args[i];
+        ell_assert_brand(lst, ELL_BRAND(stx_lst));
+        list_t *elts = ell_stx_lst_elts(lst);
+        for (lnode_t *n = list_first(elts); n; n = list_next(elts, n)) {
+            struct ell_obj *elt = (struct ell_obj *) lnode_get(n);
+            ELL_SEND(res, add, elt);
+        }
+    }
+    return res;
+}
+
 /**** Initialization ****/
 
 __attribute__((constructor(200))) static void
@@ -540,4 +582,7 @@ ell_init()
     if (!ELL_SYM(name)) ELL_SYM(name) = ell_intern(ell_make_str(lisp_name));
 #include "syms.h"
 #undef ELL_DEFSYM
+
+    ell_syntax_list = ell_make_clo(&ell_syntax_list_code, NULL);
+    ell_append_syntax_lists = ell_make_clo(&ell_append_syntax_list_code, NULL);
 }

@@ -323,6 +323,181 @@ ellc_norm_lam(struct ell_obj *stx_lst)
     return ast;
 }
 
+/* (Quasisyntax) */
+
+/* Unfortunately, this code is very hard to understand.  If you want
+   to make sense of it, first understand Alan Bawden's implementation
+   in appendix B of his paper "Quasiquotation in Lisp".  Ha. */
+
+static struct ellc_ast *
+ellc_norm_qs(struct ell_obj *arg_stx, unsigned depth);
+
+static struct ellc_ast *
+ellc_build_syntax(struct ell_obj *stx)
+{
+    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_LIT_STX);
+    if (!((stx->brand == ELL_BRAND(stx_sym))
+          || (stx->brand == ELL_BRAND(stx_str)))) {
+        printf("can't build syntax AST from non-syntax object\n");
+        exit(EXIT_FAILURE);
+    }
+    ast->lit_stx.stx = stx;
+    return ast;
+}
+
+static struct ellc_ast *
+ellc_build_syntax_list(list_t *asts)
+{
+    struct ellc_args *args = ellc_make_args();
+    list_transfer(&args->pos, asts, list_first(asts));
+    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_APP);
+    ast->app.op = ellc_make_ref(ell_make_stx_sym(ELL_SYM(core_syntax_list)), ELLC_NS_FUN);
+    ast->app.args = args;
+    return ast;
+}
+
+static struct ellc_ast *
+ellc_build_append_syntax_lists(list_t *asts)
+{
+    struct ellc_args *args = ellc_make_args();
+    list_transfer(&args->pos, asts, list_first(asts));
+    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_APP);
+    ast->app.op = ellc_make_ref(ell_make_stx_sym(ELL_SYM(core_append_syntax_lists)), ELLC_NS_FUN);
+    ast->app.args = args;
+    return ast;
+}
+
+static struct ellc_ast *
+ellc_build_quasisyntax(struct ell_obj *stx, unsigned depth)
+{
+    list_t *asts = ell_util_make_list();
+    ell_util_list_add(asts, ellc_build_syntax(ell_make_stx_sym(ELL_SYM(core_quasisyntax))));
+    ell_util_list_add(asts, ellc_norm_qs(stx, depth));
+    return ellc_build_syntax_list(asts);
+}
+
+static struct ellc_ast *
+ellc_build_unsyntax(struct ell_obj *stx, unsigned depth)
+{
+    list_t *asts = ell_util_make_list();
+    ell_util_list_add(asts, ellc_build_syntax(ell_make_stx_sym(ELL_SYM(core_unsyntax))));
+    ell_util_list_add(asts, ellc_norm_qs(stx, depth));
+    return ellc_build_syntax_list(asts);    
+}
+
+static struct ellc_ast *
+ellc_build_unsyntax_splicing(struct ell_obj *stx, unsigned depth)
+{
+    list_t *asts = ell_util_make_list();
+    ell_util_list_add(asts, ellc_build_syntax(ell_make_stx_sym(ELL_SYM(core_unsyntax_splicing))));
+    ell_util_list_add(asts, ellc_norm_qs(stx, depth));
+    return ellc_build_syntax_list(asts);    
+}
+
+static bool
+ellc_is_unsyntax_splicing_list(struct ell_obj *stx)
+{
+    if (stx->brand != ELL_BRAND(stx_lst)) return 0;
+    if (ell_stx_lst_len(stx) != 2) return 0;
+    struct ell_obj *op_stx = ELL_SEND(stx, first);
+    return ((op_stx->brand == ELL_BRAND(stx_sym))
+            && (ell_stx_sym_sym(op_stx) == ELL_SYM(core_unsyntax_splicing)));
+}
+
+static bool
+ellc_is_unsyntax(struct ell_obj *op_stx)
+{
+    return ((op_stx->brand == ELL_BRAND(stx_sym))
+            && (ell_stx_sym_sym(op_stx) == ELL_SYM(core_unsyntax)));
+}
+
+static bool
+ellc_is_quasisyntax(struct ell_obj *op_stx)
+{
+    return ((op_stx->brand == ELL_BRAND(stx_sym))
+            && (ell_stx_sym_sym(op_stx) == ELL_SYM(core_quasisyntax)));
+}
+
+static struct ellc_ast *
+ellc_norm_qs_lst_helper(struct ell_obj *stx_lst, unsigned depth)
+{
+    list_t *in_elts = ell_stx_lst_elts(stx_lst);
+    list_t *lsts = ell_util_make_list();
+    list_t *cur_elts = ell_util_make_list();
+    
+    for (lnode_t *n = list_first(in_elts); n; n = list_next(in_elts, n)) {
+        struct ell_obj *sub = (struct ell_obj *) lnode_get(n);
+        if (ellc_is_unsyntax_splicing_list(sub)) {
+            if (list_count(cur_elts) > 0) {
+                ell_util_list_add(lsts, ellc_build_syntax_list(cur_elts));
+                cur_elts = ell_util_make_list();
+            }
+            if (depth == 0) {
+                ell_util_list_add(lsts, ellc_norm_stx(ELL_SEND(sub, second)));
+            } else {
+                ell_util_list_add(lsts, ellc_build_unsyntax_splicing(ELL_SEND(sub, second), depth - 1));
+            }
+        } else {
+            ell_util_list_add(cur_elts, ellc_norm_qs(sub, depth));
+        }
+    }
+    if (list_count(cur_elts) > 0)
+        ell_util_list_add(lsts, ellc_build_syntax_list(cur_elts));
+    return ellc_build_append_syntax_lists(lsts);
+}
+
+static struct ellc_ast *
+ellc_norm_qs_lst(struct ell_obj *stx_lst, unsigned depth)
+{
+    if (ell_stx_lst_len(stx_lst) == 0) {
+        return ellc_build_syntax_list(ell_stx_lst_elts(stx_lst));
+    } else {
+        struct ell_obj *op_stx = ELL_SEND(stx_lst, first);
+        if (ellc_is_unsyntax(op_stx)) {
+            ell_assert_stx_lst_len(stx_lst, 2);
+            struct ell_obj *arg_stx = ELL_SEND(stx_lst, second);
+            if (depth == 0) {
+                return ellc_norm_stx(arg_stx);
+            } else {
+                return ellc_build_unsyntax(arg_stx, depth - 1);
+            }
+        } else if (ellc_is_quasisyntax(op_stx)) {
+            ell_assert_stx_lst_len(stx_lst, 2);
+            struct ell_obj *arg_stx = ELL_SEND(stx_lst, second);
+            return ellc_build_quasisyntax(arg_stx, depth + 1);
+        } else {
+            return ellc_norm_qs_lst_helper(stx_lst, depth);
+        }
+    }
+}
+
+static struct ellc_ast *
+ellc_norm_qs(struct ell_obj *arg_stx, unsigned depth)
+{
+    if (depth < 0) {
+        printf("negative quasiquotation depth\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if ((arg_stx->brand == ELL_BRAND(stx_str)) ||
+        (arg_stx->brand == ELL_BRAND(stx_sym))) {
+        return ellc_build_syntax(arg_stx);
+    } else if (arg_stx->brand == ELL_BRAND(stx_lst)) {
+        return ellc_norm_qs_lst(arg_stx, depth);
+    } else {
+        printf("bad quasiquoted syntax object\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+static struct ellc_ast *
+ellc_norm_quasisyntax(struct ell_obj *stx_lst)
+{
+    ell_assert_stx_lst_len(stx_lst, 2);
+    struct ell_obj *arg_stx = ELL_SEND(stx_lst, second);
+    return ellc_norm_qs(arg_stx, 0);
+}
+
 /* (Putting it All Together) */
 
 static struct dict_t ellc_norm_tab;
@@ -340,6 +515,7 @@ ellc_init()
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_seq), &ellc_norm_seq);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_app), &ellc_norm_app);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_lam), &ellc_norm_lam);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_quasisyntax), &ellc_norm_quasisyntax);
 }
 
 static struct ellc_ast *
@@ -584,8 +760,9 @@ ellc_conv_ast(struct ellc_st *st, struct ellc_ast *ast)
     case ELLC_AST_APP: ellc_conv_app(st, ast); break;
     case ELLC_AST_LAM: ellc_conv_lam(st, ast); break;
     case ELLC_AST_LIT_STR: break;
+    case ELLC_AST_LIT_STX: break;
     default:
-        printf("convication error: %d\n", ast->type);
+        printf("conversion error: %d\n", ast->type);
         exit(EXIT_FAILURE);
     }
 }
@@ -793,6 +970,22 @@ ellc_emit_lit_str(struct ellc_st *st, struct ellc_ast *ast)
 }
 
 static void
+ellc_emit_lit_stx(struct ellc_st *st, struct ellc_ast *ast)
+{
+    struct ell_obj *stx = ast->lit_stx.stx;
+    if (stx->brand == ELL_BRAND(stx_sym)) {
+        fprintf(st->f, "ell_make_stx_sym(ell_intern(ell_make_str(\"%s\")))", 
+                ell_str_chars(ell_sym_name(ell_stx_sym_sym(stx))));
+    } else if (stx->brand == ELL_BRAND(stx_str)) {
+        fprintf(st->f, "ell_make_stx_str(ell_make_str(\"%s\"))", 
+                ell_str_chars(ell_stx_str_str(stx)));
+    } else {
+        printf("literal syntax error\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+static void
 ellc_emit_ast(struct ellc_st *st, struct ellc_ast *ast)
 {
     switch(ast->type) {
@@ -808,6 +1001,7 @@ ellc_emit_ast(struct ellc_st *st, struct ellc_ast *ast)
     case ELLC_AST_APP: ellc_emit_app(st, ast); break;
     case ELLC_AST_LAM: ellc_emit_lam(st, ast); break;
     case ELLC_AST_LIT_STR: ellc_emit_lit_str(st, ast); break;
+    case ELLC_AST_LIT_STX: ellc_emit_lit_stx(st, ast); break;
     default:
         printf("emission error\n");
         exit(EXIT_FAILURE);

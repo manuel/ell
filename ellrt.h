@@ -179,6 +179,8 @@ struct ell_obj *
 ell_stx_str_str(struct ell_obj *stx_str);
 list_t *
 ell_stx_lst_elts(struct ell_obj *stx_lst);
+listcount_t
+ell_stx_lst_len(struct ell_obj *stx_lst);
 void
 ell_assert_stx_lst_len(struct ell_obj *stx_lst, listcount_t len);
 void

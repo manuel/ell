@@ -16,9 +16,9 @@ unit       = exprs eof
 exprs      = spc? (expr spc?)+
 expr       = str | sym | lst
 
-str        = "\"" < [^"]* > "\""    { ell_parser_add_str(yytext); }
+str        = "\"" < [^"]* > "\""   { ell_parser_add_str(yytext); }
 
-sym-char   = [a-zA-Z0-9&:] | "-"
+sym-char   = [a-zA-Z0-9&:_] | "-"
 sym        = < sym-char+ >         { ell_parser_add_sym(yytext); }
 
 lst        = OPEN exprs CLOSE
