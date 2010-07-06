@@ -156,9 +156,13 @@ ell_sym_cmp(struct ell_obj *sym_a, struct ell_obj *sym_b);
 struct ell_obj *
 ell_parse();
 
+struct ell_cx {
+    uuid_t cx;
+};
+
 struct ell_stx_sym_data {
     struct ell_obj *sym;
-    uuid_t cx;
+    struct ell_cx *cx; // maybe NULL
 };
 
 struct ell_stx_str_data {
@@ -172,13 +176,15 @@ struct ell_stx_lst_data {
 struct ell_obj *
 ell_make_stx_sym(struct ell_obj *sym);
 struct ell_obj *
-ell_make_stx_sym_cx(struct ell_obj *sym, uuid_t cx);
+ell_make_stx_sym_cx(struct ell_obj *sym, struct ell_cx *cx);
 struct ell_obj *
 ell_make_stx_str(struct ell_obj *str);
 struct ell_obj *
 ell_make_stx_lst();
 struct ell_obj *
 ell_stx_sym_sym(struct ell_obj *stx_sym);
+struct ell_cx *
+ell_stx_sym_cx(struct ell_obj *stx_sym);
 struct ell_obj *
 ell_stx_str_str(struct ell_obj *stx_str);
 list_t *

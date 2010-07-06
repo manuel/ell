@@ -135,6 +135,7 @@ enum ellc_ns { ELLC_NS_VAR, ELLC_NS_FUN };
 struct ellc_id {
     struct ell_obj *sym;
     enum ellc_ns ns;
+    struct ell_cx *cx;
 };
 
 struct ellc_params {
@@ -157,12 +158,18 @@ struct ellc_args {
     dict_t key; // sym -> ast
 };
 
-// Compiler State
-
 struct ellc_contour {
     struct ellc_ast_lam *lam;
     struct ellc_contour *up; // maybe NULL
 };
+
+// Compiler State during Normalization
+
+struct ellc_norm_st {
+    struct ellc_contour *bottom_contour;
+};
+
+// Compiler State during Closure Conversion & Emission
 
 struct ellc_st {
     FILE *f;

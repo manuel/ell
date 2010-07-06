@@ -1,5 +1,7 @@
 -*-org-*-
 * Language Issues
+** Code created by quasisyntax doesn't use current hygiene context
+Not really a problem, but still incorrect.
 ** Ensure that definitions appear only at the top level
 ** Ensure that function parameters names' are unique
 ** Ensure that only optional and keyword parameters have init forms

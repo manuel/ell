@@ -254,21 +254,19 @@ ell_sym_cmp(struct ell_obj *sym_a, struct ell_obj *sym_b)
 /**** Syntax Objects ****/
 
 struct ell_obj *
-ell_make_stx_sym_cx(struct ell_obj *sym, uuid_t cx)
+ell_make_stx_sym_cx(struct ell_obj *sym, struct ell_cx *cx)
 {
     ell_assert_brand(sym, ELL_BRAND(sym));
     struct ell_stx_sym_data *data = (struct ell_stx_sym_data *) ell_alloc(sizeof(*data));
     data->sym = sym;
-    uuid_copy(data->cx, cx);
+    data->cx = cx;
     return ell_make_obj(ELL_BRAND(stx_sym), data);    
 }
 
 struct ell_obj *
 ell_make_stx_sym(struct ell_obj *sym)
 {
-    uuid_t null_cx;
-    uuid_clear(null_cx);
-    return ell_make_stx_sym_cx(sym, null_cx);
+    return ell_make_stx_sym_cx(sym, NULL);
 }
 
 struct ell_obj *
@@ -293,6 +291,13 @@ ell_stx_sym_sym(struct ell_obj *stx_sym)
 {
     ell_assert_brand(stx_sym, ELL_BRAND(stx_sym));
     return ((struct ell_stx_sym_data *) stx_sym->data)->sym;
+}
+
+struct ell_cx *
+ell_stx_sym_cx(struct ell_obj *stx_sym)
+{
+    ell_assert_brand(stx_sym, ELL_BRAND(stx_sym));
+    return ((struct ell_stx_sym_data *) stx_sym->data)->cx;    
 }
 
 struct ell_obj *
