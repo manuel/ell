@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <uuid/uuid.h>
 
 #include "dict.h"
 #include "list.h"
@@ -157,6 +158,7 @@ ell_parse();
 
 struct ell_stx_sym_data {
     struct ell_obj *sym;
+    uuid_t cx;
 };
 
 struct ell_stx_str_data {
@@ -169,6 +171,8 @@ struct ell_stx_lst_data {
 
 struct ell_obj *
 ell_make_stx_sym(struct ell_obj *sym);
+struct ell_obj *
+ell_make_stx_sym_cx(struct ell_obj *sym, uuid_t cx);
 struct ell_obj *
 ell_make_stx_str(struct ell_obj *str);
 struct ell_obj *
