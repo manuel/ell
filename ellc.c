@@ -590,11 +590,13 @@ ellc_norm_quasisyntax(struct ellc_norm_st *st, struct ell_obj *stx_lst)
 
 /* (Putting it All Together) */
 
-static struct dict_t ellc_norm_tab;
+static dict_t ellc_mac_tab; // sym -> clo
+static dict_t ellc_norm_tab; // sym -> norm_fun
 
 __attribute__((constructor(300))) static void
 ellc_init()
 {
+    dict_init(&ellc_mac_tab, DICTCOUNT_T_MAX, (dict_comp_t) &ell_sym_cmp);
     dict_init(&ellc_norm_tab, DICTCOUNT_T_MAX, (dict_comp_t) &ell_sym_cmp);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_fref), &ellc_norm_fref);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_def), &ellc_norm_def);
@@ -622,7 +624,7 @@ ellc_norm_stx_lst(struct ellc_norm_st *st, struct ell_obj *stx_lst)
         // operator is lexically fbound
         return ellc_norm_ordinary_app(st, stx_lst);
     } else {
-        dnode_t *exp_node = dict_lookup(st->expanders, op_sym);
+        dnode_t *exp_node = dict_lookup(&ellc_mac_tab, op_sym);
         if (exp_node) {
             // operator is a macro
             struct ell_obj *expander = (struct ell_obj *) dnode_get(exp_node);
@@ -696,7 +698,7 @@ ellc_norm_mdef(struct ellc_norm_st *st, struct ell_obj *mdef_stx)
     // wrap the expander expression in one.
     struct ell_obj *stx_lst = ell_make_stx_lst();
     ELL_SEND(stx_lst, add, expander_stx);
-    ell_util_dict_put(st->expanders, ell_stx_sym_sym(name_stx), ellc_eval(stx_lst));
+    ell_util_dict_put(&ellc_mac_tab, ell_stx_sym_sym(name_stx), ellc_eval(stx_lst));
 }
 
 static list_t *
@@ -720,7 +722,6 @@ ellc_norm(struct ell_obj *stx_lst)
     ell_assert_brand(stx_lst, ELL_BRAND(stx_lst));
     struct ellc_norm_st *st = (struct ellc_norm_st *) ell_alloc(sizeof(*st));
     st->bottom_contour = NULL;
-    st->expanders = ell_util_make_dict((dict_comp_t) &ell_sym_cmp);
 
     list_t *deferred = ell_util_make_list();
     ellc_norm_macro_pass(st, ell_stx_lst_elts(stx_lst), deferred);
