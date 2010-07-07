@@ -588,10 +588,46 @@ ellc_norm_quasisyntax(struct ellc_norm_st *st, struct ell_obj *stx_lst)
     return ellc_norm_qs(st, arg_stx, 0);
 }
 
-/* (Putting it All Together) */
+/* (Macroexpansion) */
 
-static dict_t ellc_mac_tab; // sym -> clo
-static dict_t ellc_norm_tab; // sym -> norm_fun
+static bool
+ellc_is_seq(struct ell_obj *stx)
+{
+    if (stx->brand != ELL_BRAND(stx_lst)) return 0;
+    if (list_count(ell_stx_lst_elts(stx)) < 2) return 0; // todo: handle better
+    struct ell_obj *op_stx = ELL_SEND(stx, first);
+    return ((op_stx->brand == ELL_BRAND(stx_sym))
+            && (ell_stx_sym_sym(op_stx) == ELL_SYM(core_seq)));
+}
+
+static bool
+ellc_is_mdef(struct ell_obj *stx)
+{
+    if (stx->brand != ELL_BRAND(stx_lst)) return 0;
+    if (list_count(ell_stx_lst_elts(stx)) != 3) return 0; // todo: handle better
+    struct ell_obj *op_stx = ELL_SEND(stx, first);
+    return ((op_stx->brand == ELL_BRAND(stx_sym))
+            && (ell_stx_sym_sym(op_stx) == ELL_SYM(core_mdef)));
+}
+
+static struct ell_obj *
+ellc_norm_mdef(struct ellc_norm_st *st, struct ell_obj *mdef_stx)
+{
+    ell_assert_stx_lst_len(mdef_stx, 3);
+    struct ell_obj *name_stx = ELL_SEND(mdef_stx, second);
+    ell_assert_brand(name_stx, ELL_BRAND(stx_sym));
+    struct ell_obj *expander_stx = ELL_SEND(mdef_stx, third);
+    // Right now, eval requires a syntax list as input, so we need to
+    // wrap the expander expression in one.
+    struct ell_obj *stx_lst = ell_make_stx_lst();
+    ELL_SEND(stx_lst, add, expander_stx);
+    ell_util_dict_put(&ellc_mac_tab, ell_stx_sym_sym(name_stx), ellc_eval(stx_lst));
+    // Note that a macro definition is the only expression that has no
+    // runtime effect.  This case is handled specially by `ellc_norm'.
+    return NULL;
+}
+
+/* (Putting it All Together) */
 
 __attribute__((constructor(300))) static void
 ellc_init()
@@ -608,6 +644,7 @@ ellc_init()
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_app), &ellc_norm_app);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_lam), &ellc_norm_lam);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_quasisyntax), &ellc_norm_quasisyntax);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_mdef), &ellc_norm_mdef);
 }
 
 static struct ellc_ast *
@@ -667,40 +704,6 @@ ellc_norm_stx(struct ellc_norm_st *st, struct ell_obj *stx)
     }
 }
 
-static bool
-ellc_is_seq(struct ell_obj *stx)
-{
-    if (stx->brand != ELL_BRAND(stx_lst)) return 0;
-    if (list_count(ell_stx_lst_elts(stx)) < 2) return 0; // todo: handle better
-    struct ell_obj *op_stx = ELL_SEND(stx, first);
-    return ((op_stx->brand == ELL_BRAND(stx_sym))
-            && (ell_stx_sym_sym(op_stx) == ELL_SYM(core_seq)));
-}
-
-static bool
-ellc_is_mdef(struct ell_obj *stx)
-{
-    if (stx->brand != ELL_BRAND(stx_lst)) return 0;
-    if (list_count(ell_stx_lst_elts(stx)) != 3) return 0; // todo: handle better
-    struct ell_obj *op_stx = ELL_SEND(stx, first);
-    return ((op_stx->brand == ELL_BRAND(stx_sym))
-            && (ell_stx_sym_sym(op_stx) == ELL_SYM(core_mdef)));
-}
-
-static void
-ellc_norm_mdef(struct ellc_norm_st *st, struct ell_obj *mdef_stx)
-{
-    ell_assert_stx_lst_len(mdef_stx, 3);
-    struct ell_obj *name_stx = ELL_SEND(mdef_stx, second);
-    ell_assert_brand(name_stx, ELL_BRAND(stx_sym));
-    struct ell_obj *expander_stx = ELL_SEND(mdef_stx, third);
-    // Right now, eval requires a syntax list as input, so we need to
-    // wrap the expander expression in one.
-    struct ell_obj *stx_lst = ell_make_stx_lst();
-    ELL_SEND(stx_lst, add, expander_stx);
-    ell_util_dict_put(&ellc_mac_tab, ell_stx_sym_sym(name_stx), ellc_eval(stx_lst));
-}
-
 static list_t *
 ellc_norm_macro_pass(struct ellc_norm_st *st, list_t *stx_elts, list_t *deferred)
 {
@@ -729,7 +732,9 @@ ellc_norm(struct ell_obj *stx_lst)
     struct ellc_ast_seq *ast_seq = ellc_make_ast_seq();
     for (lnode_t *n = list_first(deferred); n; n = list_next(deferred, n)) {
         struct ell_obj *stx = (struct ell_obj *) lnode_get(n);
-        ellc_ast_seq_add(ast_seq, ellc_norm_stx(st, stx));
+        struct ellc_ast *res = ellc_norm_stx(st, stx);
+        if (res)
+            ellc_ast_seq_add(ast_seq, res);
     }
     return ast_seq;
 }

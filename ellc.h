@@ -165,6 +165,9 @@ struct ellc_contour {
 
 // Compiler State during Normalization
 
+static dict_t ellc_mac_tab; // sym -> clo
+static dict_t ellc_norm_tab; // sym -> norm_fun
+
 struct ellc_norm_st {
     struct ellc_contour *bottom_contour;
 };
