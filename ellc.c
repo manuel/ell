@@ -1,5 +1,17 @@
 /***** Executable and Linkable Lisp Compiler *****/
 
+//////////////////////////////////////////////////////////////////
+//                                                              //
+//   _|                  _|      _|_|  _|        _|    _|       //
+//   _|_|_|      _|_|_|  _|    _|      _|_|_|        _|_|_|_|   //
+//   _|    _|  _|    _|  _|  _|_|_|_|  _|    _|  _|    _|       //
+//   _|    _|  _|    _|  _|    _|      _|    _|  _|    _|       //
+//   _|    _|    _|_|_|  _|    _|      _|_|_|    _|      _|_|   //
+//                                                              //
+//   VERSION 0.1 ``WITNESS THE FITNESS''                 2010   //
+//                                                              //
+//////////////////////////////////////////////////////////////////
+
 #include <stdio.h>
 #include <dlfcn.h>
 
@@ -27,14 +39,23 @@ ellc_make_id(struct ell_obj *sym, enum ellc_ns ns)
 static bool
 ellc_id_equal(struct ellc_id *a, struct ellc_id *b)
 {
-    return (a->sym == b->sym) && (a->ns == b->ns);
+    return (a->sym == b->sym) && (a->ns == b->ns) && (ell_cx_equal(a->cx, b->cx));
 }
 
 static int
 ellc_id_cmp(struct ellc_id *a, struct ellc_id *b)
 {
     int sym_cmp = ell_sym_cmp(a->sym, b->sym);
-    return (sym_cmp != 0) ? sym_cmp : (a->ns - b->ns);
+    if (sym_cmp != 0) {
+        return sym_cmp;
+    } else {
+        int ns_cmp = a->ns - b->ns;
+        if (ns_cmp != 0) {
+            return ns_cmp;
+        } else {
+            return ell_cx_cmp(a->cx, b->cx);
+        }
+    }
 }
 
 static struct ellc_ast_seq *
@@ -296,7 +317,7 @@ ellc_norm_ordinary_app(struct ellc_norm_st *st, struct ell_obj *stx_lst)
 /* (Abstraction and Parameters Dissection) */
 
 static struct ellc_param *
-ellc_dissect_param(struct ellc_norm_st *st, struct ell_obj *p_stx)
+ellc_dissect_param(struct ellc_norm_st *st, struct ell_obj *p_stx, dict_t *deferred_inits)
 {
     struct ellc_param *p = (struct ellc_param *) ell_alloc(sizeof(*p));
     if (p_stx->brand == ELL_BRAND(stx_sym)) {
@@ -308,7 +329,7 @@ ellc_dissect_param(struct ellc_norm_st *st, struct ell_obj *p_stx)
         struct ell_obj *init_stx = ELL_SEND(p_stx, second);
         p->id = ellc_make_id_cx(ell_stx_sym_sym(name_stx), ELLC_NS_VAR,
                                 ell_stx_sym_cx(name_stx));
-        p->init = ellc_norm_stx(st, init_stx);
+        ell_util_dict_put(deferred_inits, p, init_stx);
     }
     return p;
 }
@@ -324,6 +345,11 @@ ellc_dissect_params(struct ellc_norm_st *st, list_t *params_stx)
     list_t *key = ell_util_make_list();
     list_t *rest = ell_util_make_list();
     list_t *all_keys = ell_util_make_list();
+    
+    /* We have to defer normalization of parameter init forms until
+       after all parameters have been seen, and have been added to the
+       current lambda, so that local variable references work correctly. */
+    dict_t *deferred_inits = ell_util_make_dict((dict_comp_t) &ell_ptr_cmp); // param -> init_stx
 
     list_t *cur = req;
     for (lnode_t *n = list_first(params_stx); n; n = list_next(params_stx, n)) {
@@ -344,12 +370,18 @@ ellc_dissect_params(struct ellc_norm_st *st, list_t *params_stx)
                 continue;
             }
         }
-        ell_util_list_add(cur, ellc_dissect_param(st, p_stx));
+        ell_util_list_add(cur, ellc_dissect_param(st, p_stx, deferred_inits));
     }
 
     if ((list_count(rest) > 1) || (list_count(all_keys) > 1)) {
         printf("more than one rest or all-keys parameter\n");
         exit(EXIT_FAILURE);
+    }
+
+    for (dnode_t *dn = dict_first(deferred_inits); dn; dn = dict_next(deferred_inits, dn)) {
+        struct ellc_param *param = (struct ellc_param *) dnode_getkey(dn);
+        struct ell_obj *init_stx = (struct ell_obj *) dnode_get(dn);
+        param->init = ellc_norm_stx(st, init_stx);
     }
 
     params->req = req;
@@ -370,17 +402,18 @@ ellc_norm_lam(struct ellc_norm_st *st, struct ell_obj *stx_lst)
     struct ell_obj *params_stx = ELL_SEND(stx_lst, second);
     ell_assert_brand(params_stx, ELL_BRAND(stx_lst));
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_LAM);
+    struct ellc_contour *c = (struct ellc_contour *) ell_alloc(sizeof(*c));
+    c->lam = &ast->lam;
+    c->up = st->bottom_contour;
+    st->bottom_contour = c;
     ast->lam.params = ellc_dissect_params(st, ell_stx_lst_elts(params_stx));
     ast->lam.body = ellc_norm_stx(st, ELL_SEND(stx_lst, third));
-    ast->lam.env = ell_util_make_dict((dict_comp_t) &ellc_id_cmp);
+    ast->lam.env = ell_util_make_dict((dict_comp_t) &ellc_id_cmp); // unused during norm.
+    st->bottom_contour = c->up;
     return ast;
 }
 
 /* (Quasisyntax) */
-
-/* Unfortunately, this code is very hard to understand.  If you want
-   to make sense of it, first understand Alan Bawden's implementation
-   in appendix B of his paper "Quasiquotation in Lisp".  Ha. */
 
 static struct ellc_ast *
 ellc_norm_qs(struct ellc_norm_st *st, struct ell_obj *arg_stx, unsigned depth);
@@ -470,6 +503,10 @@ ellc_is_quasisyntax(struct ellc_norm_st *st, struct ell_obj *op_stx)
     return ((op_stx->brand == ELL_BRAND(stx_sym))
             && (ell_stx_sym_sym(op_stx) == ELL_SYM(core_quasisyntax)));
 }
+
+/* Unfortunately, this code is very hard to understand.  If you want
+   to make sense of it, first understand Alan Bawden's implementation
+   in appendix B of his paper "Quasiquotation in Lisp".  Ha. */
 
 static struct ellc_ast *
 ellc_norm_qs_lst_helper(struct ellc_norm_st *st, struct ell_obj *stx_lst, unsigned depth)
@@ -585,12 +622,22 @@ ellc_norm_stx_lst(struct ellc_norm_st *st, struct ell_obj *stx_lst)
         // operator is lexically fbound
         return ellc_norm_ordinary_app(st, stx_lst);
     } else {
-        dnode_t *node = dict_lookup(&ellc_norm_tab, op_sym);
-        if (node) {
-            ellc_norm_fun *norm_fun = (ellc_norm_fun *) dnode_get(node);
-            return norm_fun(st, stx_lst);
+        dnode_t *exp_node = dict_lookup(st->expanders, op_sym);
+        if (exp_node) {
+            // operator is a macro
+            struct ell_obj *expander = (struct ell_obj *) dnode_get(exp_node);
+            struct ell_obj *expansion_stx = ELL_CALL(expander, stx_lst);
+            return ellc_norm_stx(st, expansion_stx);
         } else {
-            return ellc_norm_ordinary_app(st, stx_lst);
+            dnode_t *norm_node = dict_lookup(&ellc_norm_tab, op_sym);
+            if (norm_node) {
+                // operator is a special form
+                ellc_norm_fun *norm_fun = (ellc_norm_fun *) dnode_get(norm_node);
+                return norm_fun(st, stx_lst);
+            } else {
+                // operator is assumed to be global function
+                return ellc_norm_ordinary_app(st, stx_lst);
+            }
         }
     }
 }
@@ -618,16 +665,68 @@ ellc_norm_stx(struct ellc_norm_st *st, struct ell_obj *stx)
     }
 }
 
+static bool
+ellc_is_seq(struct ell_obj *stx)
+{
+    if (stx->brand != ELL_BRAND(stx_lst)) return 0;
+    if (list_count(ell_stx_lst_elts(stx)) < 2) return 0; // todo: handle better
+    struct ell_obj *op_stx = ELL_SEND(stx, first);
+    return ((op_stx->brand == ELL_BRAND(stx_sym))
+            && (ell_stx_sym_sym(op_stx) == ELL_SYM(core_seq)));
+}
+
+static bool
+ellc_is_mdef(struct ell_obj *stx)
+{
+    if (stx->brand != ELL_BRAND(stx_lst)) return 0;
+    if (list_count(ell_stx_lst_elts(stx)) != 3) return 0; // todo: handle better
+    struct ell_obj *op_stx = ELL_SEND(stx, first);
+    return ((op_stx->brand == ELL_BRAND(stx_sym))
+            && (ell_stx_sym_sym(op_stx) == ELL_SYM(core_mdef)));
+}
+
+static void
+ellc_norm_mdef(struct ellc_norm_st *st, struct ell_obj *mdef_stx)
+{
+    ell_assert_stx_lst_len(mdef_stx, 3);
+    struct ell_obj *name_stx = ELL_SEND(mdef_stx, second);
+    ell_assert_brand(name_stx, ELL_BRAND(stx_sym));
+    struct ell_obj *expander_stx = ELL_SEND(mdef_stx, third);
+    // Right now, eval requires a syntax list as input, so we need to
+    // wrap the expander expression in one.
+    struct ell_obj *stx_lst = ell_make_stx_lst();
+    ELL_SEND(stx_lst, add, expander_stx);
+    ell_util_dict_put(st->expanders, ell_stx_sym_sym(name_stx), ellc_eval(stx_lst));
+}
+
+static list_t *
+ellc_norm_macro_pass(struct ellc_norm_st *st, list_t *stx_elts, list_t *deferred)
+{
+    for (lnode_t *n = list_first(stx_elts); n; n = list_next(stx_elts, n)) {
+        struct ell_obj *stx = (struct ell_obj *) lnode_get(n);
+        if (ellc_is_seq(stx)) {
+            ellc_norm_macro_pass(st, ell_util_sublist(ell_stx_lst_elts(stx), 1), deferred);
+        } else if (ellc_is_mdef(stx)) {
+            ellc_norm_mdef(st, stx);
+        } else {
+            ell_util_list_add(deferred, stx);
+        }
+    }
+}
+
 static struct ellc_ast_seq *
 ellc_norm(struct ell_obj *stx_lst)
 {
     ell_assert_brand(stx_lst, ELL_BRAND(stx_lst));
     struct ellc_norm_st *st = (struct ellc_norm_st *) ell_alloc(sizeof(*st));
     st->bottom_contour = NULL;
+    st->expanders = ell_util_make_dict((dict_comp_t) &ell_sym_cmp);
+
+    list_t *deferred = ell_util_make_list();
+    ellc_norm_macro_pass(st, ell_stx_lst_elts(stx_lst), deferred);
 
     struct ellc_ast_seq *ast_seq = ellc_make_ast_seq();
-    list_t *elts = ell_stx_lst_elts(stx_lst);
-    for (lnode_t *n = list_first(elts); n; n = list_next(elts, n)) {
+    for (lnode_t *n = list_first(deferred); n; n = list_next(deferred, n)) {
         struct ell_obj *stx = (struct ell_obj *) lnode_get(n);
         ellc_ast_seq_add(ast_seq, ellc_norm_stx(st, stx));
     }
@@ -1208,7 +1307,6 @@ ellc_eval(struct ell_obj *stx_lst)
     if (ell_result) {
         return ell_result;
     } else {
-        printf("unknown error\n");
-        exit(EXIT_FAILURE);
+        return ell_make_str("no result");
     }
 }

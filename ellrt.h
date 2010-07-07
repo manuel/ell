@@ -65,7 +65,7 @@ ell_check_npos(unsigned formal_npos, unsigned actual_npos);
     ({                                                                  \
         struct ell_obj *__ell_args[] = { __VA_ARGS__ };                 \
         unsigned npos = sizeof(__ell_args) / sizeof(struct ell_obj *);  \
-        return ell_call(clo, npos, 0, __ell_args);                      \
+        ell_call(clo, npos, 0, __ell_args);                      \
     })
 
 /**** Methods ****/
@@ -157,7 +157,7 @@ struct ell_obj *
 ell_parse();
 
 struct ell_cx {
-    uuid_t cx;
+    uuid_t uuid;
 };
 
 struct ell_stx_sym_data {
@@ -195,6 +195,12 @@ void
 ell_assert_stx_lst_len(struct ell_obj *stx_lst, listcount_t len);
 void
 ell_assert_stx_lst_len_min(struct ell_obj *stx_lst, listcount_t len);
+struct ell_cx *
+ell_make_cx();
+bool
+ell_cx_equal(struct ell_cx *cxa, struct ell_cx *cxb);
+int
+ell_cx_cmp(struct ell_cx *cxa, struct ell_cx *cxb);
 
 /**** Utilities ****/
 
@@ -214,6 +220,8 @@ void
 ell_util_dict_put(dict_t *dict, void *key, void *val);
 void
 ell_util_set_add(list_t *set, void *elt, dict_comp_t compare);
+int
+ell_ptr_cmp(void *a, void *b);
 
 /**** Utilities for Generated Code ****/
 

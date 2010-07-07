@@ -320,6 +320,38 @@ ell_stx_lst_len(struct ell_obj *stx_lst)
     return list_count(ell_stx_lst_elts(stx_lst));
 }
 
+struct ell_cx *
+ell_make_cx()
+{
+    struct ell_cx *cx = (struct ell_cx *) ell_alloc(sizeof(*cx));
+    uuid_generate(cx->uuid);
+    return cx;
+}
+
+bool
+ell_cx_equal(struct ell_cx *cxa, struct ell_cx *cxb)
+{
+    return (ell_cx_cmp(cxa, cxb) == 0);
+}
+
+int
+ell_cx_cmp(struct ell_cx *cxa, struct ell_cx *cxb)
+{
+    if (cxa == NULL) {
+        if (cxb == NULL) {
+            return 0;
+        } else {
+            return -1;
+        }
+    } else {
+        if (cxb == NULL) {
+            return 1;
+        } else {
+            return uuid_compare(cxa->uuid, cxb->uuid);
+        }
+    }
+}
+
 void
 ell_assert_stx_lst_len(struct ell_obj *stx_lst, listcount_t len)
 {
@@ -549,6 +581,12 @@ ell_util_set_add(list_t *set, void *elt, dict_comp_t compare)
         if (compare(elt, lnode_get(n)) == 0)
             return;
     ell_util_list_add(set, elt);
+}
+
+int
+ell_ptr_cmp(void *a, void *b)
+{
+    return a - b;
 }
 
 struct ell_obj *ell_syntax_list;

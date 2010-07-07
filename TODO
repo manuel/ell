@@ -2,6 +2,8 @@
 * Language Issues
 ** Code created by quasisyntax doesn't use current hygiene context
 Not really a problem, but still incorrect.
+** What's the deal with macro-writing macros wrt hygiene?
+IOW, are macro names symbols or (hygiene-contextual) identifiers?
 ** Ensure that definitions appear only at the top level
 ** Ensure that function parameters names' are unique
 ** Ensure that only optional and keyword parameters have init forms

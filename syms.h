@@ -14,6 +14,7 @@ ELL_DEFSYM(core_cond, "ell-cond")
 ELL_DEFSYM(core_seq,  "ell-seq")
 ELL_DEFSYM(core_lam,  "ell-lam")
 ELL_DEFSYM(core_app,  "ell-app")
+ELL_DEFSYM(core_mdef, "ell-mdef")
 
 ELL_DEFSYM(core_syntax, "ell_syntax")
 ELL_DEFSYM(core_quasisyntax, "ell_quasisyntax")

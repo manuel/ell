@@ -167,6 +167,7 @@ struct ellc_contour {
 
 struct ellc_norm_st {
     struct ellc_contour *bottom_contour;
+    dict_t *expanders; // sym -> clo
 };
 
 // Compiler State during Closure Conversion & Emission
