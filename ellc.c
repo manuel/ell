@@ -610,7 +610,7 @@ ellc_is_mdef(struct ell_obj *stx)
             && (ell_stx_sym_sym(op_stx) == ELL_SYM(core_mdef)));
 }
 
-static struct ell_obj *
+static struct ellc_ast *
 ellc_norm_mdef(struct ellc_norm_st *st, struct ell_obj *mdef_stx)
 {
     ell_assert_stx_lst_len(mdef_stx, 3);
