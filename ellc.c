@@ -335,7 +335,7 @@ ellc_dissect_param(struct ellc_norm_st *st, struct ell_obj *p_stx, dict_t *defer
 }
 
 static struct ellc_params *
-ellc_dissect_params(struct ellc_norm_st *st, list_t *params_stx)
+ellc_dissect_params(struct ellc_norm_st *st, list_t *params_stx, dict_t *deferred_inits)
 {
     struct ellc_params *params =
         (struct ellc_params *) ell_alloc(sizeof(*params));
@@ -346,11 +346,6 @@ ellc_dissect_params(struct ellc_norm_st *st, list_t *params_stx)
     list_t *rest = ell_util_make_list();
     list_t *all_keys = ell_util_make_list();
     
-    /* We have to defer normalization of parameter init forms until
-       after all parameters have been seen, and have been added to the
-       current lambda, so that local variable references work correctly. */
-    dict_t *deferred_inits = ell_util_make_dict((dict_comp_t) &ell_ptr_cmp); // param -> init_stx
-
     list_t *cur = req;
     for (lnode_t *n = list_first(params_stx); n; n = list_next(params_stx, n)) {
         struct ell_obj *p_stx = lnode_get(n);
@@ -378,12 +373,6 @@ ellc_dissect_params(struct ellc_norm_st *st, list_t *params_stx)
         exit(EXIT_FAILURE);
     }
 
-    for (dnode_t *dn = dict_first(deferred_inits); dn; dn = dict_next(deferred_inits, dn)) {
-        struct ellc_param *param = (struct ellc_param *) dnode_getkey(dn);
-        struct ell_obj *init_stx = (struct ell_obj *) dnode_get(dn);
-        param->init = ellc_norm_stx(st, init_stx);
-    }
-
     params->req = req;
     params->opt = opt;
     params->key = key;
@@ -406,7 +395,20 @@ ellc_norm_lam(struct ellc_norm_st *st, struct ell_obj *stx_lst)
     c->lam = &ast->lam;
     c->up = st->bottom_contour;
     st->bottom_contour = c;
-    ast->lam.params = ellc_dissect_params(st, ell_stx_lst_elts(params_stx));
+
+    /* We have to defer normalization of parameter init forms until
+       after all parameters have been seen, and have been added to the
+       current lambda, so that local variable references work correctly. */
+    dict_t *deferred_inits = ell_util_make_dict((dict_comp_t) &ell_ptr_cmp); // param -> init_stx
+
+    ast->lam.params = ellc_dissect_params(st, ell_stx_lst_elts(params_stx), deferred_inits);
+
+    for (dnode_t *dn = dict_first(deferred_inits); dn; dn = dict_next(deferred_inits, dn)) {
+        struct ellc_param *param = (struct ellc_param *) dnode_getkey(dn);
+        struct ell_obj *init_stx = (struct ell_obj *) dnode_get(dn);
+        param->init = ellc_norm_stx(st, init_stx);
+    }
+
     ast->lam.body = ellc_norm_stx(st, ELL_SEND(stx_lst, third));
     ast->lam.env = ell_util_make_dict((dict_comp_t) &ellc_id_cmp); // unused during norm.
     st->bottom_contour = c->up;
