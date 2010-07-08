@@ -202,6 +202,8 @@ ell_cx_equal(struct ell_cx *cxa, struct ell_cx *cxb);
 int
 ell_cx_cmp(struct ell_cx *cxa, struct ell_cx *cxb);
 
+static struct ell_cx *__ell_cur_cx = NULL;
+
 /**** Utilities ****/
 
 list_t *

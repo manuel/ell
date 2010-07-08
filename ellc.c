@@ -1164,13 +1164,8 @@ ellc_emit_lit_stx(struct ellc_st *st, struct ellc_ast *ast)
 {
     struct ell_obj *stx = ast->lit_stx.stx;
     if (stx->brand == ELL_BRAND(stx_sym)) {
-        if (st->in_quasisyntax) {
-            fprintf(st->f, "ell_make_stx_sym_cx(ell_intern(ell_make_str(\"%s\")), __ell_cur_cx)", 
-                    ell_str_chars(ell_sym_name(ell_stx_sym_sym(stx))));
-        } else {
-            fprintf(st->f, "ell_make_stx_sym(ell_intern(ell_make_str(\"%s\")))", 
-                    ell_str_chars(ell_sym_name(ell_stx_sym_sym(stx))));
-        }
+        fprintf(st->f, "ell_make_stx_sym_cx(ell_intern(ell_make_str(\"%s\")), __ell_cur_cx)",
+                ell_str_chars(ell_sym_name(ell_stx_sym_sym(stx))));
     } else if (stx->brand == ELL_BRAND(stx_str)) {
         fprintf(st->f, "ell_make_stx_str(ell_make_str(\"%s\"))", 
                 ell_str_chars(ell_stx_str_str(stx)));
@@ -1186,6 +1181,10 @@ ellc_emit_cx(struct ellc_st *st, struct ellc_ast *ast)
     if (st->in_quasisyntax) {
         ellc_emit_ast(st, ast->cx.body);
     } else {
+        /* Shadow the global current hygiene context, which is always
+           NULL.  The trick here is that only syntax forms that are
+           statically enclosed in this form will pick up this new
+           context, that's shadowing the global context. */
         st->in_quasisyntax = 1;
         fprintf(st->f, "({ struct ell_cx *__ell_cur_cx = ell_make_cx(); ");
         ellc_emit_ast(st, ast->cx.body);
