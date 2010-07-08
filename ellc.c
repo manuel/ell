@@ -1151,6 +1151,8 @@ ellc_emit_app(struct ellc_st *st, struct ellc_ast *ast)
 static void
 ellc_emit_lam(struct ellc_st *st, struct ellc_ast *ast)
 {
+    bool in_quasisyntax_tmp = st->in_quasisyntax;
+    st->in_quasisyntax = 0;
     struct ellc_ast_lam *lam = &ast->lam;
     fprintf(st->f, "({");
     // populate env
@@ -1171,6 +1173,7 @@ ellc_emit_lam(struct ellc_st *st, struct ellc_ast *ast)
         fprintf(st->f, "ell_make_clo(&__ell_code_%u, NULL);", lam->code_id);
     }
     fprintf(st->f, "})");
+    st->in_quasisyntax = in_quasisyntax_tmp;
 }
 
 static void
