@@ -1,7 +1,8 @@
 -*-org-*-
 * Language Issues
 ** Code created by quasisyntax doesn't use current hygiene context
-Not really a problem, but still incorrect.
+This means that append-syntax-lists and such cannot be shadowed.  Not
+really a problem, but still incorrect.
 ** What's the deal with macro-writing macros wrt hygiene?
 IOW, are macro names symbols or (hygiene-contextual) identifiers?
 ** Ensure that definitions appear only at the top level
@@ -9,19 +10,6 @@ IOW, are macro names symbols or (hygiene-contextual) identifiers?
 ** Ensure that only optional and keyword parameters have init forms
 * Code Enhancements
 ** Remove complex __attribute__((constructor())) stuff in favor of one central init routine 
-** Cleanup all loops over lists, so that they don't use a counter (except where needed)
-** Transform convoluted list_process's and dict_process's to for loops
 ** Make ellc_args contain pointers, for uniformity with other code
-* Compiler Optimizations
-** Implement LOC_APP for faster local function calls
-When we know that a function call is to a local function, we may omit
-the type check, and directly call the function, since the runtime
-ensures that function bindings only ever contain functions.  This
-would require using a special trap function for unbound functions,
-like the trap functions for unbound global functions.  Additionally,
-LOC_FREFs would need to check against this trap's address, similarly
-to LOC_REFs check against NULL.  However, some architectures seem to
-have trouble with comparing function pointers (although its valid
-C99), so maybe it's not such a good idea.
 * Environment Issues
 ** Fix Makefile, so that changing ellrt.h isn't silently ignored

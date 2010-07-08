@@ -750,6 +750,12 @@ ellc_norm(struct ell_obj *stx_lst)
 static void
 ellc_conv_ast(struct ellc_st *st, struct ellc_ast *ast);
 
+static bool
+ellc_defined_at_toplevel(struct ellc_st *st, struct ellc_id *id)
+{
+    return ell_util_list_contains(st->defined_globals, id, (dict_comp_t) &ellc_id_cmp);
+}
+
 static void
 ellc_env_add_ref(struct ellc_ast_lam *lam, struct ellc_id *id)
 {
@@ -766,6 +772,15 @@ ellc_conv_ref(struct ellc_st *st, struct ellc_ast *ast)
     struct ellc_param *p = NULL;
     struct ellc_contour *c = ellc_contour_lookup(st->bottom_contour, ast->ref.id, &p);
     if (!c) {
+        /* The identifier isn't lexically bound.  Now, we still need
+           to check whether it's defined at the top-level in the
+           current unit, before we follow the rule that all variables
+           are considered implicitly bound at the top-level.  For such
+           implicitly bound variables we need to ignore the hygiene
+           context. */
+        if (!ellc_defined_at_toplevel(st, ast->ref.id)) {
+            ast->ref.id->cx = NULL;
+        }
         struct ellc_id *tmp_id = ast->ref.id;
         ast->type = ELLC_AST_GLO_REF;
         ast->glo_ref.id = tmp_id;
@@ -784,6 +799,7 @@ ellc_conv_ref(struct ellc_st *st, struct ellc_ast *ast)
 static void
 ellc_conv_def(struct ellc_st *st, struct ellc_ast *ast)
 {
+    ell_util_set_add(st->defined_globals, ast->def.id, (dict_comp_t) &ellc_id_cmp);
     ell_util_set_add(st->globals, ast->def.id, (dict_comp_t) &ellc_id_cmp);
     ellc_conv_ast(st, ast->def.val);
 }
@@ -795,6 +811,10 @@ ellc_conv_set(struct ellc_st *st, struct ellc_ast *ast)
     struct ellc_param *p;
     struct ellc_contour *c = ellc_contour_lookup(st->bottom_contour, ast->set.id, &p);
     if (!c) {
+        /* See comment in ellc_conv_ref. */
+        if (!ellc_defined_at_toplevel(st, ast->ref.id)) {
+            ast->set.id->cx = NULL;
+        }
         struct ellc_id *tmp_id = ast->set.id;
         ast->type = ELLC_AST_GLO_SET;
         ast->glo_set.id = tmp_id;
@@ -1339,6 +1359,7 @@ ellc_make_st(FILE *f)
 {
     struct ellc_st *st = (struct ellc_st *) ell_alloc(sizeof(*st));
     st->f = f;
+    st->defined_globals = ell_util_make_list();
     st->globals = ell_util_make_list();
     st->lambdas = ell_util_make_list();
     return st;

@@ -189,6 +189,7 @@ struct ellc_norm_st {
 struct ellc_st {
     FILE *f;
     struct ellc_contour *bottom_contour; // maybe NULL
+    list_t *defined_globals; // id
     list_t *globals; // id
     list_t *lambdas; // lam
     bool in_quasisyntax;

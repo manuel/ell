@@ -212,6 +212,8 @@ void
 ell_util_list_add(list_t *list, void *elt);
 list_t *
 ell_util_sublist(list_t *list, listcount_t start);
+bool
+ell_util_list_contains(list_t *list, void *elt, dict_comp_t compare);
 void
 ell_util_assert_list_len(list_t *list, listcount_t len);
 void

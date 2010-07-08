@@ -535,6 +535,12 @@ ell_util_sublist(list_t *list, listcount_t start)
     return res;
 }
 
+bool
+ell_util_list_contains(list_t *list, void *elt, dict_comp_t compare)
+{
+    return (list_find(list, elt, compare) != NULL);
+}
+
 void
 ell_util_assert_list_len(list_t *list, listcount_t len)
 {
