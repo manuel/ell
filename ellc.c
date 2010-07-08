@@ -881,6 +881,12 @@ ellc_conv_lam(struct ellc_st *st, struct ellc_ast *ast)
 }
 
 static void
+ellc_conv_cx(struct ellc_st *st, struct ellc_ast *ast)
+{
+    ellc_conv_ast(st, ast->cx.body);
+}
+
+static void
 ellc_conv_ast(struct ellc_st *st, struct ellc_ast *ast)
 {
     switch(ast->type) {
@@ -893,6 +899,7 @@ ellc_conv_ast(struct ellc_st *st, struct ellc_ast *ast)
     case ELLC_AST_LAM: ellc_conv_lam(st, ast); break;
     case ELLC_AST_LIT_STR: break;
     case ELLC_AST_LIT_STX: break;
+    case ELLC_AST_CX: ellc_conv_cx(st, ast); break;
     default:
         printf("conversion error: %d\n", ast->type);
         exit(EXIT_FAILURE);
@@ -956,11 +963,11 @@ ellc_mangle_id(char *prefix, struct ellc_id *id)
     char *std = "__ell";
     char *name = ellc_mangle_str(ell_str_chars(ell_sym_name(id->sym)));
     char *cx = ellc_mangle_cx(id->cx);
+    size_t prefix_len = strlen(prefix);
     size_t std_len = strlen(std);
     size_t name_len = strlen(name);
     size_t cx_len = strlen(cx);
-    size_t len = std_len + name_len + cx_len
-        + 1  // prefix
+    size_t len = std_len + prefix_len + name_len + cx_len
         + 3  // separators
         + 1; // zero
     char *out = (char *) ell_alloc(len);
@@ -1176,7 +1183,7 @@ ellc_emit_cx(struct ellc_st *st, struct ellc_ast *ast)
             "if (ell_cur_cx == NULL) { __ell_tmp_cx = ell_cur_cx; ell_cur_cx = ell_make_cx(); }\n"
             "struct ell_obj *__ell_res = ");
     ellc_emit_ast(st, ast->cx.body);
-    fprintf(st->f, "\nell_cur_cx = __ell_tmp_cx; __ell_res; })");
+    fprintf(st->f, "\n; ell_cur_cx = __ell_tmp_cx; __ell_res; })");
 }
 
 static void
