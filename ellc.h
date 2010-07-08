@@ -191,6 +191,7 @@ struct ellc_st {
     struct ellc_contour *bottom_contour; // maybe NULL
     list_t *globals; // id
     list_t *lambdas; // lam
+    bool in_quasisyntax;
 };
 
 // API

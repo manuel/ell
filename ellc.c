@@ -1164,8 +1164,13 @@ ellc_emit_lit_stx(struct ellc_st *st, struct ellc_ast *ast)
 {
     struct ell_obj *stx = ast->lit_stx.stx;
     if (stx->brand == ELL_BRAND(stx_sym)) {
-        fprintf(st->f, "ell_make_stx_sym_cx(ell_intern(ell_make_str(\"%s\")), ell_cur_cx)", 
-                ell_str_chars(ell_sym_name(ell_stx_sym_sym(stx))));
+        if (st->in_quasisyntax) {
+            fprintf(st->f, "ell_make_stx_sym_cx(ell_intern(ell_make_str(\"%s\")), __ell_cur_cx)", 
+                    ell_str_chars(ell_sym_name(ell_stx_sym_sym(stx))));
+        } else {
+            fprintf(st->f, "ell_make_stx_sym(ell_intern(ell_make_str(\"%s\")))", 
+                    ell_str_chars(ell_sym_name(ell_stx_sym_sym(stx))));
+        }
     } else if (stx->brand == ELL_BRAND(stx_str)) {
         fprintf(st->f, "ell_make_stx_str(ell_make_str(\"%s\"))", 
                 ell_str_chars(ell_stx_str_str(stx)));
@@ -1178,12 +1183,15 @@ ellc_emit_lit_stx(struct ellc_st *st, struct ellc_ast *ast)
 static void
 ellc_emit_cx(struct ellc_st *st, struct ellc_ast *ast)
 {
-    fprintf(st->f, 
-            "({ struct ell_cx *__ell_tmp_cx = NULL; \n"
-            "if (ell_cur_cx == NULL) { __ell_tmp_cx = ell_cur_cx; ell_cur_cx = ell_make_cx(); }\n"
-            "struct ell_obj *__ell_res = ");
-    ellc_emit_ast(st, ast->cx.body);
-    fprintf(st->f, "\n; ell_cur_cx = __ell_tmp_cx; __ell_res; })");
+    if (st->in_quasisyntax) {
+        ellc_emit_ast(st, ast->cx.body);
+    } else {
+        st->in_quasisyntax = 1;
+        fprintf(st->f, "({ struct ell_cx *__ell_cur_cx = ell_make_cx(); ");
+        ellc_emit_ast(st, ast->cx.body);
+        fprintf(st->f, "; })");
+        st->in_quasisyntax = 0;
+    }
 }
 
 static void

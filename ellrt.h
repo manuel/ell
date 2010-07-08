@@ -202,9 +202,6 @@ ell_cx_equal(struct ell_cx *cxa, struct ell_cx *cxb);
 int
 ell_cx_cmp(struct ell_cx *cxa, struct ell_cx *cxb);
 
-/* Dynamically overriden by ellc_ast_cx nodes. */
-static struct ell_cx *ell_cur_cx = NULL;
-
 /**** Utilities ****/
 
 list_t *
