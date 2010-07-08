@@ -911,34 +911,85 @@ ellc_conv(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
 static void
 ellc_emit_ast(struct ellc_st *st, struct ellc_ast *ast);
 
-static char *
-ellc_mangle_id(struct ellc_id *id)
+static char
+ellc_mangle_char(char c)
 {
-    return ell_str_chars(ell_sym_name(id->sym));
+    // Needs to be kept in sync with sym-char in `grammar.leg'.
+    switch (c) {
+    case '&': return 'A';
+    case ':': return 'S';
+    case '_': return 'U';
+    case '-': return 'D';
+    default: return c;
+    }
+}
+
+static char *
+ellc_mangle_str(char *s)
+{
+    size_t len = strlen(s);
+    char *out = (char *) ell_alloc(len + 1);
+    for (int i = 0; i < len; i++) {
+        out[i] = ellc_mangle_char(s[i]);
+    }
+    out[len] = '\0';
+    return out;
+}
+
+static char *ELLC_NO_CX = "";
+
+static char *
+ellc_mangle_cx(struct ell_cx *cx)
+{
+    if (cx->uuid != NULL) {
+        char *out = (char *) ell_alloc(37);
+        uuid_unparse(cx->uuid, out);
+        return ellc_mangle_str(out);
+    } else {
+        return ELLC_NO_CX;
+    }
+}
+
+static char *
+ellc_mangle_id(char *prefix, struct ellc_id *id)
+{
+    char *std = "__ell";
+    char *name = ellc_mangle_str(ell_str_chars(ell_sym_name(id->sym)));
+    char *cx = ellc_mangle_cx(id->cx);
+    size_t std_len = strlen(std);
+    size_t name_len = strlen(name);
+    size_t cx_len = strlen(cx);
+    size_t len = std_len + name_len + cx_len
+        + 1  // prefix
+        + 3  // separators
+        + 1; // zero
+    char *out = (char *) ell_alloc(len);
+    snprintf(out, len, "%s_%s_%s_%s", std, prefix, name, cx);
+    return out;
 }
 
 static char *
 ellc_mangle_glo_id(struct ellc_id *id)
 {
-    return ellc_mangle_id(id);
+    return ellc_mangle_id("g", id);
 }
 
 static char *
 ellc_mangle_param_id(struct ellc_id *id)
 {
-    return ellc_mangle_id(id);
+    return ellc_mangle_id("p", id);
 }
 
 static char *
 ellc_mangle_env_id(struct ellc_id *id)
 {
-    return ellc_mangle_id(id);
+    return ellc_mangle_id("e", id);
 }
 
 static char *
 ellc_mangle_arg_id(struct ellc_id *id)
 {
-    return ellc_mangle_id(id);
+    return ellc_mangle_id("a", id);
 }
 
 static void
