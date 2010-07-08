@@ -56,6 +56,14 @@ struct ellc_ast_lit_stx {
     struct ell_obj *stx;
 };
 
+/* Context node for maintenance of SRFI 72's improved hygiene
+   condition.  Introduces a new hygienic context if there currently is
+   no context, i.e. if the syntax occurs doesn't occur nested inside a
+   quasisyntax. */
+struct ellc_ast_cx {
+    struct ellc_ast *body;
+};
+
 // Explicit Form
 
 struct ellc_ast_glo_ref {
@@ -105,6 +113,8 @@ enum ellc_ast_type {
 
     ELLC_AST_LIT_STR = 201,
     ELLC_AST_LIT_STX = 202,
+
+    ELLC_AST_CX      = 301,
 };
 
 struct ellc_ast {
@@ -127,6 +137,8 @@ struct ellc_ast {
 
         struct ellc_ast_lit_str lit_str;
         struct ellc_ast_lit_stx lit_stx;
+
+        struct ellc_ast_cx      cx;
     };
 };
 

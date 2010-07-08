@@ -587,7 +587,11 @@ ellc_norm_quasisyntax(struct ellc_norm_st *st, struct ell_obj *stx_lst)
 {
     ell_assert_stx_lst_len(stx_lst, 2);
     struct ell_obj *arg_stx = ELL_SEND(stx_lst, second);
-    return ellc_norm_qs(st, arg_stx, 0);
+    struct ellc_ast *body = ellc_norm_qs(st, arg_stx, 0);
+    
+    struct ellc_ast *cx_ast = ellc_make_ast(ELLC_AST_CX);
+    cx_ast->cx.body = body;
+    return cx_ast;
 }
 
 /* (Macroexpansion) */
@@ -1102,7 +1106,7 @@ ellc_emit_lit_stx(struct ellc_st *st, struct ellc_ast *ast)
 {
     struct ell_obj *stx = ast->lit_stx.stx;
     if (stx->brand == ELL_BRAND(stx_sym)) {
-        fprintf(st->f, "ell_make_stx_sym(ell_intern(ell_make_str(\"%s\")))", 
+        fprintf(st->f, "ell_make_stx_sym_cx(ell_intern(ell_make_str(\"%s\")), ell_cur_cx)", 
                 ell_str_chars(ell_sym_name(ell_stx_sym_sym(stx))));
     } else if (stx->brand == ELL_BRAND(stx_str)) {
         fprintf(st->f, "ell_make_stx_str(ell_make_str(\"%s\"))", 
@@ -1111,6 +1115,17 @@ ellc_emit_lit_stx(struct ellc_st *st, struct ellc_ast *ast)
         printf("literal syntax error\n");
         exit(EXIT_FAILURE);
     }
+}
+
+static void
+ellc_emit_cx(struct ellc_st *st, struct ellc_ast *ast)
+{
+    fprintf(st->f, 
+            "({ struct ell_cx *__ell_tmp_cx = NULL; \n"
+            "if (ell_cur_cx == NULL) { __ell_tmp_cx = ell_cur_cx; ell_cur_cx = ell_make_cx(); }\n"
+            "struct ell_obj *__ell_res = ");
+    ellc_emit_ast(st, ast->cx.body);
+    fprintf(st->f, "\nell_cur_cx = __ell_tmp_cx; __ell_res; })");
 }
 
 static void
@@ -1130,6 +1145,7 @@ ellc_emit_ast(struct ellc_st *st, struct ellc_ast *ast)
     case ELLC_AST_LAM: ellc_emit_lam(st, ast); break;
     case ELLC_AST_LIT_STR: ellc_emit_lit_str(st, ast); break;
     case ELLC_AST_LIT_STX: ellc_emit_lit_stx(st, ast); break;
+    case ELLC_AST_CX: ellc_emit_cx(st, ast); break;
     default:
         printf("emission error\n");
         exit(EXIT_FAILURE);
