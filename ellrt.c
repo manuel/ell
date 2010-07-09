@@ -597,6 +597,8 @@ ell_ptr_cmp(void *a, void *b)
 
 /**** Quasisyntax ****/
 
+/* (syntax-list &rest syntax-objects) -> syntax-list */
+
 struct ell_obj *__ell_g_syntaxDlist_;
 
 struct ell_obj *
@@ -608,6 +610,8 @@ ell_syntax_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct e
     }
     return res;
 }
+
+/* (append-syntax-lists &rest syntax-lists) -> syntax-list */
 
 struct ell_obj *__ell_g_appendDsyntaxDlists_;
 
@@ -625,6 +629,28 @@ ell_append_syntax_lists_code(struct ell_obj *clo, unsigned npos, unsigned nkey, 
         }
     }
     return res;
+}
+
+/* (apply-syntax-list function syntax-list) -> result */
+
+struct ell_obj *__ell_g_applyDsyntaxDlist_;
+
+struct ell_obj *
+ell_apply_syntax_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    ell_check_npos(2, npos);
+    struct ell_obj *fun = args[0];
+    struct ell_obj *stx_lst = args[1];
+    ell_assert_brand(fun, ELL_BRAND(clo));
+    ell_assert_brand(stx_lst, ELL_BRAND(stx_lst));
+    list_t *elts = ell_stx_lst_elts(stx_lst);
+    listcount_t len = list_count(elts);
+    struct ell_obj *the_args[len];
+    int i = 0;
+    for (lnode_t *n = list_first(elts); n; n = list_next(elts, n)) {
+        the_args[i++] = (struct ell_obj *) lnode_get(n);
+    }
+    return ell_call(fun, len, 0, the_args);
 }
 
 /**** Initialization ****/
@@ -645,4 +671,5 @@ ell_init()
 
     __ell_g_syntaxDlist_ = ell_make_clo(&ell_syntax_list_code, NULL);
     __ell_g_appendDsyntaxDlists_ = ell_make_clo(&ell_append_syntax_lists_code, NULL);
+    __ell_g_applyDsyntaxDlist_ = ell_make_clo(&ell_apply_syntax_list_code, NULL);
 }

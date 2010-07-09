@@ -22,6 +22,7 @@ ELL_DEFSYM(core_unsyntax, "unsyntax")
 ELL_DEFSYM(core_unsyntax_splicing, "unsyntax-splicing")
 ELL_DEFSYM(core_syntax_list, "syntax-list")
 ELL_DEFSYM(core_append_syntax_lists, "append-syntax-lists")
+ELL_DEFSYM(core_apply_syntax_list, "apply-syntax-list")
 
 ELL_DEFSYM(param_optional, "&optional")
 ELL_DEFSYM(param_key, "&key")

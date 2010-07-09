@@ -1013,12 +1013,6 @@ ellc_mangle_env_id(struct ellc_id *id)
     return ellc_mangle_id("e", id);
 }
 
-static char *
-ellc_mangle_arg_id(struct ellc_id *id)
-{
-    return ellc_mangle_id("a", id);
-}
-
 static void
 ellc_emit_glo_ref(struct ellc_st *st, struct ellc_ast *ast)
 {
@@ -1042,9 +1036,9 @@ static void
 ellc_emit_arg_ref(struct ellc_st *st, struct ellc_ast *ast)
 {
     if (ellc_param_boxed(ast->arg_ref.param)) {
-        fprintf(st->f, "ell_box_read(%s)", ellc_mangle_arg_id(ast->arg_ref.param->id));
+        fprintf(st->f, "ell_box_read(%s)", ellc_mangle_param_id(ast->arg_ref.param->id));
     } else {
-        fprintf(st->f, "%s", ellc_mangle_arg_id(ast->arg_ref.param->id));
+        fprintf(st->f, "%s", ellc_mangle_param_id(ast->arg_ref.param->id));
     }
 }
 
@@ -1079,11 +1073,11 @@ ellc_emit_arg_set(struct ellc_st *st, struct ellc_ast *ast)
 {
     struct ellc_ast_arg_set *arg_set = &ast->arg_set;
     if (ellc_param_boxed(arg_set->param)) {
-        fprintf(st->f, "(ell_box_write(%s, ", ellc_mangle_arg_id(arg_set->param->id));
+        fprintf(st->f, "(ell_box_write(%s, ", ellc_mangle_param_id(arg_set->param->id));
         ellc_emit_ast(st, arg_set->val);
         fprintf(st->f, "))");
     } else {
-        fprintf(st->f, "(%s = ", ellc_mangle_arg_id(arg_set->param->id));
+        fprintf(st->f, "(%s = ", ellc_mangle_param_id(arg_set->param->id));
         ellc_emit_ast(st, arg_set->val);
         fprintf(st->f, ")");
     }
