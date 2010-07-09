@@ -415,6 +415,15 @@ ellc_norm_lam(struct ellc_norm_st *st, struct ell_obj *stx_lst)
     return ast;
 }
 
+static struct ellc_ast *
+ellc_norm_quote(struct ellc_norm_st *st, struct ell_obj *stx_lst)
+{
+    ell_assert_stx_lst_len(stx_lst, 2);
+    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_LIT_SYM);
+    ast->lit_sym.sym = ell_stx_sym_sym(ELL_SEND(stx_lst, second));
+    return ast;
+}
+
 /* (Quasisyntax) */
 
 static struct ellc_ast *
@@ -649,12 +658,13 @@ ellc_init()
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_seq), &ellc_norm_seq);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_app), &ellc_norm_app);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_lam), &ellc_norm_lam);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_quote), &ellc_norm_quote);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_quasisyntax), &ellc_norm_quasisyntax);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_mdef), &ellc_norm_mdef);
 }
 
 static struct ellc_ast *
-ellc_norm_stx_lst(struct ellc_norm_st *st, struct ell_obj *stx_lst)
+ellc_norm_lst(struct ellc_norm_st *st, struct ell_obj *stx_lst)
 {
     ell_assert_brand(stx_lst, ELL_BRAND(stx_lst));
     struct ell_obj *op_stx = ELL_SEND(stx_lst, first);
@@ -688,7 +698,7 @@ ellc_norm_stx_lst(struct ellc_norm_st *st, struct ell_obj *stx_lst)
 }
 
 static struct ellc_ast *
-ellc_norm_stx_str(struct ellc_norm_st *st, struct ell_obj *stx)
+ellc_norm_lit_str(struct ellc_norm_st *st, struct ell_obj *stx)
 {
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_LIT_STR);
     ast->lit_str.str = ell_stx_str_str(stx);
@@ -701,9 +711,9 @@ ellc_norm_stx(struct ellc_norm_st *st, struct ell_obj *stx)
     if (stx->brand == ELL_BRAND(stx_sym)) {
         return ellc_norm_ref(st, stx);
     } else if (stx->brand == ELL_BRAND(stx_lst)) {
-        return ellc_norm_stx_lst(st, stx);
+        return ellc_norm_lst(st, stx);
     } else if (stx->brand == ELL_BRAND(stx_str)) {
-        return ellc_norm_stx_str(st, stx);
+        return ellc_norm_lit_str(st, stx);
     } else {
         printf("syntax normalization failure\n");
         exit(EXIT_FAILURE);
@@ -917,6 +927,7 @@ ellc_conv_ast(struct ellc_st *st, struct ellc_ast *ast)
     case ELLC_AST_SEQ: ellc_conv_seq(st, ast); break;
     case ELLC_AST_APP: ellc_conv_app(st, ast); break;
     case ELLC_AST_LAM: ellc_conv_lam(st, ast); break;
+    case ELLC_AST_LIT_SYM: break;
     case ELLC_AST_LIT_STR: break;
     case ELLC_AST_LIT_STX: break;
     case ELLC_AST_CX: ellc_conv_cx(st, ast); break;
@@ -1171,6 +1182,12 @@ ellc_emit_lam(struct ellc_st *st, struct ellc_ast *ast)
 }
 
 static void
+ellc_emit_lit_sym(struct ellc_st *st, struct ellc_ast *ast)
+{
+    fprintf(st->f, "ell_intern(ell_make_str(\"%s\"))", ell_str_chars(ell_sym_name(ast->lit_sym.sym)));
+}
+
+static void
 ellc_emit_lit_str(struct ellc_st *st, struct ellc_ast *ast)
 {
     fprintf(st->f, "ell_make_str(\"%s\")", ell_str_chars(ast->lit_str.str));
@@ -1225,6 +1242,7 @@ ellc_emit_ast(struct ellc_st *st, struct ellc_ast *ast)
     case ELLC_AST_SEQ: ellc_emit_seq(st, ast); break;
     case ELLC_AST_APP: ellc_emit_app(st, ast); break;
     case ELLC_AST_LAM: ellc_emit_lam(st, ast); break;
+    case ELLC_AST_LIT_SYM: ellc_emit_lit_sym(st, ast); break;
     case ELLC_AST_LIT_STR: ellc_emit_lit_str(st, ast); break;
     case ELLC_AST_LIT_STX: ellc_emit_lit_stx(st, ast); break;
     case ELLC_AST_CX: ellc_emit_cx(st, ast); break;

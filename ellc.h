@@ -48,6 +48,10 @@ struct ellc_ast_lam {
     unsigned code_id;
 };
 
+struct ellc_ast_lit_sym {
+    struct ell_obj *sym;
+};
+
 struct ellc_ast_lit_str {
     struct ell_obj *str;
 };
@@ -111,8 +115,9 @@ enum ellc_ast_type {
     ELLC_AST_ENV_REF = 105,
     ELLC_AST_ENV_SET = 106,
 
-    ELLC_AST_LIT_STR = 201,
-    ELLC_AST_LIT_STX = 202,
+    ELLC_AST_LIT_SYM = 201,
+    ELLC_AST_LIT_STR = 202,
+    ELLC_AST_LIT_STX = 203,
 
     ELLC_AST_CX      = 301,
 };
@@ -135,6 +140,7 @@ struct ellc_ast {
         struct ellc_ast_env_ref env_ref;
         struct ellc_ast_env_set env_set;
 
+        struct ellc_ast_lit_sym lit_sym;
         struct ellc_ast_lit_str lit_str;
         struct ellc_ast_lit_stx lit_stx;
 

@@ -16,6 +16,8 @@ ELL_DEFSYM(core_lam,  "ell-lam")
 ELL_DEFSYM(core_app,  "ell-app")
 ELL_DEFSYM(core_mdef, "ell-mdef")
 
+ELL_DEFSYM(core_quote, "quote")
+
 ELL_DEFSYM(core_syntax, "syntax")
 ELL_DEFSYM(core_quasisyntax, "quasisyntax")
 ELL_DEFSYM(core_unsyntax, "unsyntax")
