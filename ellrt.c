@@ -595,7 +595,24 @@ ell_ptr_cmp(void *a, void *b)
     return a - b;
 }
 
-/**** Quasisyntax ****/
+/**** Built-in Functions ****/
+
+/* (send rcv msg &rest args) -> result */
+
+struct ell_obj *__ell_g_send_;
+
+struct ell_obj *
+ell_send_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    ell_check_npos(2, npos);
+    struct ell_obj *rcv = args[0];
+    struct ell_obj *msg = args[1];
+    ell_assert_brand(msg, ELL_BRAND(sym));
+    /* Klever: */
+    args++;
+    args[0] = rcv;
+    return ell_send(rcv, msg, npos - 1, 0, args);
+}
 
 /* (syntax-list &rest syntax-objects) -> syntax-list */
 
@@ -669,6 +686,7 @@ ell_init()
 #include "syms.h"
 #undef ELL_DEFSYM
 
+    __ell_g_send_ = ell_make_clo(&ell_send_code, NULL);
     __ell_g_syntaxDlist_ = ell_make_clo(&ell_syntax_list_code, NULL);
     __ell_g_appendDsyntaxDlists_ = ell_make_clo(&ell_append_syntax_lists_code, NULL);
     __ell_g_applyDsyntaxDlist_ = ell_make_clo(&ell_apply_syntax_list_code, NULL);
