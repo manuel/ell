@@ -19,7 +19,7 @@ expr       = str | sym | lst
 str        = "\"" < [^"]* > "\""   { ell_parser_add_str(yytext); }
 
 # Needs to be kept in sync with ellc_mangle_char in `ell.c'.
-sym-char   = [a-zA-Z0-9&:_] | "-"
+sym-char   = [a-z0-9&:_] | "-"
 sym        = < sym-char+ >         { ell_parser_add_sym(yytext); }
 
 lst        = OPEN exprs CLOSE
