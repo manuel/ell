@@ -595,7 +595,9 @@ ell_ptr_cmp(void *a, void *b)
     return a - b;
 }
 
-struct ell_obj *ell_syntax_list;
+/**** Quasisyntax ****/
+
+struct ell_obj *__ell_g_syntaxDlist_;
 
 struct ell_obj *
 ell_syntax_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
@@ -607,10 +609,10 @@ ell_syntax_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct e
     return res;
 }
 
-struct ell_obj *ell_append_syntax_lists;
+struct ell_obj *__ell_g_appendDsyntaxDlists_;
 
 struct ell_obj *
-ell_append_syntax_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+ell_append_syntax_lists_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
 {
     struct ell_obj *res = ell_make_stx_lst();
     for (int i = 0; i < npos; i++) {
@@ -641,6 +643,6 @@ ell_init()
 #include "syms.h"
 #undef ELL_DEFSYM
 
-    ell_syntax_list = ell_make_clo(&ell_syntax_list_code, NULL);
-    ell_append_syntax_lists = ell_make_clo(&ell_append_syntax_list_code, NULL);
+    __ell_g_syntaxDlist_ = ell_make_clo(&ell_syntax_list_code, NULL);
+    __ell_g_appendDsyntaxDlists_ = ell_make_clo(&ell_append_syntax_lists_code, NULL);
 }
