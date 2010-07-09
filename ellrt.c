@@ -628,6 +628,24 @@ ell_syntax_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct e
     return res;
 }
 
+/* (syntax-list-rest syntax-list) -> syntax-list */
+
+struct ell_obj *__ell_g_syntaxDlistDrest_;
+
+struct ell_obj *
+ell_syntax_list_rest_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    ell_check_npos(1, npos);
+    struct ell_obj *stx_lst = args[0];
+    ell_assert_brand(stx_lst, ELL_BRAND(stx_lst));
+    struct ell_obj *res = ell_make_stx_lst();
+    list_t *elts = ell_stx_lst_elts(stx_lst);
+    for (lnode_t *n = list_next(elts, list_first(elts)); n; n = list_next(elts, n)) {
+        ELL_SEND(res, add, (struct ell_obj *) lnode_get(n));
+    }
+    return res;
+}
+
 /* (append-syntax-lists &rest syntax-lists) -> syntax-list */
 
 struct ell_obj *__ell_g_appendDsyntaxDlists_;
@@ -688,6 +706,7 @@ ell_init()
 
     __ell_g_send_ = ell_make_clo(&ell_send_code, NULL);
     __ell_g_syntaxDlist_ = ell_make_clo(&ell_syntax_list_code, NULL);
+    __ell_g_syntaxDlistDrest_ = ell_make_clo(&ell_syntax_list_rest_code, NULL);
     __ell_g_appendDsyntaxDlists_ = ell_make_clo(&ell_append_syntax_lists_code, NULL);
     __ell_g_applyDsyntaxDlist_ = ell_make_clo(&ell_apply_syntax_list_code, NULL);
 }
