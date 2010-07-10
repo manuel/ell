@@ -181,6 +181,28 @@ ellc_norm_fdef(struct ellc_norm_st *st, struct ell_obj *stx_lst)
 }
 
 static struct ellc_ast *
+ellc_make_defp(struct ellc_norm_st *st, struct ell_obj *stx_lst, enum ellc_ns ns)
+{
+    ell_assert_stx_lst_len(stx_lst, 2);
+    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_DEFP);
+    struct ell_obj *stx_sym = ELL_SEND(stx_lst, second);
+    ast->defp.id = ellc_make_id_cx(ell_stx_sym_sym(stx_sym), ns, ell_stx_sym_cx(stx_sym));
+    return ast;
+}
+
+static struct ellc_ast *
+ellc_norm_defp(struct ellc_norm_st *st, struct ell_obj *stx_lst)
+{
+    return ellc_make_defp(st, stx_lst, ELLC_NS_VAR);
+}
+
+static struct ellc_ast *
+ellc_norm_fdefp(struct ellc_norm_st *st, struct ell_obj *stx_lst)
+{
+    return ellc_make_defp(st, stx_lst, ELLC_NS_FUN);
+}
+
+static struct ellc_ast *
 ellc_make_set(struct ellc_norm_st *st, struct ell_obj *stx_lst, enum ellc_ns ns)
 {
     ell_assert_stx_lst_len(stx_lst, 3);
@@ -651,6 +673,8 @@ ellc_init()
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_fref), &ellc_norm_fref);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_def), &ellc_norm_def);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_fdef), &ellc_norm_fdef);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_defp), &ellc_norm_defp);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_fdefp), &ellc_norm_fdefp);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_set), &ellc_norm_set);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_fset), &ellc_norm_fset);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_cond), &ellc_norm_cond);
@@ -814,6 +838,16 @@ ellc_conv_def(struct ellc_st *st, struct ellc_ast *ast)
 }
 
 static void
+ellc_conv_defp(struct ellc_st *st, struct ellc_ast *ast)
+{
+    /* See comment in ellc_conv_ref. */
+    if (!ellc_defined_at_toplevel(st, ast->defp.id)) {
+        ast->defp.id->cx = NULL;
+    }
+    ell_util_set_add(st->globals, ast->defp.id, (dict_comp_t) &ellc_id_cmp);
+}
+
+static void
 ellc_conv_set(struct ellc_st *st, struct ellc_ast *ast)
 {
     ellc_conv_ast(st, ast->set.val);
@@ -921,6 +955,7 @@ ellc_conv_ast(struct ellc_st *st, struct ellc_ast *ast)
     switch(ast->type) {
     case ELLC_AST_REF: ellc_conv_ref(st, ast); break;
     case ELLC_AST_DEF: ellc_conv_def(st, ast); break;
+    case ELLC_AST_DEFP: ellc_conv_defp(st, ast); break;
     case ELLC_AST_SET: ellc_conv_set(st, ast); break;
     case ELLC_AST_COND: ellc_conv_cond(st, ast); break;
     case ELLC_AST_SEQ: ellc_conv_seq(st, ast); break;
@@ -1068,6 +1103,12 @@ ellc_emit_def(struct ellc_st *st, struct ellc_ast *ast)
     fprintf(st->f, "(%s = ", ellc_mangle_glo_id(ast->def.id));
     ellc_emit_ast(st, ast->def.val);
     fprintf(st->f, ")");
+}
+
+static void
+ellc_emit_defp(struct ellc_st *st, struct ellc_ast *ast)
+{
+    fprintf(st->f, "(%s != NULL)", ellc_mangle_glo_id(ast->defp.id));
 }
 
 static void
@@ -1234,6 +1275,7 @@ ellc_emit_ast(struct ellc_st *st, struct ellc_ast *ast)
     case ELLC_AST_ARG_REF: ellc_emit_arg_ref(st, ast); break;
     case ELLC_AST_ENV_REF: ellc_emit_env_ref(st, ast); break;
     case ELLC_AST_DEF: ellc_emit_def(st, ast); break;
+    case ELLC_AST_DEFP: ellc_emit_defp(st, ast); break;
     case ELLC_AST_GLO_SET: ellc_emit_glo_set(st, ast); break;
     case ELLC_AST_ARG_SET: ellc_emit_arg_set(st, ast); break;
     case ELLC_AST_ENV_SET: ellc_emit_env_set(st, ast); break;
