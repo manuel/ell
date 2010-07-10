@@ -8,7 +8,6 @@
 //   _|    _|  _|    _|  _|    _|      _|    _|  _|    _|       //
 //   _|    _|    _|_|_|  _|    _|      _|_|_|    _|      _|_|   //
 //                                                              //
-//   VERSION 0.1 ``WITNESS THE FITNESS''                 2010   //
 //                                                              //
 //////////////////////////////////////////////////////////////////
 
@@ -638,7 +637,7 @@ ellc_norm_mdef(struct ellc_norm_st *st, struct ell_obj *mdef_stx)
     ELL_SEND(stx_lst, add, expander_stx);
     ell_util_dict_put(&ellc_mac_tab, ell_stx_sym_sym(name_stx), ellc_eval(stx_lst));
     // Note that a macro definition is the only expression that has no
-    // runtime effect.  This case is handled specially by `ellc_norm'.
+    // runtime effect.  This case is handled specially by 'ellc_norm'.
     return NULL;
 }
 
@@ -952,7 +951,7 @@ ellc_emit_ast(struct ellc_st *st, struct ellc_ast *ast);
 static char
 ellc_mangle_char(char c)
 {
-    // Needs to be kept in sync with sym-char in `grammar.leg'.
+    // Needs to be kept in sync with sym-char in 'grammar.leg'.
     switch (c) {
     case '&': return 'A';
     case ':': return 'S';
