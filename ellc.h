@@ -187,24 +187,29 @@ struct ellc_contour {
     struct ellc_contour *up; // maybe NULL
 };
 
-// Compiler State during Normalization
+// Compiler State
 
 static dict_t ellc_mac_tab; // sym -> clo
 static dict_t ellc_norm_tab; // sym -> norm_fun
 
-struct ellc_norm_st {
-    struct ellc_contour *bottom_contour;
-};
-
-// Compiler State during Closure Conversion & Emission
-
 struct ellc_st {
-    FILE *f;
-    struct ellc_contour *bottom_contour; // maybe NULL
+    /* Keeps track of all global variables defined in the compilation
+       unit.  Populated during normalization. */
     list_t *defined_globals; // id
+    /* Keeps track of lexical contours during normalization and
+       closure conversion. */
+    struct ellc_contour *bottom_contour; // maybe NULL
+    /* Keeps track of all globals used in the compilation unit.
+       Populated during closure conversion. */
     list_t *globals; // id
+    /* Keeps track of all lambdas created in the compilation unit.
+       Populated during closure conversion. */
     list_t *lambdas; // lam
+    /* Whether we are inside a quasisyntax, for improved hygiene
+       condition.  Not fully clear whether this is correct. */
     bool in_quasisyntax;
+    /* The output file for C code during emission. */
+    FILE *f;
 };
 
 // API

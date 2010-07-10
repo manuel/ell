@@ -129,15 +129,15 @@ ellc_contour_lookup(struct ellc_contour *c, struct ellc_id *id, struct ellc_para
 /**** Normalization: Syntax Objects -> AST ****/
 
 static struct ellc_ast *
-ellc_norm_stx(struct ellc_norm_st *st, struct ell_obj *stx);
+ellc_norm_stx(struct ellc_st *st, struct ell_obj *stx);
 
 typedef struct ellc_ast *
-(ellc_norm_fun)(struct ellc_norm_st *st, struct ell_obj *stx_lst);
+(ellc_norm_fun)(struct ellc_st *st, struct ell_obj *stx_lst);
 
 /* (Simple Forms) */
 
 static struct ellc_ast *
-ellc_make_ref(struct ellc_norm_st *st, struct ell_obj *stx_sym, enum ellc_ns ns)
+ellc_make_ref(struct ellc_st *st, struct ell_obj *stx_sym, enum ellc_ns ns)
 {
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_REF);
     ast->ref.id = ellc_make_id_cx(ell_stx_sym_sym(stx_sym), ns, ell_stx_sym_cx(stx_sym));
@@ -145,43 +145,44 @@ ellc_make_ref(struct ellc_norm_st *st, struct ell_obj *stx_sym, enum ellc_ns ns)
 }
 
 static struct ellc_ast *
-ellc_norm_ref(struct ellc_norm_st *st, struct ell_obj *stx_sym)
+ellc_norm_ref(struct ellc_st *st, struct ell_obj *stx_sym)
 {
     return ellc_make_ref(st, stx_sym, ELLC_NS_VAR);
 }
 
 static struct ellc_ast *
-ellc_norm_fref(struct ellc_norm_st *st, struct ell_obj *stx_lst)
+ellc_norm_fref(struct ellc_st *st, struct ell_obj *stx_lst)
 {
     ell_assert_stx_lst_len(stx_lst, 2);
     return ellc_make_ref(st, ELL_SEND(stx_lst, second), ELLC_NS_FUN);
 }
 
 static struct ellc_ast *
-ellc_make_def(struct ellc_norm_st *st, struct ell_obj *stx_lst, enum ellc_ns ns)
+ellc_make_def(struct ellc_st *st, struct ell_obj *stx_lst, enum ellc_ns ns)
 {
     ell_assert_stx_lst_len(stx_lst, 3);
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_DEF);
     struct ell_obj *stx_sym = ELL_SEND(stx_lst, second);
     ast->def.id = ellc_make_id_cx(ell_stx_sym_sym(stx_sym), ns, ell_stx_sym_cx(stx_sym));
     ast->def.val = ellc_norm_stx(st, ELL_SEND(stx_lst, third));
+    ell_util_set_add(st->defined_globals, ast->def.id, (dict_comp_t) &ellc_id_cmp);
     return ast;
 }
 
 static struct ellc_ast *
-ellc_norm_def(struct ellc_norm_st *st, struct ell_obj *stx_lst)
+ellc_norm_def(struct ellc_st *st, struct ell_obj *stx_lst)
 {
     return ellc_make_def(st, stx_lst, ELLC_NS_VAR);
 }
 
 static struct ellc_ast *
-ellc_norm_fdef(struct ellc_norm_st *st, struct ell_obj *stx_lst)
+ellc_norm_fdef(struct ellc_st *st, struct ell_obj *stx_lst)
 {
     return ellc_make_def(st, stx_lst, ELLC_NS_FUN);
 }
 
 static struct ellc_ast *
-ellc_make_defp(struct ellc_norm_st *st, struct ell_obj *stx_lst, enum ellc_ns ns)
+ellc_make_defp(struct ellc_st *st, struct ell_obj *stx_lst, enum ellc_ns ns)
 {
     ell_assert_stx_lst_len(stx_lst, 2);
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_DEFP);
@@ -191,19 +192,19 @@ ellc_make_defp(struct ellc_norm_st *st, struct ell_obj *stx_lst, enum ellc_ns ns
 }
 
 static struct ellc_ast *
-ellc_norm_defp(struct ellc_norm_st *st, struct ell_obj *stx_lst)
+ellc_norm_defp(struct ellc_st *st, struct ell_obj *stx_lst)
 {
     return ellc_make_defp(st, stx_lst, ELLC_NS_VAR);
 }
 
 static struct ellc_ast *
-ellc_norm_fdefp(struct ellc_norm_st *st, struct ell_obj *stx_lst)
+ellc_norm_fdefp(struct ellc_st *st, struct ell_obj *stx_lst)
 {
     return ellc_make_defp(st, stx_lst, ELLC_NS_FUN);
 }
 
 static struct ellc_ast *
-ellc_make_set(struct ellc_norm_st *st, struct ell_obj *stx_lst, enum ellc_ns ns)
+ellc_make_set(struct ellc_st *st, struct ell_obj *stx_lst, enum ellc_ns ns)
 {
     ell_assert_stx_lst_len(stx_lst, 3);
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_SET);
@@ -214,19 +215,19 @@ ellc_make_set(struct ellc_norm_st *st, struct ell_obj *stx_lst, enum ellc_ns ns)
 }
 
 static struct ellc_ast *
-ellc_norm_set(struct ellc_norm_st *st, struct ell_obj *stx_lst)
+ellc_norm_set(struct ellc_st *st, struct ell_obj *stx_lst)
 {
     return ellc_make_set(st, stx_lst, ELLC_NS_VAR);
 }
 
 static struct ellc_ast *
-ellc_norm_fset(struct ellc_norm_st *st, struct ell_obj *stx_lst)
+ellc_norm_fset(struct ellc_st *st, struct ell_obj *stx_lst)
 {
     return ellc_make_set(st, stx_lst, ELLC_NS_FUN);
 }
 
 static struct ellc_ast *
-ellc_norm_cond(struct ellc_norm_st *st, struct ell_obj *stx_lst)
+ellc_norm_cond(struct ellc_st *st, struct ell_obj *stx_lst)
 {
     ell_assert_stx_lst_len(stx_lst, 4);
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_COND);
@@ -237,7 +238,7 @@ ellc_norm_cond(struct ellc_norm_st *st, struct ell_obj *stx_lst)
 }
 
 static struct ellc_ast *
-ellc_norm_seq(struct ellc_norm_st *st, struct ell_obj *stx_lst)
+ellc_norm_seq(struct ellc_st *st, struct ell_obj *stx_lst)
 {
     ell_assert_stx_lst_len_min(stx_lst, 1);
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_SEQ);
@@ -280,7 +281,7 @@ ellc_make_args()
 }
 
 static struct ellc_args *
-ellc_dissect_args(struct ellc_norm_st *st, list_t *args_stx)
+ellc_dissect_args(struct ellc_st *st, list_t *args_stx)
 {
     struct ellc_args *args = ellc_make_args();
     for (lnode_t *n = list_first(args_stx); n; n = list_next(args_stx, n)) {
@@ -306,7 +307,7 @@ ellc_dissect_args(struct ellc_norm_st *st, list_t *args_stx)
 }
 
 static struct ellc_ast *
-ellc_make_app(struct ellc_norm_st *st, struct ellc_ast *op, list_t *arg_stx_lst)
+ellc_make_app(struct ellc_st *st, struct ellc_ast *op, list_t *arg_stx_lst)
 {
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_APP);
     ast->app.op = op;
@@ -315,7 +316,7 @@ ellc_make_app(struct ellc_norm_st *st, struct ellc_ast *op, list_t *arg_stx_lst)
 }
 
 static struct ellc_ast *
-ellc_norm_app(struct ellc_norm_st *st, struct ell_obj *stx_lst)
+ellc_norm_app(struct ellc_st *st, struct ell_obj *stx_lst)
 {
     ell_assert_stx_lst_len_min(stx_lst, 2);
     return ellc_make_app(st, ellc_norm_stx(st, ELL_SEND(stx_lst, second)),
@@ -323,7 +324,7 @@ ellc_norm_app(struct ellc_norm_st *st, struct ell_obj *stx_lst)
 }
 
 static struct ellc_ast *
-ellc_norm_ordinary_app(struct ellc_norm_st *st, struct ell_obj *stx_lst)
+ellc_norm_ordinary_app(struct ellc_st *st, struct ell_obj *stx_lst)
 {
     ell_assert_stx_lst_len_min(stx_lst, 1);
     struct ell_obj *op_sym_stx = ELL_SEND(stx_lst, first);
@@ -338,7 +339,7 @@ ellc_norm_ordinary_app(struct ellc_norm_st *st, struct ell_obj *stx_lst)
 /* (Abstraction and Parameters Dissection) */
 
 static struct ellc_param *
-ellc_dissect_param(struct ellc_norm_st *st, struct ell_obj *p_stx, dict_t *deferred_inits)
+ellc_dissect_param(struct ellc_st *st, struct ell_obj *p_stx, dict_t *deferred_inits)
 {
     struct ellc_param *p = (struct ellc_param *) ell_alloc(sizeof(*p));
     if (p_stx->brand == ELL_BRAND(stx_sym)) {
@@ -356,7 +357,7 @@ ellc_dissect_param(struct ellc_norm_st *st, struct ell_obj *p_stx, dict_t *defer
 }
 
 static struct ellc_params *
-ellc_dissect_params(struct ellc_norm_st *st, list_t *params_stx, dict_t *deferred_inits)
+ellc_dissect_params(struct ellc_st *st, list_t *params_stx, dict_t *deferred_inits)
 {
     struct ellc_params *params =
         (struct ellc_params *) ell_alloc(sizeof(*params));
@@ -406,7 +407,7 @@ ellc_dissect_params(struct ellc_norm_st *st, list_t *params_stx, dict_t *deferre
 }
 
 static struct ellc_ast *
-ellc_norm_lam(struct ellc_norm_st *st, struct ell_obj *stx_lst)
+ellc_norm_lam(struct ellc_st *st, struct ell_obj *stx_lst)
 {
     ell_assert_stx_lst_len(stx_lst, 3);
     struct ell_obj *params_stx = ELL_SEND(stx_lst, second);
@@ -437,7 +438,7 @@ ellc_norm_lam(struct ellc_norm_st *st, struct ell_obj *stx_lst)
 }
 
 static struct ellc_ast *
-ellc_norm_quote(struct ellc_norm_st *st, struct ell_obj *stx_lst)
+ellc_norm_quote(struct ellc_st *st, struct ell_obj *stx_lst)
 {
     ell_assert_stx_lst_len(stx_lst, 2);
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_LIT_SYM);
@@ -448,10 +449,10 @@ ellc_norm_quote(struct ellc_norm_st *st, struct ell_obj *stx_lst)
 /* (Quasisyntax) */
 
 static struct ellc_ast *
-ellc_norm_qs(struct ellc_norm_st *st, struct ell_obj *arg_stx, unsigned depth);
+ellc_norm_qs(struct ellc_st *st, struct ell_obj *arg_stx, unsigned depth);
 
 static struct ellc_ast *
-ellc_build_syntax(struct ellc_norm_st *st, struct ell_obj *stx)
+ellc_build_syntax(struct ellc_st *st, struct ell_obj *stx)
 {
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_LIT_STX);
     if (!((stx->brand == ELL_BRAND(stx_sym))
@@ -464,7 +465,7 @@ ellc_build_syntax(struct ellc_norm_st *st, struct ell_obj *stx)
 }
 
 static struct ellc_ast *
-ellc_build_syntax_list(struct ellc_norm_st *st, list_t *asts)
+ellc_build_syntax_list(struct ellc_st *st, list_t *asts)
 {
     struct ellc_args *args = ellc_make_args();
     list_transfer(&args->pos, asts, list_first(asts));
@@ -475,7 +476,7 @@ ellc_build_syntax_list(struct ellc_norm_st *st, list_t *asts)
 }
 
 static struct ellc_ast *
-ellc_build_append_syntax_lists(struct ellc_norm_st *st, list_t *asts)
+ellc_build_append_syntax_lists(struct ellc_st *st, list_t *asts)
 {
     struct ellc_args *args = ellc_make_args();
     list_transfer(&args->pos, asts, list_first(asts));
@@ -486,7 +487,7 @@ ellc_build_append_syntax_lists(struct ellc_norm_st *st, list_t *asts)
 }
 
 static struct ellc_ast *
-ellc_build_quasisyntax(struct ellc_norm_st *st, struct ell_obj *stx, unsigned depth)
+ellc_build_quasisyntax(struct ellc_st *st, struct ell_obj *stx, unsigned depth)
 {
     list_t *asts = ell_util_make_list();
     ell_util_list_add(asts, ellc_build_syntax(st, ell_make_stx_sym(ELL_SYM(core_quasisyntax))));
@@ -495,7 +496,7 @@ ellc_build_quasisyntax(struct ellc_norm_st *st, struct ell_obj *stx, unsigned de
 }
 
 static struct ellc_ast *
-ellc_build_unsyntax(struct ellc_norm_st *st, struct ell_obj *stx, unsigned depth)
+ellc_build_unsyntax(struct ellc_st *st, struct ell_obj *stx, unsigned depth)
 {
     list_t *asts = ell_util_make_list();
     ell_util_list_add(asts, ellc_build_syntax(st, ell_make_stx_sym(ELL_SYM(core_unsyntax))));
@@ -504,7 +505,7 @@ ellc_build_unsyntax(struct ellc_norm_st *st, struct ell_obj *stx, unsigned depth
 }
 
 static struct ellc_ast *
-ellc_build_unsyntax_splicing(struct ellc_norm_st *st, struct ell_obj *stx, unsigned depth)
+ellc_build_unsyntax_splicing(struct ellc_st *st, struct ell_obj *stx, unsigned depth)
 {
     list_t *asts = ell_util_make_list();
     ell_util_list_add(asts, ellc_build_syntax(st, ell_make_stx_sym(ELL_SYM(core_unsyntax_splicing))));
@@ -513,7 +514,7 @@ ellc_build_unsyntax_splicing(struct ellc_norm_st *st, struct ell_obj *stx, unsig
 }
 
 static bool
-ellc_is_unsyntax_splicing_list(struct ellc_norm_st *st, struct ell_obj *stx)
+ellc_is_unsyntax_splicing_list(struct ellc_st *st, struct ell_obj *stx)
 {
     if (stx->brand != ELL_BRAND(stx_lst)) return 0;
     if (ell_stx_lst_len(stx) != 2) return 0;
@@ -523,14 +524,14 @@ ellc_is_unsyntax_splicing_list(struct ellc_norm_st *st, struct ell_obj *stx)
 }
 
 static bool
-ellc_is_unsyntax(struct ellc_norm_st *st, struct ell_obj *op_stx)
+ellc_is_unsyntax(struct ellc_st *st, struct ell_obj *op_stx)
 {
     return ((op_stx->brand == ELL_BRAND(stx_sym))
             && (ell_stx_sym_sym(op_stx) == ELL_SYM(core_unsyntax)));
 }
 
 static bool
-ellc_is_quasisyntax(struct ellc_norm_st *st, struct ell_obj *op_stx)
+ellc_is_quasisyntax(struct ellc_st *st, struct ell_obj *op_stx)
 {
     return ((op_stx->brand == ELL_BRAND(stx_sym))
             && (ell_stx_sym_sym(op_stx) == ELL_SYM(core_quasisyntax)));
@@ -541,7 +542,7 @@ ellc_is_quasisyntax(struct ellc_norm_st *st, struct ell_obj *op_stx)
    in appendix B of his paper "Quasiquotation in Lisp".  Ha. */
 
 static struct ellc_ast *
-ellc_norm_qs_lst_helper(struct ellc_norm_st *st, struct ell_obj *stx_lst, unsigned depth)
+ellc_norm_qs_lst_helper(struct ellc_st *st, struct ell_obj *stx_lst, unsigned depth)
 {
     list_t *in_elts = ell_stx_lst_elts(stx_lst);
     list_t *lsts = ell_util_make_list();
@@ -569,7 +570,7 @@ ellc_norm_qs_lst_helper(struct ellc_norm_st *st, struct ell_obj *stx_lst, unsign
 }
 
 static struct ellc_ast *
-ellc_norm_qs_lst(struct ellc_norm_st *st, struct ell_obj *stx_lst, unsigned depth)
+ellc_norm_qs_lst(struct ellc_st *st, struct ell_obj *stx_lst, unsigned depth)
 {
     if (ell_stx_lst_len(stx_lst) == 0) {
         return ellc_build_syntax_list(st, ell_stx_lst_elts(stx_lst));
@@ -594,7 +595,7 @@ ellc_norm_qs_lst(struct ellc_norm_st *st, struct ell_obj *stx_lst, unsigned dept
 }
 
 static struct ellc_ast *
-ellc_norm_qs(struct ellc_norm_st *st, struct ell_obj *arg_stx, unsigned depth)
+ellc_norm_qs(struct ellc_st *st, struct ell_obj *arg_stx, unsigned depth)
 {
     if (depth < 0) {
         printf("negative quasiquotation depth\n");
@@ -613,7 +614,7 @@ ellc_norm_qs(struct ellc_norm_st *st, struct ell_obj *arg_stx, unsigned depth)
 }
 
 static struct ellc_ast *
-ellc_norm_quasisyntax(struct ellc_norm_st *st, struct ell_obj *stx_lst)
+ellc_norm_quasisyntax(struct ellc_st *st, struct ell_obj *stx_lst)
 {
     ell_assert_stx_lst_len(stx_lst, 2);
     struct ell_obj *arg_stx = ELL_SEND(stx_lst, second);
@@ -647,7 +648,7 @@ ellc_is_mdef(struct ell_obj *stx)
 }
 
 static struct ellc_ast *
-ellc_norm_mdef(struct ellc_norm_st *st, struct ell_obj *mdef_stx)
+ellc_norm_mdef(struct ellc_st *st, struct ell_obj *mdef_stx)
 {
     ell_assert_stx_lst_len(mdef_stx, 3);
     struct ell_obj *name_stx = ELL_SEND(mdef_stx, second);
@@ -687,7 +688,7 @@ ellc_init()
 }
 
 static struct ellc_ast *
-ellc_norm_lst(struct ellc_norm_st *st, struct ell_obj *stx_lst)
+ellc_norm_lst(struct ellc_st *st, struct ell_obj *stx_lst)
 {
     ell_assert_brand(stx_lst, ELL_BRAND(stx_lst));
     struct ell_obj *op_stx = ELL_SEND(stx_lst, first);
@@ -721,7 +722,7 @@ ellc_norm_lst(struct ellc_norm_st *st, struct ell_obj *stx_lst)
 }
 
 static struct ellc_ast *
-ellc_norm_lit_str(struct ellc_norm_st *st, struct ell_obj *stx)
+ellc_norm_lit_str(struct ellc_st *st, struct ell_obj *stx)
 {
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_LIT_STR);
     ast->lit_str.str = ell_stx_str_str(stx);
@@ -729,7 +730,7 @@ ellc_norm_lit_str(struct ellc_norm_st *st, struct ell_obj *stx)
 }
 
 static struct ellc_ast *
-ellc_norm_stx(struct ellc_norm_st *st, struct ell_obj *stx)
+ellc_norm_stx(struct ellc_st *st, struct ell_obj *stx)
 {
     if (stx->brand == ELL_BRAND(stx_sym)) {
         return ellc_norm_ref(st, stx);
@@ -744,7 +745,7 @@ ellc_norm_stx(struct ellc_norm_st *st, struct ell_obj *stx)
 }
 
 static list_t *
-ellc_norm_macro_pass(struct ellc_norm_st *st, list_t *stx_elts, list_t *deferred)
+ellc_norm_macro_pass(struct ellc_st *st, list_t *stx_elts, list_t *deferred)
 {
     for (lnode_t *n = list_first(stx_elts); n; n = list_next(stx_elts, n)) {
         struct ell_obj *stx = (struct ell_obj *) lnode_get(n);
@@ -759,12 +760,9 @@ ellc_norm_macro_pass(struct ellc_norm_st *st, list_t *stx_elts, list_t *deferred
 }
 
 static struct ellc_ast_seq *
-ellc_norm(struct ell_obj *stx_lst)
+ellc_norm(struct ellc_st *st, struct ell_obj *stx_lst)
 {
     ell_assert_brand(stx_lst, ELL_BRAND(stx_lst));
-    struct ellc_norm_st *st = (struct ellc_norm_st *) ell_alloc(sizeof(*st));
-    st->bottom_contour = NULL;
-
     list_t *deferred = ell_util_make_list();
     ellc_norm_macro_pass(st, ell_stx_lst_elts(stx_lst), deferred);
 
@@ -832,7 +830,6 @@ ellc_conv_ref(struct ellc_st *st, struct ellc_ast *ast)
 static void
 ellc_conv_def(struct ellc_st *st, struct ellc_ast *ast)
 {
-    ell_util_set_add(st->defined_globals, ast->def.id, (dict_comp_t) &ellc_id_cmp);
     ell_util_set_add(st->globals, ast->def.id, (dict_comp_t) &ellc_id_cmp);
     ellc_conv_ast(st, ast->def.val);
 }
@@ -974,6 +971,10 @@ ellc_conv_ast(struct ellc_st *st, struct ellc_ast *ast)
 static void
 ellc_conv(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
 {
+    if (st->bottom_contour != NULL) {
+        printf("contour tracking bug or error in compilation unit\n");
+        exit(EXIT_FAILURE);
+    }
     for (lnode_t *n = list_first(ast_seq->exprs); n; n = list_next(ast_seq->exprs, n))
         ellc_conv_ast(st, (struct ellc_ast *) lnode_get(n));
 }
@@ -1418,6 +1419,7 @@ ellc_make_st(FILE *f)
     st->defined_globals = ell_util_make_list();
     st->globals = ell_util_make_list();
     st->lambdas = ell_util_make_list();
+    st->bottom_contour = NULL;
     return st;
 }
 
@@ -1444,9 +1446,8 @@ ellc_eval(struct ell_obj *stx_lst)
         exit(EXIT_FAILURE);
     }
     
-    struct ellc_ast_seq *ast_seq = ellc_norm(stx_lst);
-
     struct ellc_st *st = ellc_make_st(f);
+    struct ellc_ast_seq *ast_seq = ellc_norm(st, stx_lst);
     ellc_conv(st, ast_seq);
     ellc_emit(st, ast_seq);
     
