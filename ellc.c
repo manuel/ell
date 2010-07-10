@@ -1327,12 +1327,12 @@ ellc_emit_req_param_val(struct ellc_st *st, struct ellc_param *p, unsigned pos)
 }
 
 static void
-ellc_emit_opt_param_val(struct ellc_st *st, struct ellc_param *p, unsigned pos)
+ellc_emit_opt_param_val(struct ellc_st *st, struct ellc_param *p, unsigned i)
 {
     if (ellc_param_boxed(p))
-        fprintf(st->f, "__ell_npos >= %u ? ell_make_box(__ell_args[%u]) : ", pos, pos);
+        fprintf(st->f, "__ell_npos > %u ? ell_make_box(__ell_args[%u]) : ", i, i);
     else
-        fprintf(st->f, "__ell_npos >= %u ? __ell_args[%u] : ", pos, pos);
+        fprintf(st->f, "__ell_npos > %u ? __ell_args[%u] : ", i, i);
 
     if (p->init)
         ellc_emit_ast(st, p->init);
@@ -1346,20 +1346,24 @@ ellc_emit_params(struct ellc_st *st, struct ellc_ast_lam *lam)
     listcount_t nreq = list_count(lam->params->req);
     if (nreq > 0) fprintf(st->f, "\tif (__ell_npos < %lu) { ell_arity_error(); }\n", nreq);
     
-    unsigned pos = 0;
+    unsigned i = 0;
+
+    // required
     for (lnode_t *n = list_first(lam->params->req); n; n = list_next(lam->params->req, n)) {
         struct ellc_param *p = (struct ellc_param *) lnode_get(n);
         fprintf(st->f, "\tvoid *%s = ", ellc_mangle_param_id(p->id));
-        ellc_emit_req_param_val(st, p, pos);
+        ellc_emit_req_param_val(st, p, i);
         fprintf(st->f, ";\n");
-        pos++;
+        i++;
     }
+
+    // optional
     for (lnode_t *n = list_first(lam->params->opt); n; n = list_next(lam->params->opt, n)) {
         struct ellc_param *p = (struct ellc_param *) lnode_get(n);
         fprintf(st->f, "\tvoid *%s = ", ellc_mangle_param_id(p->id));
-        ellc_emit_opt_param_val(st, p, pos);
+        ellc_emit_opt_param_val(st, p, i);
         fprintf(st->f, ";\n");
-        pos++;
+        i++;
     }
 
     if (list_count(lam->params->key) > 0) {
