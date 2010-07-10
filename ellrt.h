@@ -255,6 +255,8 @@ __attribute__((weak)) struct ell_obj *ell_result;
 void
 ell_arity_error();
 struct ell_obj *
+ell_unbound_arg();
+struct ell_obj *
 ell_unbound_var(char *name);
 struct ell_obj *
 ell_unbound_fun(char *name);

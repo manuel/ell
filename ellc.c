@@ -1082,11 +1082,13 @@ ellc_emit_glo_ref(struct ellc_st *st, struct ellc_ast *ast)
 static void
 ellc_emit_arg_ref(struct ellc_st *st, struct ellc_ast *ast)
 {
+    fprintf(st->f, "({ struct ell_obj *val = ");
     if (ellc_param_boxed(ast->arg_ref.param)) {
         fprintf(st->f, "ell_box_read(%s)", ellc_mangle_param_id(ast->arg_ref.param->id));
     } else {
         fprintf(st->f, "%s", ellc_mangle_param_id(ast->arg_ref.param->id));
     }
+    fprintf(st->f, "; val != ell_unbound ? val : ell_unbound_arg(); })");
 }
 
 static void

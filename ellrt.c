@@ -486,6 +486,14 @@ ell_arity_error()
 }
 
 struct ell_obj *
+ell_unbound_arg()
+{
+    printf("unbound argument\n");
+    exit(EXIT_FAILURE);
+    return ell_unspecified;
+}
+
+struct ell_obj *
 ell_unbound_var(char *name)
 {
     printf("unbound variable: %s\n", name);
