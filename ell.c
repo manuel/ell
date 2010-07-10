@@ -26,9 +26,11 @@ int main()
         ell_len = strlen(ell_line);
         ell_off = 0;
 
-        struct ell_obj *stx_lst = ell_parse();
-        ELL_SEND(ellc_eval(stx_lst), print_object);
-        printf("\n");
+        struct ell_obj *result = ellc_eval(ell_parse());
+        if (result != ell_unspecified) {
+            ELL_SEND(result, print_object);
+            printf("\n");
+        }
 
         free(ell_line);
     }
