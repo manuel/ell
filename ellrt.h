@@ -151,6 +151,27 @@ ell_sym_name(struct ell_obj *sym);
 int
 ell_sym_cmp(struct ell_obj *sym_a, struct ell_obj *sym_b);
 
+/**** Booleans ****/
+
+// Lisp names
+struct ell_obj *__ell_g_Ot_;
+struct ell_obj *__ell_g_Of_;
+// C names for convenience
+struct ell_obj *ell_t;
+struct ell_obj *ell_f;
+
+bool
+ell_is_true(struct ell_obj *obj);
+
+/**** Unspecified value ****/
+
+struct ell_obj *__ell_g_unspecified_;
+struct ell_obj *ell_unspecified;
+
+/**** Unbound marker ****/
+
+struct ell_obj *ell_unbound;
+
 /**** Syntax Objects ****/
 
 struct ell_obj *

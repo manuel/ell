@@ -1,5 +1,6 @@
 -*-org-*-
 * Language Issues
+** Check local variable access against unbound marker
 ** Try to find out what the money quote in SRFI 72 actually means and check for compat
 ** Code created by quasisyntax doesn't use current hygiene context
 This means that append-syntax-lists and such cannot be shadowed.  Not
@@ -10,6 +11,7 @@ IOW, are macro names symbols or (hygiene-contextual) identifiers?
 ** Ensure that function parameters names' are unique
 ** Ensure that only optional and keyword parameters have init forms
 * Code Enhancements
+** Keep track of all used symbols in unit and intern them only once at load-time
 ** Remove complex __attribute__((constructor())) stuff in favor of one central init routine 
 ** Make ellc_args contain pointers, for uniformity with other code
 * Environment Issues

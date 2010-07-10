@@ -366,24 +366,47 @@ ell_assert_stx_lst_len_min(struct ell_obj *stx_lst, listcount_t len)
     ell_util_assert_list_len_min(ell_stx_lst_elts(stx_lst), len);
 }
 
+/**** Booleans ****/
+
+bool
+ell_is_true(struct ell_obj *obj)
+{
+    ell_assert_brand(obj, ELL_BRAND(boolean));
+    return obj == ell_t;
+}
+
 /**** Library ****/
+
+ELL_DEFMETHOD(boolean, print_object, 1)
+ELL_PARAM(boolean, 0)
+if (ell_is_true(boolean)) {
+    printf("#t");
+} else {
+    printf("#f");
+}
+return ell_unspecified;
+ELL_END
+
+ELL_DEFMETHOD(unspecified, print_object, 1)
+return ell_unspecified;
+ELL_END
 
 ELL_DEFMETHOD(sym, print_object, 1)
 ELL_PARAM(sym, 0)
 printf("%s", ell_str_chars(ell_sym_name(sym)));
-return NULL;
+return ell_unspecified;
 ELL_END
 
 ELL_DEFMETHOD(str, print_object, 1)
 ELL_PARAM(str, 0)
 printf("\"%s\"", ell_str_chars(str));
-return NULL;
+return ell_unspecified;
 ELL_END
 
 ELL_DEFMETHOD(clo, print_object, 1)
 ELL_PARAM(self, 0)
 printf("%s", "#<function>");
-return NULL;
+return ell_unspecified;
 ELL_END
 
 ELL_DEFMETHOD(stx_lst, add, 2)
@@ -407,19 +430,19 @@ ELL_PARAM(stx_lst, 0)
 printf("(");
 list_process(ell_stx_lst_elts(stx_lst), NULL, &ell_stx_lst_print_process);
 printf(")");
-return NULL;
+return ell_unspecified;
 ELL_END
 
 ELL_DEFMETHOD(stx_sym, print_object, 1)
 ELL_PARAM(stx_sym, 0)
 printf("%s", ell_str_chars(ell_sym_name(ell_stx_sym_sym(stx_sym))));
-return NULL;
+return ell_unspecified;
 ELL_END
 
 ELL_DEFMETHOD(stx_str, print_object, 1)
 ELL_PARAM(stx_str, 0)
 printf("%s", ell_str_chars(ell_stx_str_str(stx_str)));
-return NULL;
+return ell_unspecified;
 ELL_END
 
 ELL_DEFMETHOD(stx_lst, first, 1)
@@ -467,7 +490,7 @@ ell_unbound_var(char *name)
 {
     printf("unbound variable: %s\n", name);
     exit(EXIT_FAILURE);
-    return NULL;
+    return ell_unspecified;
 }
 
 struct ell_obj *
@@ -475,7 +498,7 @@ ell_unbound_fun(char *name)
 {
     printf("unbound function: %s\n", name);
     exit(EXIT_FAILURE);
-    return NULL;
+    return ell_unspecified;
 }
 
 struct ell_obj **
@@ -703,6 +726,16 @@ ell_init()
     if (!ELL_SYM(name)) ELL_SYM(name) = ell_intern(ell_make_str(lisp_name));
 #include "syms.h"
 #undef ELL_DEFSYM
+
+    __ell_g_Ot_ = ell_make_obj(ELL_BRAND(boolean), NULL);
+    ell_t = __ell_g_Ot_;
+    __ell_g_Of_ = ell_make_obj(ELL_BRAND(boolean), NULL);
+    ell_f = __ell_g_Of_;
+
+    __ell_g_unspecified_ = ell_make_obj(ELL_BRAND(unspecified), NULL);
+    ell_unspecified = __ell_g_unspecified_;
+
+    ell_unbound = ell_make_obj(ELL_BRAND(unbound), NULL);
 
     __ell_g_send_ = ell_make_clo(&ell_send_code, NULL);
     __ell_g_syntaxDlist_ = ell_make_clo(&ell_syntax_list_code, NULL);

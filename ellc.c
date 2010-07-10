@@ -993,6 +993,7 @@ ellc_mangle_char(char c)
     case ':': return 'S';
     case '_': return 'U';
     case '-': return 'D';
+    case '#': return 'O';
     default: return c;
     }
 }
@@ -1067,10 +1068,10 @@ ellc_emit_glo_ref(struct ellc_st *st, struct ellc_ast *ast)
     char *mid = ellc_mangle_glo_id(id);
     switch(id->ns) {
     case ELLC_NS_VAR:
-        fprintf(st->f, "(%s != NULL ? %s : ell_unbound_var(\"%s\"))", mid, mid, sid);
+        fprintf(st->f, "(%s != ell_unbound ? %s : ell_unbound_var(\"%s\"))", mid, mid, sid);
         break;
     case ELLC_NS_FUN:
-        fprintf(st->f, "(%s != NULL ? %s : ell_unbound_fun(\"%s\"))", mid, mid, sid);
+        fprintf(st->f, "(%s != ell_unbound ? %s : ell_unbound_fun(\"%s\"))", mid, mid, sid);
         break;
     default:
         printf("unknown namespace\n");
@@ -1109,7 +1110,7 @@ ellc_emit_def(struct ellc_st *st, struct ellc_ast *ast)
 static void
 ellc_emit_defp(struct ellc_st *st, struct ellc_ast *ast)
 {
-    fprintf(st->f, "(%s != NULL)", ellc_mangle_glo_id(ast->defp.id));
+    fprintf(st->f, "(%s != ell_unbound ? ell_t : ell_f)", ellc_mangle_glo_id(ast->defp.id));
 }
 
 static void
@@ -1153,9 +1154,9 @@ ellc_emit_env_set(struct ellc_st *st, struct ellc_ast *ast)
 static void
 ellc_emit_cond(struct ellc_st *st, struct ellc_ast *ast)
 {
-    fprintf(st->f, "(");
+    fprintf(st->f, "(ell_is_true(");
     ellc_emit_ast(st, ast->cond.test);
-    fprintf(st->f, ") ? (");
+    fprintf(st->f, ")) ? (");
     ellc_emit_ast(st, ast->cond.consequent);
     fprintf(st->f, ") : (");
     ellc_emit_ast(st, ast->cond.alternative);
@@ -1295,12 +1296,23 @@ ellc_emit_ast(struct ellc_st *st, struct ellc_ast *ast)
 }
 
 static void
-ellc_emit_globals(struct ellc_st *st)
+ellc_emit_globals_declarations(struct ellc_st *st)
 {
     fprintf(st->f, "// GLOBALS\n");
     for (lnode_t *n = list_first(st->globals); n; n = list_next(st->globals, n)) {
         struct ellc_id *id = (struct ellc_id *) lnode_get(n);
         fprintf(st->f, "__attribute__((weak)) struct ell_obj *%s;\n", ellc_mangle_glo_id(id));
+    }
+    fprintf(st->f, "\n");
+}
+
+static void
+ellc_emit_globals_initializations(struct ellc_st *st)
+{
+    for (lnode_t *n = list_first(st->globals); n; n = list_next(st->globals, n)) {
+        struct ellc_id *id = (struct ellc_id *) lnode_get(n);
+        char *mid = ellc_mangle_glo_id(id);
+        fprintf(st->f, "if (%s == NULL) %s = ell_unbound;\n", mid, mid);
     }
     fprintf(st->f, "\n");
 }
@@ -1325,7 +1337,7 @@ ellc_emit_opt_param_val(struct ellc_st *st, struct ellc_param *p, unsigned pos)
     if (p->init)
         ellc_emit_ast(st, p->init);
     else
-        fprintf(st->f, "NULL");
+        fprintf(st->f, "ell_unbound");
 }
 
 static void
@@ -1397,10 +1409,11 @@ static void
 ellc_emit(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
 {
     fprintf(st->f, "#include \"ellrt.h\"\n");
-    ellc_emit_globals(st);
+    ellc_emit_globals_declarations(st);
     ellc_emit_codes(st);
     fprintf(st->f, "// INIT\n");
     fprintf(st->f, "__attribute__((constructor)) static void ell_init() {\n");
+    ellc_emit_globals_initializations(st);
     for (lnode_t *n = list_first(ast_seq->exprs); n; n = list_next(ast_seq->exprs, n)) {
         fprintf(st->f, "\tell_result = ");
         ellc_emit_ast(st, (struct ellc_ast *) lnode_get(n));
@@ -1471,9 +1484,5 @@ ellc_eval(struct ell_obj *stx_lst)
         exit(EXIT_FAILURE);
     }
     
-    if (ell_result) {
-        return ell_result;
-    } else {
-        return ell_make_str("no result");
-    }
+    return ell_result;
 }
