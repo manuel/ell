@@ -10,6 +10,7 @@ IOW, are macro names symbols or (hygiene-contextual) identifiers?
 ** Ensure that function parameters names' are unique
 ** Ensure that only optional and keyword parameters have init forms
 ** Ensure that a global variable can only be set if it's defined (ellc_emit_glo_set)
+** Ignore unsyntax inside syntax -- currently uses same normalizer as quasisyntax
 * Code Enhancements
 ** Keep track of all used symbols in unit and intern them only once at load-time
 ** Remove complex __attribute__((constructor())) stuff in favor of one central init routine 

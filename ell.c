@@ -7,9 +7,6 @@
 
 #include "ellc.h"
 
-#include "grammar.c"
-
-/*
 static char *ell_line;
 static size_t ell_len;
 static size_t ell_off;
@@ -39,7 +36,8 @@ ell_repl()
         free(ell_line);
     }
 }
-*/
+
+#include "grammar.c"
 
 int
 main(int argc, char *argv[])
@@ -59,5 +57,5 @@ main(int argc, char *argv[])
     if (name_str)
         ellc_compile_file(name_str);
     else
-        fprintf(stderr, "Usage: %s -c package.lisp\n", argv[0]);
+        ell_repl();
 }

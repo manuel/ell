@@ -59,6 +59,49 @@ ell_parser_pop()
     ell_parser_stack_top = ell_parser_stack_top->down;
 }
 
+void
+ell_parser_push_special(struct ell_obj *sym)
+{
+    struct ell_parser_stack *new = 
+        (struct ell_parser_stack *) ell_alloc(sizeof(*new));
+    struct ell_obj *new_stx_lst = ell_make_stx_lst();
+    ELL_SEND(new_stx_lst, add, ell_make_stx_sym(sym));
+    new->down = ell_parser_stack_top;
+    new->stx_lst = new_stx_lst;
+    ELL_SEND(ell_parser_stack_top->stx_lst, add, new_stx_lst);
+    ell_parser_stack_top = new;
+}
+
+void
+ell_parser_push_quote()
+{
+    ell_parser_push_special(ELL_SYM(core_quote));
+}
+
+void
+ell_parser_push_syntax()
+{
+    ell_parser_push_special(ELL_SYM(core_syntax));
+}
+
+void
+ell_parser_push_quasisyntax()
+{
+    ell_parser_push_special(ELL_SYM(core_quasisyntax));
+}
+
+void
+ell_parser_push_unsyntax()
+{
+    ell_parser_push_special(ELL_SYM(core_unsyntax));
+}
+
+void
+ell_parser_push_unsyntax_splicing()
+{
+    ell_parser_push_special(ELL_SYM(core_unsyntax_splicing));
+}
+
 /**** Brands and Objects ****/
 
 struct ell_obj *

@@ -686,6 +686,7 @@ ellc_init()
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_lam), &ellc_norm_lam);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_quote), &ellc_norm_quote);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_quasisyntax), &ellc_norm_quasisyntax);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_syntax), &ellc_norm_quasisyntax);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_mdef), &ellc_norm_mdef);
 }
 
