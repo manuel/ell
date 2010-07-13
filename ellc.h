@@ -196,6 +196,9 @@ struct ellc_st {
     /* Keeps track of all global variables defined in the compilation
        unit.  Populated during normalization. */
     list_t *defined_globals; // id
+    /* Keeps track of all macro definitions in the compilation unit.
+       Populated during normalization. */
+    dict_t *defined_macros; // sym -> stx
     /* Keeps track of lexical contours during normalization and
        closure conversion. */
     struct ellc_contour *bottom_contour; // maybe NULL
@@ -216,5 +219,9 @@ struct ellc_st {
 
 struct ell_obj *
 ellc_eval(struct ell_obj *stx_lst);
+void
+ellc_compile_file(struct ell_obj *name_str);
+
+
 
 #endif

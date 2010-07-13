@@ -11,6 +11,7 @@
 //                                                              //
 //////////////////////////////////////////////////////////////////
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <dlfcn.h>
 
@@ -654,6 +655,7 @@ ellc_norm_mdef(struct ellc_st *st, struct ell_obj *mdef_stx)
     struct ell_obj *name_stx = ELL_SEND(mdef_stx, second);
     ell_assert_brand(name_stx, ELL_BRAND(stx_sym));
     struct ell_obj *expander_stx = ELL_SEND(mdef_stx, third);
+    ell_util_dict_put(st->defined_macros, ell_stx_sym_sym(name_stx), expander_stx);
     // Right now, eval requires a syntax list as input, so we need to
     // wrap the expander expression in one.
     struct ell_obj *stx_lst = ell_make_stx_lst();
@@ -770,7 +772,7 @@ ellc_norm(struct ellc_st *st, struct ell_obj *stx_lst)
     for (lnode_t *n = list_first(deferred); n; n = list_next(deferred, n)) {
         struct ell_obj *stx = (struct ell_obj *) lnode_get(n);
         struct ellc_ast *res = ellc_norm_stx(st, stx);
-        if (res)
+        if (res) // check for mdef... could be done better?
             ellc_ast_seq_add(ast_seq, res);
     }
     return ast_seq;
@@ -1418,7 +1420,7 @@ ellc_emit(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
     ellc_emit_globals_declarations(st);
     ellc_emit_codes(st);
     fprintf(st->f, "// INIT\n");
-    fprintf(st->f, "__attribute__((constructor)) static void ell_init() {\n");
+    fprintf(st->f, "__attribute__((constructor(500))) static void ell_init() {\n");
     ellc_emit_globals_initializations(st);
     for (lnode_t *n = list_first(ast_seq->exprs); n; n = list_next(ast_seq->exprs, n)) {
         fprintf(st->f, "\tell_result = ");
@@ -1436,24 +1438,28 @@ ellc_make_st(FILE *f)
     struct ellc_st *st = (struct ellc_st *) ell_alloc(sizeof(*st));
     st->f = f;
     st->defined_globals = ell_util_make_list();
+    st->defined_macros = ell_util_make_dict((dict_comp_t) &ell_sym_cmp);
     st->globals = ell_util_make_list();
     st->lambdas = ell_util_make_list();
     st->bottom_contour = NULL;
     return st;
 }
 
-struct ell_obj *
-ellc_eval(struct ell_obj *stx_lst)
+/* Compiles a syntax list and returns the name of the (temporary) FASL
+   file.  Also returns a pointer to the compiler state in the st_out
+   parameter. */
+static char *
+ellc_compile(struct ell_obj *stx_lst, struct ellc_st **st_out, char **out_c_file)
 {
     ell_assert_brand(stx_lst, ELL_BRAND(stx_lst));
 
-    char cnam[L_tmpnam];
+    char *cnam = ell_alloc(L_tmpnam);
     if (!tmpnam(cnam)) {
         printf("cannot name temp file\n");
         exit(EXIT_FAILURE);
     }
 
-    char onam[L_tmpnam];
+    char *onam = ell_alloc(L_tmpnam);
     if (!tmpnam(onam)) {
         printf("cannot name temp file\n");
         exit(EXIT_FAILURE);
@@ -1483,6 +1489,18 @@ ellc_eval(struct ell_obj *stx_lst)
         exit(EXIT_FAILURE);
     }
 
+    if (st_out)
+        *st_out = st;
+    if (out_c_file)
+        *out_c_file = cnam;
+    return onam;
+}
+
+struct ell_obj *
+ellc_eval(struct ell_obj *stx_lst)
+{
+    char *onam = ellc_compile(stx_lst, NULL, NULL);
+
     ell_result = NULL;
 
     if (!dlopen(onam, RTLD_NOW | RTLD_GLOBAL)) {
@@ -1491,4 +1509,51 @@ ellc_eval(struct ell_obj *stx_lst)
     }
     
     return ell_result;
+}
+
+void
+ellc_compile_file(struct ell_obj* name_str)
+{
+    char *name = ell_str_chars(name_str);
+    freopen(name, "r", stdin);
+
+    struct ellc_st *st;
+
+    struct ell_obj* stx_lst = ell_parse();
+    char *tmp_c_fasl_name; 
+    char *tmp_c_cfasl_name; 
+    char *tmp_fasl_name = ellc_compile(stx_lst, &st, &tmp_c_fasl_name);
+
+    struct ell_obj *macros_stx_lst = ell_make_stx_lst();
+    for (dnode_t *n = dict_first(st->defined_macros); n; n = dict_next(st->defined_macros, n)) {
+        struct ell_obj *name_sym = (struct ell_obj *) dnode_getkey(n);
+        struct ell_obj *expander_stx = (struct ell_obj *) dnode_get(n);
+        struct ell_obj *macro_stx = ell_make_stx_lst();
+        ELL_SEND(macro_stx, add, ell_make_stx_sym(ell_intern(ell_make_str("compiler-put-expander"))));
+        ELL_SEND(macro_stx, add, ell_make_stx_sym(name_sym));
+        ELL_SEND(macro_stx, add, expander_stx);
+        ELL_SEND(macros_stx_lst, add, macro_stx);
+    }
+    
+    char *tmp_cfasl_name = ellc_compile(macros_stx_lst, NULL, &tmp_c_cfasl_name);
+    
+    size_t name_len = strlen(name);
+    char *fasl_name;
+    char *cfasl_name;
+    char *c_fasl_name;
+    char *c_cfasl_name;
+    asprintf(&fasl_name, "%s.fasl", name);
+    asprintf(&cfasl_name, "%s.cfasl", name);
+    asprintf(&c_fasl_name, "%s.fasl.c", name);
+    asprintf(&c_cfasl_name, "%s.cfasl.c", name);
+    
+    rename(tmp_fasl_name, fasl_name);
+    rename(tmp_cfasl_name, cfasl_name);
+    rename(tmp_c_fasl_name, c_fasl_name);
+    rename(tmp_c_cfasl_name, c_cfasl_name);
+
+    free(fasl_name);
+    free(cfasl_name);
+    free(c_fasl_name);
+    free(c_cfasl_name);
 }
