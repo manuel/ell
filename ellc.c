@@ -1120,9 +1120,10 @@ ellc_emit_defp(struct ellc_st *st, struct ellc_ast *ast)
 static void
 ellc_emit_glo_set(struct ellc_st *st, struct ellc_ast *ast)
 {
-    fprintf(st->f, "(%s = ", ellc_mangle_glo_id(ast->glo_set.id));
+    char *mid = ellc_mangle_glo_id(ast->glo_set.id);
+    fprintf(st->f, "({ if (%s == ell_unbound) ell_unbound_var(\"%s\"); %s = ", mid, mid, mid);
     ellc_emit_ast(st, ast->glo_set.val);
-    fprintf(st->f, ")");
+    fprintf(st->f, "; })");
 }
 
 static void

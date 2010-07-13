@@ -1,6 +1,5 @@
 -*-org-*-
 * Language Issues
-** Check local variable access against unbound marker
 ** Try to find out what the money quote in SRFI 72 actually means and check for compat
 ** Code created by quasisyntax doesn't use current hygiene context
 This means that append-syntax-lists and such cannot be shadowed.  Not
