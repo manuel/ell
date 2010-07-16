@@ -33,4 +33,10 @@ ellcm_compile_str(struct ellcm *cm, char *s, char *faslfile, char *cfaslfile);
 int
 ellcm_compile_file(struct ellcm *cm, char *infile, char *faslfile, char *cfaslfile);
 
+struct ell_obj *
+ellcm_eval(struct ellcm *cm, char *s);
+
+void
+ellcm_load_file(struct ellcm *cm, char *infile);
+
 #endif

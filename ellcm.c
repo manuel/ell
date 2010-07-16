@@ -107,7 +107,6 @@ ellcm_compile_file(struct ellcm *cm, char *infile, char *faslfile, char *cfaslfi
         total += bytes;
         buf += bytes;
     }
-    printf("compiler: %s\n", rx.msg);
     return rx.status;
 }
 
@@ -133,4 +132,15 @@ ellcm_eval(struct ellcm *cm, char *s)
     ell_result = ell_unspecified;
     dlopen(faslfile, RTLD_NOW | RTLD_GLOBAL);
     return ell_result;
+}
+
+void
+ellcm_load_file(struct ellcm *cm, char *infile)
+{
+    char *faslfile = ell_alloc(L_tmpnam);
+    char *cfaslfile = ell_alloc(L_tmpnam);
+    tmpnam(faslfile);
+    tmpnam(cfaslfile);
+    ellcm_compile_file(cm, infile, faslfile, cfaslfile);
+    dlopen(faslfile, RTLD_NOW | RTLD_GLOBAL);
 }

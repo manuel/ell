@@ -7,10 +7,9 @@
 #include "ellcm.h"
 
 static void
-ell_repl()
+ell_repl(struct ellcm *cm)
 {
-    struct ellcm *cm = ellcm_init();
-    for(unsigned i = 0; ; i++) {
+    for(;;) {
         char *line = readline("> ");
         struct ell_obj *result = ellcm_eval(cm, line);
         if (result != ell_unspecified) {
@@ -24,6 +23,10 @@ ell_repl()
 int
 main(int argc, char *argv[])
 {
-    ell_repl();
+    struct ellcm *cm = ellcm_init();
+    for (int i = 1; i < argc; i++) {
+        ellcm_load_file(cm, argv[i]);
+    }
+    ell_repl(cm);
     return 0;
 }
