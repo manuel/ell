@@ -764,6 +764,15 @@ ell_apply_syntax_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, st
     return ell_call(fun, len, 0, the_args);
 }
 
+struct ell_obj *__ell_g_exit_;
+
+struct ell_obj *
+ell_exit_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    exit(EXIT_SUCCESS);
+    return NULL;
+}
+
 /**** Initialization ****/
 
 __attribute__((constructor(200))) static void
@@ -795,4 +804,5 @@ ell_init()
     __ell_g_syntaxDlistDrest_ = ell_make_clo(&ell_syntax_list_rest_code, NULL);
     __ell_g_appendDsyntaxDlists_ = ell_make_clo(&ell_append_syntax_lists_code, NULL);
     __ell_g_applyDsyntaxDlist_ = ell_make_clo(&ell_apply_syntax_list_code, NULL);
+    __ell_g_exit_ = ell_make_clo(&ell_exit_code, NULL);
 }
