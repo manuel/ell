@@ -2,7 +2,7 @@ CFLAGS=-std=c99 -g
 LD=gcc
 LDFLAGS=-rdynamic -lgc -ldl -lreadline -luuid
 
-OBJECTS = ell.o ellrt.o ellc.o dict.o list.o
+OBJECTS = ell.o ellrt.o ellc.o ellcm.o dict.o list.o
 
 ell: $(OBJECTS)
 	$(LD) $(LDFLAGS) $(OBJECTS) -o ell

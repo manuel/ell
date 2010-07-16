@@ -30,6 +30,9 @@ ELL_DEFSYM(core_syntax_list, "syntax-list")
 ELL_DEFSYM(core_append_syntax_lists, "append-syntax-lists")
 ELL_DEFSYM(core_apply_syntax_list, "apply-syntax-list")
 
+ELL_DEFSYM(core_require, "require")
+ELL_DEFSYM(core_require_when_compile, "require-when-compile")
+
 ELL_DEFSYM(param_optional, "&optional")
 ELL_DEFSYM(param_key, "&key")
 ELL_DEFSYM(param_rest, "&rest")

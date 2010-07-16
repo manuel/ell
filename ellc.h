@@ -217,11 +217,7 @@ struct ellc_st {
 
 // API
 
-struct ell_obj *
-ellc_eval(struct ell_obj *stx_lst);
-void
-ellc_compile_file(struct ell_obj *name_str);
-
-
+int
+ellc_compile_file(char *infile, char *faslfile, char *cfaslfile);
 
 #endif

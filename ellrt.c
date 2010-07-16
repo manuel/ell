@@ -4,6 +4,8 @@
 
 /**** Parsing ****/
 
+#include "grammar.c"
+
 int yyparse();
 
 struct ell_parser_stack {

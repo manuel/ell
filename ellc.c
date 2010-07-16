@@ -17,6 +17,9 @@
 
 #include "ellc.h"
 
+struct ell_obj *
+ellc_eval(struct ell_obj *stx_lst);
+
 /**** AST Utilities ****/
 
 static struct ellc_id *
@@ -1451,7 +1454,7 @@ ellc_make_st(FILE *f)
    file.  Also returns a pointer to the compiler state in the st_out
    parameter. */
 static char *
-ellc_compile(struct ell_obj *stx_lst, struct ellc_st **st_out, char **out_c_file)
+ellc_compile(struct ell_obj *stx_lst, struct ellc_st **st_out)
 {
     ell_assert_brand(stx_lst, ELL_BRAND(stx_lst));
 
@@ -1493,15 +1496,13 @@ ellc_compile(struct ell_obj *stx_lst, struct ellc_st **st_out, char **out_c_file
 
     if (st_out)
         *st_out = st;
-    if (out_c_file)
-        *out_c_file = cnam;
     return onam;
 }
 
 struct ell_obj *
 ellc_eval(struct ell_obj *stx_lst)
 {
-    char *onam = ellc_compile(stx_lst, NULL, NULL);
+    char *onam = ellc_compile(stx_lst, NULL);
 
     ell_result = NULL;
 
@@ -1513,19 +1514,16 @@ ellc_eval(struct ell_obj *stx_lst)
     return ell_result;
 }
 
-void
-ellc_compile_file(struct ell_obj* name_str)
+int
+ellc_compile_file(char *infile, char *faslfile, char *cfaslfile)
 {
-    char *name = ell_str_chars(name_str);
-    freopen(name, "r", stdin);
+    freopen(infile, "r", stdin);
 
     struct ellc_st *st;
-
     struct ell_obj* stx_lst = ell_parse();
-    char *tmp_c_fasl_name; 
-    char *tmp_c_cfasl_name; 
-    char *tmp_fasl_name = ellc_compile(stx_lst, &st, &tmp_c_fasl_name);
+    char *tmp_fasl_name = ellc_compile(stx_lst, &st);
 
+    // CROOK AHEAD
     struct ell_obj *macros_stx_lst = ell_make_stx_lst();
     for (dnode_t *n = dict_first(st->defined_macros); n; n = dict_next(st->defined_macros, n)) {
         struct ell_obj *name_sym = (struct ell_obj *) dnode_getkey(n);
@@ -1537,25 +1535,10 @@ ellc_compile_file(struct ell_obj* name_str)
         ELL_SEND(macros_stx_lst, add, macro_stx);
     }
     
-    char *tmp_cfasl_name = ellc_compile(macros_stx_lst, NULL, &tmp_c_cfasl_name);
+    char *tmp_cfasl_name = ellc_compile(macros_stx_lst, NULL);
     
-    size_t name_len = strlen(name);
-    char *fasl_name;
-    char *cfasl_name;
-    char *c_fasl_name;
-    char *c_cfasl_name;
-    asprintf(&fasl_name, "%s.fasl", name);
-    asprintf(&cfasl_name, "%s.cfasl", name);
-    asprintf(&c_fasl_name, "%s.fasl.c", name);
-    asprintf(&c_cfasl_name, "%s.cfasl.c", name);
-    
-    rename(tmp_fasl_name, fasl_name);
-    rename(tmp_cfasl_name, cfasl_name);
-    rename(tmp_c_fasl_name, c_fasl_name);
-    rename(tmp_c_cfasl_name, c_cfasl_name);
+    rename(tmp_fasl_name, faslfile);
+    rename(tmp_cfasl_name, cfaslfile);
 
-    free(fasl_name);
-    free(cfasl_name);
-    free(c_fasl_name);
-    free(c_cfasl_name);
+    return 0;
 }
