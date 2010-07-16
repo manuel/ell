@@ -1,9 +1,8 @@
 (ell-mdef defmacro
   (ell-lam (defmacro-form)
-    (quasisyntax 
-      (ell-mdef (unsyntax (send defmacro-form (quote second)))
-        (ell-lam (form)
+    #`(ell-mdef ,(send defmacro-form 'second)
+        (ell-lam (macro-call-form)
           (apply-syntax-list
-            (ell-lam (unsyntax (send defmacro-form (quote third)))
-              (unsyntax (send defmacro-form (quote fourth))))
-            (syntax-list-rest form)))))))
+            (ell-lam ,(send defmacro-form 'third)
+              ,(send defmacro-form 'fourth))
+            (syntax-list-rest macro-call-form))))))
