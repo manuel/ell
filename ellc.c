@@ -1353,7 +1353,13 @@ static void
 ellc_emit_params(struct ellc_st *st, struct ellc_ast_lam *lam)
 {
     listcount_t nreq = list_count(lam->params->req);
-    if (nreq > 0) fprintf(st->f, "\tif (__ell_npos < %lu) { ell_arity_error(); }\n", nreq);
+    listcount_t nopt = list_count(lam->params->opt);
+    if (nreq > 0) {
+        fprintf(st->f, "\tif (__ell_npos < %lu) { ell_arity_error(); }\n", nreq);
+    }
+    if (!lam->params->rest) {
+        fprintf(st->f, "\tif (__ell_npos > %lu) { ell_arity_error(); }\n", nreq + nopt);
+    }
     
     unsigned i = 0;
 
