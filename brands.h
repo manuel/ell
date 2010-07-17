@@ -1,6 +1,7 @@
 ELL_DEFBRAND(sym)
 ELL_DEFBRAND(str)
 ELL_DEFBRAND(clo)
+ELL_DEFBRAND(lst)
 ELL_DEFBRAND(boolean)
 ELL_DEFBRAND(unspecified)
 ELL_DEFBRAND(unbound)

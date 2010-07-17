@@ -420,6 +420,45 @@ ell_is_true(struct ell_obj *obj)
     return obj == ell_t;
 }
 
+/**** Lists ****/
+
+struct ell_obj *
+ell_make_lst()
+{
+    struct ell_lst_data *data = (struct ell_lst_data *) ell_alloc(sizeof(*data));
+    list_init(&data->elts, LISTCOUNT_T_MAX);
+    return ell_make_obj(ELL_BRAND(lst), data);
+}
+
+list_t *
+ell_lst_elts(struct ell_obj *lst)
+{
+    ell_assert_brand(lst, ELL_BRAND(lst));
+    return &((struct ell_lst_data *) lst->data)->elts;
+}
+
+ELL_DEFMETHOD(lst, add, 2)
+ELL_PARAM(lst, 0)
+ELL_PARAM(elt, 1)
+ell_util_list_add(ell_lst_elts(lst), elt);
+return lst;
+ELL_END
+
+static void
+ell_lst_print_process(list_t *list, lnode_t *node, void *unused)
+{
+    ELL_SEND((struct ell_obj *) lnode_get(node), print_object);
+    printf(" ");
+}
+
+ELL_DEFMETHOD(lst, print_object, 1)
+ELL_PARAM(lst, 0)
+printf("(");
+list_process(ell_lst_elts(lst), NULL, &ell_lst_print_process);
+printf(")");
+return ell_unspecified;
+ELL_END
+
 /**** Library ****/
 
 ELL_DEFMETHOD(boolean, print_object, 1)
@@ -457,9 +496,7 @@ ELL_END
 ELL_DEFMETHOD(stx_lst, add, 2)
 ELL_PARAM(stx_lst, 0)
 ELL_PARAM(elt, 1)
-lnode_t *node = (lnode_t *) ell_alloc(sizeof(*node));
-lnode_init(node, elt);
-list_append(ell_stx_lst_elts(stx_lst), node);
+ell_util_list_add(ell_stx_lst_elts(stx_lst), elt);
 return stx_lst;
 ELL_END
 

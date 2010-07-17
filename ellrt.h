@@ -81,9 +81,9 @@ ell_send(struct ell_obj *rcv, struct ell_obj *msg_sym,
 #define ELL_SEND(rcv, msg, ...)                                         \
     ({                                                                  \
         struct ell_obj *__ell_rcv = rcv;                                \
-        struct ell_obj *__ell_args[] = { __ell_rcv, __VA_ARGS__ };      \
-        unsigned npos = sizeof(__ell_args) / sizeof(struct ell_obj *);  \
-        ell_send(__ell_rcv, ELL_SYM(msg), npos, 0, __ell_args);         \
+        struct ell_obj *__ell_send_args[] = { __ell_rcv, __VA_ARGS__ }; \
+        unsigned npos = sizeof(__ell_send_args) / sizeof(struct ell_obj *); \
+        ell_send(__ell_rcv, ELL_SYM(msg), npos, 0, __ell_send_args);    \
     })
 
 #define ELL_METHOD_CODE(brand, msg) __ell_method_code_##brand##_##msg
@@ -171,6 +171,15 @@ struct ell_obj *ell_unspecified;
 /**** Unbound marker ****/
 
 struct ell_obj *ell_unbound;
+
+/**** Lists ****/
+
+struct ell_lst_data {
+    list_t elts;
+};
+
+struct ell_obj *
+ell_make_lst();
 
 /**** Syntax Objects ****/
 

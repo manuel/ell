@@ -1381,13 +1381,28 @@ ellc_emit_params(struct ellc_st *st, struct ellc_ast_lam *lam)
         i++;
     }
 
+    // rest
+    if (lam->params->rest) {
+        struct ellc_param *rest = lam->params->rest;
+        fprintf(st->f, "\tstruct ell_obj *__ell_rest_tmp = ell_make_lst();\n");;
+        fprintf(st->f, "\tfor (int __ell_rest_i = %lu; __ell_rest_i < __ell_npos; __ell_rest_i++)\n",
+                nreq + nopt);
+        fprintf(st->f, "\t\tELL_SEND(__ell_rest_tmp, add, __ell_args[__ell_rest_i]);\n");
+        char *mid = ellc_mangle_param_id(rest->id);
+        if (ellc_param_boxed(rest)){
+            fprintf(st->f, "\tvoid *%s = ell_make_box(__ell_rest_tmp);\n", mid);
+        } else {
+            fprintf(st->f, "\tvoid *%s = __ell_rest_tmp;\n", mid);
+        }
+    }
+
     if (list_count(lam->params->key) > 0) {
         printf("keyword parameters not yet supported\n");
         exit(EXIT_FAILURE);
     }
 
-    if (lam->params->rest || lam->params->all_keys) {
-        printf("rest and all-keys parameters not yet supported\n");
+    if (lam->params->all_keys) {
+        printf("all-keys parameters not yet supported\n");
         exit(EXIT_FAILURE);
     }
 }
