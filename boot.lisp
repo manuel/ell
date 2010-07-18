@@ -38,21 +38,21 @@
   #`(unless (definedp ,name)
       (defparameter ,name ,value)))
 
-(defmacro define (name function)
+(defmacro defun/f (name function)
   #`(ell-fdef ,name ,function))
 
 (defmacro defun (name sig &rest body)
-  #`(define ,name (lambda ,sig ,@body)))
+  #`(defun/f ,name (lambda ,sig ,@body)))
 
 (defmacro funcall (fun &rest args)
   #`(ell-app ,fun ,@args))
 
 (defmacro block (label &rest body)
-  #`(block0 (lambda (,label) ,@body)))
+  #`(block/f (lambda (,label) ,@body)))
 
 (defmacro return-from (label value)
   #`(funcall ,label ,value))
 
 (defmacro unwind-protect (protected &rest cleanups)
-  #`(unwind-protect-0 (lambda () ,protected)
+  #`(unwind-protect/f (lambda () ,protected)
                       (lambda () ,@cleanups)))
