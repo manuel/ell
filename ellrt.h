@@ -4,6 +4,7 @@
 #define ELL_H
 
 #include <gc/gc.h>
+#include <setjmp.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -110,6 +111,27 @@ ell_send(struct ell_obj *rcv, struct ell_obj *msg_sym,
 
 #define ELL_END \
     }
+
+/**** Control Flow ****/
+
+struct ell_unwind_protect {
+    struct ell_unwind_protect *parent;
+    struct ell_obj            *cleanup;
+};
+
+struct ell_block {
+    struct ell_unwind_protect *parent;
+    struct ell_obj            *val;
+    jmp_buf                   dest;
+};
+
+struct ell_unwind_protect *ell_current_unwind_protect;
+
+struct ell_obj *
+ell_block(struct ell_obj *fun);
+
+struct ell_obj *
+ell_unwind_protect(struct ell_obj *protected, struct ell_obj *cleanup);
 
 /**** Strings ****/
 

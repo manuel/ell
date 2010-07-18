@@ -199,6 +199,68 @@ ell_send(struct ell_obj *rcv, struct ell_obj *msg_sym,
     }
 }
 
+/**** Control Flow ****/
+
+struct ell_obj *
+ell_return_from_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    struct ell_clo_data *clo_data = (struct ell_clo_data *) clo->data;
+    struct ell_block *block = (struct ell_block *) clo_data->env; // See comment in ell_block
+    struct ell_obj *val = args[0];
+    while(ell_current_unwind_protect != block->parent) {
+        struct ell_unwind_protect *unwind_protect = ell_current_unwind_protect;
+        ell_current_unwind_protect = ell_current_unwind_protect->parent;
+        ELL_CALL(unwind_protect->cleanup);
+    }
+    block->val = val;
+    longjmp(block->dest, 1);
+    return NULL;
+}
+
+struct ell_obj *
+ell_block(struct ell_obj *fun)
+{
+    struct ell_block block;
+    block.parent = ell_current_unwind_protect;
+    if (!setjmp(block.dest)) {
+        // Faked closure with block as "environment"
+        struct ell_obj *escape = ell_make_clo(&ell_return_from_code, &block);
+        return ELL_CALL(fun, escape);
+    } else {
+        return block.val;
+    }
+}
+
+struct ell_obj *
+ell_unwind_protect(struct ell_obj *protected, struct ell_obj *cleanup)
+{
+    struct ell_unwind_protect unwind_protect;
+    unwind_protect.parent = ell_current_unwind_protect;
+    unwind_protect.cleanup = cleanup;
+    
+    ell_current_unwind_protect = &unwind_protect;
+    struct ell_obj *val = ELL_CALL(protected);
+    ell_current_unwind_protect = ell_current_unwind_protect->parent;
+    
+    ELL_CALL(cleanup);
+    return val;
+}
+
+struct ell_obj *
+ell_block0_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    return ell_block(args[0]);
+}
+
+struct ell_obj *
+ell_unwind_protect_0_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    return ell_unwind_protect(args[0], args[1]);
+}
+
+struct ell_obj *__ell_g_block0_;
+struct ell_obj *__ell_g_unwindDprotectD0_;
+
 /**** Strings ****/
 
 struct ell_obj *
@@ -893,6 +955,9 @@ ell_init()
     ell_unspecified = __ell_g_unspecified_;
 
     ell_unbound = ell_make_obj(ELL_BRAND(unbound), NULL);
+
+    __ell_g_block0_ = ell_make_clo(&ell_block0_code, NULL);
+    __ell_g_unwindDprotectD0_ = ell_make_clo(&ell_unwind_protect_0_code, NULL);
 
     __ell_g_send_ = ell_make_clo(&ell_send_code, NULL);
     __ell_g_syntaxDlist_ = ell_make_clo(&ell_syntax_list_code, NULL);
