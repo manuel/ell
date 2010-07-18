@@ -5,6 +5,11 @@ ELL_DEFSYM(third, "third")
 ELL_DEFSYM(fourth, "fourth")
 ELL_DEFSYM(print_object, "print-object")
 
+ELL_DEFSYM(all, "all")
+ELL_DEFSYM(front, "front")
+ELL_DEFSYM(emptyp, "emptyp")
+ELL_DEFSYM(pop_front, "pop-front")
+
 ELL_DEFSYM(core_send, "send")
 
 ELL_DEFSYM(core_fref, "ell-fref")

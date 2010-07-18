@@ -181,6 +181,16 @@ struct ell_lst_data {
 struct ell_obj *
 ell_make_lst();
 
+/**** Ranges ****/
+
+struct ell_list_range_data {
+    list_t *elts;
+    lnode_t *cur;
+};
+
+struct ell_obj *
+ell_make_range_from_list(list_t *elts);
+
 /**** Syntax Objects ****/
 
 struct ell_obj *

@@ -420,6 +420,54 @@ ell_is_true(struct ell_obj *obj)
     return obj == ell_t;
 }
 
+/**** Ranges ****/
+
+struct ell_obj *
+ell_make_range_from_list(list_t *elts)
+{
+    struct ell_list_range_data *data = (struct ell_list_range_data *) ell_alloc(sizeof(*data));
+    data->elts = elts;
+    data->cur = list_first(elts);
+    return ell_make_obj(ELL_BRAND(list_range), data);
+}
+
+list_t *
+ell_list_range_elts(struct ell_obj *range)
+{
+    ell_assert_brand(range, ELL_BRAND(list_range));
+    return ((struct ell_list_range_data *) range->data)->elts;
+}
+
+lnode_t *
+ell_list_range_cur(struct ell_obj *range)
+{
+    ell_assert_brand(range, ELL_BRAND(list_range));
+    return ((struct ell_list_range_data *) range->data)->cur;
+}
+
+void
+ell_list_range_set_cur(struct ell_obj *range, lnode_t *new_cur)
+{
+    ell_assert_brand(range, ELL_BRAND(list_range));
+    ((struct ell_list_range_data *) range->data)->cur = new_cur;
+}
+
+ELL_DEFMETHOD(list_range, emptyp, 1)
+ELL_PARAM(range, 0)
+return (ell_list_range_cur(range) ? ell_f : ell_t);
+ELL_END
+
+ELL_DEFMETHOD(list_range, front, 1)
+ELL_PARAM(range, 0)
+return (struct ell_obj *) lnode_get(ell_list_range_cur(range));
+ELL_END
+
+ELL_DEFMETHOD(list_range, pop_front, 1)
+ELL_PARAM(range, 0)
+ell_list_range_set_cur(range, list_next(ell_list_range_elts(range), ell_list_range_cur(range)));
+return ell_unspecified;
+ELL_END
+
 /**** Lists ****/
 
 struct ell_obj *
@@ -457,6 +505,11 @@ printf("(");
 list_process(ell_lst_elts(lst), NULL, &ell_lst_print_process);
 printf(")");
 return ell_unspecified;
+ELL_END
+
+ELL_DEFMETHOD(lst, all, 1)
+ELL_PARAM(lst, 0)
+return ell_make_range_from_list(ell_lst_elts(lst));
 ELL_END
 
 /**** Library ****/
@@ -556,6 +609,11 @@ ell_assert_stx_lst_len_min(stx_lst, 4);
 list_t *elts = ell_stx_lst_elts(stx_lst);
 lnode_t *node = list_next(elts, list_next(elts, list_next(elts, list_first(elts))));
 return (struct ell_obj *) lnode_get(node);
+ELL_END
+
+ELL_DEFMETHOD(stx_lst, all, 1)
+ELL_PARAM(stx_lst, 0)
+return ell_make_range_from_list(ell_stx_lst_elts(stx_lst));
 ELL_END
 
 /**** Utilities used by Generated Code ****/
@@ -769,11 +827,11 @@ ell_append_syntax_lists_code(struct ell_obj *clo, unsigned npos, unsigned nkey, 
     struct ell_obj *res = ell_make_stx_lst();
     for (int i = 0; i < npos; i++) {
         struct ell_obj *lst = args[i];
-        ell_assert_brand(lst, ELL_BRAND(stx_lst));
-        list_t *elts = ell_stx_lst_elts(lst);
-        for (lnode_t *n = list_first(elts); n; n = list_next(elts, n)) {
-            struct ell_obj *elt = (struct ell_obj *) lnode_get(n);
+        struct ell_obj *range = ELL_SEND(args[i], all);
+        while (!ell_is_true(ELL_SEND(range, emptyp))) {
+            struct ell_obj *elt = ELL_SEND(range, front);
             ELL_SEND(res, add, elt);
+            ELL_SEND(range, pop_front);
         }
     }
     return res;

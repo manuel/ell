@@ -6,6 +6,8 @@ ELL_DEFBRAND(boolean)
 ELL_DEFBRAND(unspecified)
 ELL_DEFBRAND(unbound)
 
+ELL_DEFBRAND(list_range)
+
 ELL_DEFBRAND(stx_sym)
 ELL_DEFBRAND(stx_str)
 ELL_DEFBRAND(stx_lst)

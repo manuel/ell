@@ -6,3 +6,6 @@
             (ell-lam ,(send defmacro-form 'third)
               ,(send defmacro-form 'fourth))
             (syntax-list-rest macro-call-form))))))
+
+(defmacro progn (&rest exprs)
+  #`(ell-seq ,@exprs))
