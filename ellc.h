@@ -52,6 +52,10 @@ struct ellc_ast_defp { // "boundp"
     struct ellc_id *id;
 };
 
+struct ellc_ast_loop {
+    struct ellc_ast *body;
+};
+
 struct ellc_ast_lit_sym {
     struct ell_obj *sym;
 };
@@ -112,6 +116,7 @@ enum ellc_ast_type {
     ELLC_AST_APP  = 6,
     ELLC_AST_LAM  = 7,
     ELLC_AST_DEFP = 8,
+    ELLC_AST_LOOP = 9,
 
     ELLC_AST_GLO_REF = 101,
     ELLC_AST_GLO_SET = 102,
@@ -138,6 +143,7 @@ struct ellc_ast {
         struct ellc_ast_app app;
         struct ellc_ast_lam lam;
         struct ellc_ast_defp defp;
+        struct ellc_ast_loop loop;
 
         struct ellc_ast_glo_ref glo_ref;
         struct ellc_ast_glo_set glo_set;

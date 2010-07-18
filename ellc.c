@@ -450,6 +450,15 @@ ellc_norm_quote(struct ellc_st *st, struct ell_obj *stx_lst)
     return ast;
 }
 
+static struct ellc_ast *
+ellc_norm_loop(struct ellc_st *st, struct ell_obj *stx_lst)
+{
+    ell_assert_stx_lst_len(stx_lst, 2);
+    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_LOOP);
+    ast->loop.body = ellc_norm_stx(st, ELL_SEND(stx_lst, second));
+    return ast;
+}
+
 /* (Quasisyntax) */
 
 static struct ellc_ast *
@@ -687,6 +696,7 @@ ellc_init()
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_seq), &ellc_norm_seq);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_app), &ellc_norm_app);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_lam), &ellc_norm_lam);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_loop), &ellc_norm_loop);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_quote), &ellc_norm_quote);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_quasisyntax), &ellc_norm_quasisyntax);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_syntax), &ellc_norm_quasisyntax);
@@ -947,6 +957,12 @@ ellc_conv_lam(struct ellc_st *st, struct ellc_ast *ast)
 }
 
 static void
+ellc_conv_loop(struct ellc_st *st, struct ellc_ast *ast)
+{
+    ellc_conv_ast(st, ast->loop.body);
+}
+
+static void
 ellc_conv_cx(struct ellc_st *st, struct ellc_ast *ast)
 {
     ellc_conv_ast(st, ast->cx.body);
@@ -964,6 +980,7 @@ ellc_conv_ast(struct ellc_st *st, struct ellc_ast *ast)
     case ELLC_AST_SEQ: ellc_conv_seq(st, ast); break;
     case ELLC_AST_APP: ellc_conv_app(st, ast); break;
     case ELLC_AST_LAM: ellc_conv_lam(st, ast); break;
+    case ELLC_AST_LOOP: ellc_conv_loop(st, ast); break;
     case ELLC_AST_LIT_SYM: break;
     case ELLC_AST_LIT_STR: break;
     case ELLC_AST_LIT_STX: break;
@@ -1234,6 +1251,14 @@ ellc_emit_lam(struct ellc_st *st, struct ellc_ast *ast)
 }
 
 static void
+ellc_emit_loop(struct ellc_st *st, struct ellc_ast *ast)
+{
+    fprintf(st->f, "({ for(;;) {");
+    ellc_emit_ast(st, ast->loop.body);
+    fprintf(st->f, "; } ell_unspecified; })");
+}
+
+static void
 ellc_emit_lit_sym(struct ellc_st *st, struct ellc_ast *ast)
 {
     fprintf(st->f, "ell_intern(ell_make_str(\"%s\"))", ell_str_chars(ell_sym_name(ast->lit_sym.sym)));
@@ -1295,6 +1320,7 @@ ellc_emit_ast(struct ellc_st *st, struct ellc_ast *ast)
     case ELLC_AST_SEQ: ellc_emit_seq(st, ast); break;
     case ELLC_AST_APP: ellc_emit_app(st, ast); break;
     case ELLC_AST_LAM: ellc_emit_lam(st, ast); break;
+    case ELLC_AST_LOOP: ellc_emit_loop(st, ast); break;
     case ELLC_AST_LIT_SYM: ellc_emit_lit_sym(st, ast); break;
     case ELLC_AST_LIT_STR: ellc_emit_lit_str(st, ast); break;
     case ELLC_AST_LIT_STX: ellc_emit_lit_stx(st, ast); break;

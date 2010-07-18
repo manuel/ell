@@ -24,6 +24,7 @@ ELL_DEFSYM(core_seq,  "ell-seq")
 ELL_DEFSYM(core_lam,  "ell-lam")
 ELL_DEFSYM(core_app,  "ell-app")
 ELL_DEFSYM(core_mdef, "ell-mdef")
+ELL_DEFSYM(core_loop, "ell-loop")
 
 ELL_DEFSYM(core_quote, "quote")
 

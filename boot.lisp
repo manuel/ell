@@ -55,3 +55,12 @@
 (defmacro unwind-protect (protected &rest cleanups)
   #`(unwind-protect/f (lambda () ,protected)
                       (lambda () ,@cleanups)))
+
+(defmacro loop (&rest exprs)
+  #`(ell-loop (progn ,@exprs)))
+
+(defmacro while (test &rest body)
+  #`(block exit
+      (loop
+         (unless ,test (return-from exit unspecified))
+         ,@body)))
