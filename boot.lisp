@@ -35,8 +35,7 @@
   #`(ell-def ,name ,value))
 
 (defmacro defvar (name value)
-  #`(unless (definedp ,name)
-      (defparameter ,name ,value)))
+  #`(defparameter ,name (if (definedp ,name) ,name ,value)))
 
 (defmacro defun/f (name function)
   #`(ell-fdef ,name ,function))
