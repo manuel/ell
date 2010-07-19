@@ -478,8 +478,7 @@ ell_assert_stx_lst_len_min(struct ell_obj *stx_lst, listcount_t len)
 bool
 ell_is_true(struct ell_obj *obj)
 {
-    ell_assert_brand(obj, ELL_BRAND(boolean));
-    return obj == ell_t;
+    return obj != ell_f;
 }
 
 /**** Ranges ****/
