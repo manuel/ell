@@ -1017,7 +1017,9 @@ ellc_mangle_char(char c)
     case '_': return 'U';
     case '-': return 'D';
     case '#': return 'O';
-    case '/': return 'L';
+    case '/': return 'F';
+    case '<': return 'L';
+    case '>': return 'G';
     default: return c;
     }
 }

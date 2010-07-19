@@ -247,19 +247,19 @@ ell_unwind_protect(struct ell_obj *protected, struct ell_obj *cleanup)
 }
 
 struct ell_obj *
-ell_blockLf_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+ell_blockFf_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
 {
     return ell_block(args[0]);
 }
 
 struct ell_obj *
-ell_unwind_protectLf_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+ell_unwind_protectFf_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
 {
     return ell_unwind_protect(args[0], args[1]);
 }
 
-struct ell_obj *__ell_g_blockLf_;
-struct ell_obj *__ell_g_unwindDprotectLf_;
+struct ell_obj *__ell_g_blockFf_;
+struct ell_obj *__ell_g_unwindDprotectFf_;
 
 /**** Strings ****/
 
@@ -977,8 +977,8 @@ ell_init()
 
     ell_unbound = ell_make_obj(ELL_BRAND(unbound), NULL);
 
-    __ell_g_blockLf_ = ell_make_clo(&ell_blockLf_code, NULL);
-    __ell_g_unwindDprotectLf_ = ell_make_clo(&ell_unwind_protectLf_code, NULL);
+    __ell_g_blockFf_ = ell_make_clo(&ell_blockFf_code, NULL);
+    __ell_g_unwindDprotectFf_ = ell_make_clo(&ell_unwind_protectFf_code, NULL);
 
     __ell_g_send_ = ell_make_clo(&ell_send_code, NULL);
     __ell_g_syntaxDlist_ = ell_make_clo(&ell_syntax_list_code, NULL);
