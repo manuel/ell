@@ -921,6 +921,25 @@ ell_apply_syntax_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, st
     return ell_call(fun, len, 0, the_args);
 }
 
+/* (datum->syntax stx-sym sym) -> stx-sym
+
+   Note that this implements only a subset of SRFI-72 functionality:
+   The first argument must be a syntax symbol, and the second argument
+   must be a symbol. */
+
+struct ell_obj *__ell_g_datumDGsyntax_;
+
+struct ell_obj *
+ell_datum_syntax_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    ell_check_npos(2, npos);
+    struct ell_obj *stx = args[0];
+    struct ell_obj *sym = args[1];
+    ell_assert_brand(stx, ELL_BRAND(stx_sym));
+    ell_assert_brand(sym, ELL_BRAND(sym));
+    return ell_make_stx_sym_cx(sym, ell_stx_sym_cx(stx));
+}
+
 /* (map-list function list) -> list */
 
 struct ell_obj *__ell_g_mapDlist_;
@@ -928,8 +947,10 @@ struct ell_obj *__ell_g_mapDlist_;
 struct ell_obj *
 ell_map_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
 {
+    ell_check_npos(2, npos);
     struct ell_obj *res = ell_make_lst();
     struct ell_obj *fun = args[0];
+    ell_assert_brand(fun, ELL_BRAND(clo));
     struct ell_obj *lst = args[1];
     struct ell_obj *range = ELL_SEND(lst, all);
     while (!ell_is_true(ELL_SEND(range, emptyp))) {
@@ -985,6 +1006,7 @@ ell_init()
     __ell_g_syntaxDlistDrest_ = ell_make_clo(&ell_syntax_list_rest_code, NULL);
     __ell_g_appendDsyntaxDlists_ = ell_make_clo(&ell_append_syntax_lists_code, NULL);
     __ell_g_applyDsyntaxDlist_ = ell_make_clo(&ell_apply_syntax_list_code, NULL);
+    __ell_g_datumDGsyntax_ = ell_make_clo(&ell_datum_syntax_code, NULL);
 
     __ell_g_mapDlist_ = ell_make_clo(&ell_map_list_code, NULL);
     __ell_g_exit_ = ell_make_clo(&ell_exit_code, NULL);
