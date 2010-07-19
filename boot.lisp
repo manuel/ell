@@ -46,10 +46,16 @@
 (defmacro funcall (fun &rest args)
   #`(ell-app ,fun ,@args))
 
+(defmacro setq (name value)
+  #`(ell-set ,name ,value))
+
+(defmacro fsetq (name value)
+  #`(ell-fset ,name ,value))
+
 (defmacro block (label &rest body)
   #`(block/f (lambda (,label) ,@body)))
 
-(defmacro return-from (label value)
+(defmacro return-from (label &optional (value #'unspecified))
   #`(funcall ,label ,value))
 
 (defmacro unwind-protect (protected &rest cleanups)

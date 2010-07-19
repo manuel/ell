@@ -921,6 +921,8 @@ ell_apply_syntax_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, st
     return ell_call(fun, len, 0, the_args);
 }
 
+/* (exit) */
+
 struct ell_obj *__ell_g_exit_;
 
 struct ell_obj *
