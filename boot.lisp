@@ -70,3 +70,8 @@
       (loop
          (unless ,test (return-from exit unspecified))
          ,@body)))
+
+(defmacro let (bindings &rest body)
+  #`(funcall (lambda (,@(map-list (lambda (binding) (send binding 'first)) bindings))
+               ,@body)
+             ,@(map-list (lambda (binding) (send binding 'second)) bindings)))

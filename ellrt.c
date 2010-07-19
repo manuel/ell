@@ -921,6 +921,25 @@ ell_apply_syntax_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, st
     return ell_call(fun, len, 0, the_args);
 }
 
+/* (map-list function list) -> list */
+
+struct ell_obj *__ell_g_mapDlist_;
+
+struct ell_obj *
+ell_map_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    struct ell_obj *res = ell_make_lst();
+    struct ell_obj *fun = args[0];
+    struct ell_obj *lst = args[1];
+    struct ell_obj *range = ELL_SEND(lst, all);
+    while (!ell_is_true(ELL_SEND(range, emptyp))) {
+        struct ell_obj *elt = ELL_SEND(range, front);
+        ELL_SEND(res, add, ELL_CALL(fun, elt));
+        ELL_SEND(range, pop_front);
+    }
+    return res;
+}
+
 /* (exit) */
 
 struct ell_obj *__ell_g_exit_;
@@ -966,5 +985,7 @@ ell_init()
     __ell_g_syntaxDlistDrest_ = ell_make_clo(&ell_syntax_list_rest_code, NULL);
     __ell_g_appendDsyntaxDlists_ = ell_make_clo(&ell_append_syntax_lists_code, NULL);
     __ell_g_applyDsyntaxDlist_ = ell_make_clo(&ell_apply_syntax_list_code, NULL);
+
+    __ell_g_mapDlist_ = ell_make_clo(&ell_map_list_code, NULL);
     __ell_g_exit_ = ell_make_clo(&ell_exit_code, NULL);
 }
