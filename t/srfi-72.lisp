@@ -1,4 +1,4 @@
-(ell-mdef if-it
+(defsyntax if-it
   (lambda (form)
     (apply-syntax-list (lambda (k e1 e2 e3)
                          (let ((it (datum->syntax k 'it)))
@@ -6,7 +6,7 @@
                                (if ,it ,e2 ,e3))))
                        form)))
 
-(ell-mdef when-it
+(defsyntax when-it
   (lambda (form)
     (apply-syntax-list (lambda (k e1 e2)
                          (let ((the-it (datum->syntax k 'it)))

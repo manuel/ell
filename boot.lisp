@@ -7,6 +7,9 @@
               ,(send defmacro-form 'fourth))
             (syntax-list-rest macro-call-form))))))
 
+(defmacro defsyntax (name expander)
+  #`(ell-mdef ,name ,expander))
+
 (defmacro progn (&rest exprs)
   #`(ell-seq ,@exprs))
 
