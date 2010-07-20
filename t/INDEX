@@ -1,6 +1,9 @@
 -*- org -*-
 * srfi-72.lisp
 Tests for datum->syntax adapted from SRFI 72.
-* syntax-case.lisp
+* dybvig.lisp
 Tests for hygienic macros adapted from ``Writing Hygienic Macros in
-Scheme with Syntax-Case'' by Dybvig.
+Scheme with Syntax-Case'' by Dybvig.  Note that they don't (can't)
+test what they should really test (referential transparency), until
+ell gets a facility for lexically binding names in the function
+namespace.
