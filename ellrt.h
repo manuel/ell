@@ -66,7 +66,7 @@ ell_check_npos(unsigned formal_npos, unsigned actual_npos);
     ({                                                                  \
         struct ell_obj *__ell_args[] = { __VA_ARGS__ };                 \
         unsigned npos = sizeof(__ell_args) / sizeof(struct ell_obj *);  \
-        ell_call(clo, npos, 0, __ell_args);                      \
+        ell_call(clo, npos, 0, __ell_args);                             \
     })
 
 /**** Methods ****/
@@ -176,8 +176,8 @@ ell_sym_cmp(struct ell_obj *sym_a, struct ell_obj *sym_b);
 /**** Booleans ****/
 
 // Lisp names
-struct ell_obj *__ell_g_Ot_;
-struct ell_obj *__ell_g_Of_;
+struct ell_obj *__ell_g_Ot_1_;
+struct ell_obj *__ell_g_Of_1_;
 // C names for convenience
 struct ell_obj *ell_t;
 struct ell_obj *ell_f;
@@ -187,7 +187,7 @@ ell_is_true(struct ell_obj *obj);
 
 /**** Unspecified value ****/
 
-struct ell_obj *__ell_g_unspecified_;
+struct ell_obj *__ell_g_unspecified_1_;
 struct ell_obj *ell_unspecified;
 
 /**** Unbound marker ****/

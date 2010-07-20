@@ -160,7 +160,22 @@ struct ellc_ast {
     };
 };
 
-enum ellc_ns { ELLC_NS_VAR, ELLC_NS_FUN };
+/* A note on namespaces, i.e. Lisp-N.  Ell is a Lisp-2 on the surface,
+   but internally, all the compiler cares about is identifiers
+   ('ellc_id').  Identifiers carry a namespace number ('ellc_ns'),
+   which means that in the future we'll be able to add an unbounded
+   number of additional namespaces.  Just kidding.
+
+   Note that (syntax) symbols themselves do *not* carry a namespace.
+   That's because the namespace of a symbol is determined by its
+   position in the syntax.  For example, the first element of a
+   compound form is always put into the function namespace (Nr. 2).
+
+   Symbols are converted to identifiers during normalization. */
+enum ellc_ns {
+    ELLC_NS_VAR = 1,
+    ELLC_NS_FUN = 2,
+};
 
 struct ellc_id {
     struct ell_obj *sym;

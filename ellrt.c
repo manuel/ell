@@ -258,8 +258,8 @@ ell_unwind_protectFf_code(struct ell_obj *clo, unsigned npos, unsigned nkey, str
     return ell_unwind_protect(args[0], args[1]);
 }
 
-struct ell_obj *__ell_g_blockFf_;
-struct ell_obj *__ell_g_unwindDprotectFf_;
+struct ell_obj *__ell_g_blockFf_2_;
+struct ell_obj *__ell_g_unwindDprotectFf_2_;
 
 /**** Strings ****/
 
@@ -831,7 +831,7 @@ ell_ptr_cmp(void *a, void *b)
 
 /* (send rcv msg &rest args) -> result */
 
-struct ell_obj *__ell_g_send_;
+struct ell_obj *__ell_g_send_2_;
 
 struct ell_obj *
 ell_send_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
@@ -848,7 +848,7 @@ ell_send_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj 
 
 /* (syntax-list &rest syntax-objects) -> syntax-list */
 
-struct ell_obj *__ell_g_syntaxDlist_;
+struct ell_obj *__ell_g_syntaxDlist_2_;
 
 struct ell_obj *
 ell_syntax_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
@@ -862,7 +862,7 @@ ell_syntax_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct e
 
 /* (syntax-list-rest syntax-list) -> syntax-list */
 
-struct ell_obj *__ell_g_syntaxDlistDrest_;
+struct ell_obj *__ell_g_syntaxDlistDrest_2_;
 
 struct ell_obj *
 ell_syntax_list_rest_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
@@ -880,7 +880,7 @@ ell_syntax_list_rest_code(struct ell_obj *clo, unsigned npos, unsigned nkey, str
 
 /* (append-syntax-lists &rest syntax-lists) -> syntax-list */
 
-struct ell_obj *__ell_g_appendDsyntaxDlists_;
+struct ell_obj *__ell_g_appendDsyntaxDlists_2_;
 
 struct ell_obj *
 ell_append_syntax_lists_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
@@ -900,7 +900,7 @@ ell_append_syntax_lists_code(struct ell_obj *clo, unsigned npos, unsigned nkey, 
 
 /* (apply-syntax-list function syntax-list) -> result */
 
-struct ell_obj *__ell_g_applyDsyntaxDlist_;
+struct ell_obj *__ell_g_applyDsyntaxDlist_2_;
 
 struct ell_obj *
 ell_apply_syntax_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
@@ -926,7 +926,7 @@ ell_apply_syntax_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, st
    The first argument must be a syntax symbol, and the second argument
    must be a symbol. */
 
-struct ell_obj *__ell_g_datumDGsyntax_;
+struct ell_obj *__ell_g_datumDGsyntax_2_;
 
 struct ell_obj *
 ell_datum_syntax_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
@@ -941,7 +941,7 @@ ell_datum_syntax_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct 
 
 /* (map-list function list) -> list */
 
-struct ell_obj *__ell_g_mapDlist_;
+struct ell_obj *__ell_g_mapDlist_2_;
 
 struct ell_obj *
 ell_map_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
@@ -962,7 +962,7 @@ ell_map_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_
 
 /* (exit) */
 
-struct ell_obj *__ell_g_exit_;
+struct ell_obj *__ell_g_exit_2_;
 
 struct ell_obj *
 ell_exit_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
@@ -987,26 +987,26 @@ ell_init()
 #include "syms.h"
 #undef ELL_DEFSYM
 
-    __ell_g_Ot_ = ell_make_obj(ELL_BRAND(boolean), NULL);
-    ell_t = __ell_g_Ot_;
-    __ell_g_Of_ = ell_make_obj(ELL_BRAND(boolean), NULL);
-    ell_f = __ell_g_Of_;
+    __ell_g_Ot_1_ = ell_make_obj(ELL_BRAND(boolean), NULL);
+    ell_t = __ell_g_Ot_1_;
+    __ell_g_Of_1_ = ell_make_obj(ELL_BRAND(boolean), NULL);
+    ell_f = __ell_g_Of_1_;
 
-    __ell_g_unspecified_ = ell_make_obj(ELL_BRAND(unspecified), NULL);
-    ell_unspecified = __ell_g_unspecified_;
+    __ell_g_unspecified_1_ = ell_make_obj(ELL_BRAND(unspecified), NULL);
+    ell_unspecified = __ell_g_unspecified_1_;
 
     ell_unbound = ell_make_obj(ELL_BRAND(unbound), NULL);
 
-    __ell_g_blockFf_ = ell_make_clo(&ell_blockFf_code, NULL);
-    __ell_g_unwindDprotectFf_ = ell_make_clo(&ell_unwind_protectFf_code, NULL);
+    __ell_g_blockFf_2_ = ell_make_clo(&ell_blockFf_code, NULL);
+    __ell_g_unwindDprotectFf_2_ = ell_make_clo(&ell_unwind_protectFf_code, NULL);
 
-    __ell_g_send_ = ell_make_clo(&ell_send_code, NULL);
-    __ell_g_syntaxDlist_ = ell_make_clo(&ell_syntax_list_code, NULL);
-    __ell_g_syntaxDlistDrest_ = ell_make_clo(&ell_syntax_list_rest_code, NULL);
-    __ell_g_appendDsyntaxDlists_ = ell_make_clo(&ell_append_syntax_lists_code, NULL);
-    __ell_g_applyDsyntaxDlist_ = ell_make_clo(&ell_apply_syntax_list_code, NULL);
-    __ell_g_datumDGsyntax_ = ell_make_clo(&ell_datum_syntax_code, NULL);
+    __ell_g_send_2_ = ell_make_clo(&ell_send_code, NULL);
+    __ell_g_syntaxDlist_2_ = ell_make_clo(&ell_syntax_list_code, NULL);
+    __ell_g_syntaxDlistDrest_2_ = ell_make_clo(&ell_syntax_list_rest_code, NULL);
+    __ell_g_appendDsyntaxDlists_2_ = ell_make_clo(&ell_append_syntax_lists_code, NULL);
+    __ell_g_applyDsyntaxDlist_2_ = ell_make_clo(&ell_apply_syntax_list_code, NULL);
+    __ell_g_datumDGsyntax_2_ = ell_make_clo(&ell_datum_syntax_code, NULL);
 
-    __ell_g_mapDlist_ = ell_make_clo(&ell_map_list_code, NULL);
-    __ell_g_exit_ = ell_make_clo(&ell_exit_code, NULL);
+    __ell_g_mapDlist_2_ = ell_make_clo(&ell_map_list_code, NULL);
+    __ell_g_exit_2_ = ell_make_clo(&ell_exit_code, NULL);
 }

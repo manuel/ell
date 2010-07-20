@@ -1061,10 +1061,11 @@ ellc_mangle_id(char *prefix, struct ellc_id *id)
     size_t name_len = strlen(name);
     size_t cx_len = strlen(cx);
     size_t len = std_len + prefix_len + name_len + cx_len
-        + 3  // separators
+        + 4  // separators
+        + 1  // ns (single digit, lest this become a Lisp-10)
         + 1; // zero
     char *out = (char *) ell_alloc(len);
-    snprintf(out, len, "%s_%s_%s_%s", std, prefix, name, cx);
+    snprintf(out, len, "%s_%s_%s_%u_%s", std, prefix, name, id->ns, cx);
     return out;
 }
 
