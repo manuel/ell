@@ -69,9 +69,9 @@ struct ellc_ast_lit_stx {
 };
 
 /* Context node for maintenance of SRFI 72's improved hygiene
-   condition.  Introduces a new hygienic context if there currently is
-   no context, i.e. if the syntax occurs doesn't occur nested inside a
-   quasisyntax. */
+   condition.  This sets the '__ell_cur_cx' ('ellrt.h') variable for
+   the body of code. It is introduced for every quasisyntax that is
+   not considered enclosed in another quasisyntax. */
 struct ellc_ast_cx {
     struct ellc_ast *body;
 };

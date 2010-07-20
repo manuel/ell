@@ -1227,8 +1227,14 @@ ellc_emit_app(struct ellc_st *st, struct ellc_ast *ast)
 static void
 ellc_emit_lam(struct ellc_st *st, struct ellc_ast *ast)
 {
+    /* Inside a lambda, the enclosing hygiene context is not visible,
+       because it's a C local variable.  Thus, setting it to off
+       inside the lambda's body is needed so that the code does the
+       right thing, namely, generate a new context when a new
+       quasisyntax is encountered. */
     bool in_quasisyntax_tmp = st->in_quasisyntax;
     st->in_quasisyntax = 0;
+
     struct ellc_ast_lam *lam = &ast->lam;
     fprintf(st->f, "({");
     // populate env
@@ -1249,6 +1255,7 @@ ellc_emit_lam(struct ellc_st *st, struct ellc_ast *ast)
         fprintf(st->f, "ell_make_clo(&__ell_code_%u, NULL);", lam->code_id);
     }
     fprintf(st->f, "})");
+
     st->in_quasisyntax = in_quasisyntax_tmp;
 }
 
@@ -1297,7 +1304,8 @@ ellc_emit_cx(struct ellc_st *st, struct ellc_ast *ast)
         /* Shadow the global current hygiene context, which is always
            NULL.  The trick here is that only syntax forms that are
            statically enclosed in this form will pick up this new
-           context, that's shadowing the global context. */
+           context, that's shadowing the global context, since the new
+           context is a C local variable. */
         st->in_quasisyntax = 1;
         fprintf(st->f, "({ struct ell_cx *__ell_cur_cx = ell_make_cx(); ");
         ellc_emit_ast(st, ast->cx.body);

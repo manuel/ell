@@ -264,6 +264,20 @@ ell_cx_equal(struct ell_cx *cxa, struct ell_cx *cxb);
 int
 ell_cx_cmp(struct ell_cx *cxa, struct ell_cx *cxb);
 
+/* The use of this hygiene context is described in 'ellc.c' a bit
+   more.  Basically, it always holds the hygiene context of the
+   current quasisyntax, if we're in a quasisyntax, to implement
+   SRFI-72's hygiene condition, which states that quasiyntaxes
+   "enclosed" in another quasisyntax share the enclosing quasisyntax's
+   hygiene context.
+
+   Note that SRFI-72 isn't completely clear on what "enclosed" really
+   means.  Our interpretation here, which seems to check out in the
+   tests done so far, is that "enclosure" stops at lambda boundaries.
+   This means when the evaluation of a quasisyntax leads to the
+   evaluation of a nested lambda that returns a quasisyntax, that
+   quasisyntax is _not_ considered to be enclosed in the outer
+   quasisyntax. */
 static struct ell_cx *__ell_cur_cx = NULL;
 
 /**** Utilities ****/
