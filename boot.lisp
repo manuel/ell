@@ -46,6 +46,9 @@
 (defmacro funcall (fun &rest args)
   #`(ell-app ,fun ,@args))
 
+(defmacro function (name)
+  #`(ell-fref ,name))
+
 (defmacro setq (name value)
   #`(ell-set ,name ,value))
 
