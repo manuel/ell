@@ -1258,9 +1258,9 @@ ellc_emit_lam(struct ellc_st *st, struct ellc_ast *ast)
             struct ellc_ast *ref_ast = (struct ellc_ast *) dnode_get(n);
             /* Tricky: if a variable is boxed, the closure environment
                needs to contain the box, not the box's contents.  This
-               means we need to override emit references specially
-               here, so that they always act as if the variable was
-               unboxed, even for boxed ones. */
+               means we need to emit references specially here, so
+               that they always act as if the variable was unboxed,
+               even for boxed ones. */
             switch(ref_ast->type) {
             case ELLC_AST_ENV_REF:
                 ellc_emit_env_ref_plain(st, ref_ast); break;

@@ -1,4 +1,7 @@
 -*-org-*-
+* Bugs
+** Revisit access to unbound parameters inside parameter init forms
+This happens if a parameter's init form accesses a parameter to the right of it.
 * Language Issues
 ** Code created by quasisyntax doesn't use current hygiene context
 This means that append-syntax-lists and such cannot be shadowed.  Not
