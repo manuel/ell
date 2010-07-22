@@ -319,7 +319,7 @@ struct ell_obj **
 ell_make_box(struct ell_obj *value);
 struct ell_obj *
 ell_box_read(struct ell_obj **box);
-void
+struct ell_obj *
 ell_box_write(struct ell_obj **box, struct ell_obj *value);
 
 #endif

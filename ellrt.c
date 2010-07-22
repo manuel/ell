@@ -515,16 +515,24 @@ ell_list_range_set_cur(struct ell_obj *range, lnode_t *new_cur)
 
 ELL_DEFMETHOD(list_range, emptyp, 1)
 ELL_PARAM(range, 0)
-return (ell_list_range_cur(range) ? ell_f : ell_t);
+return ((ell_list_range_cur(range) == NULL) ? ell_t : ell_f);
 ELL_END
 
 ELL_DEFMETHOD(list_range, front, 1)
 ELL_PARAM(range, 0)
+if (ell_list_range_cur(range) == NULL) {
+    printf("range empty\n");
+    exit(EXIT_FAILURE);
+}
 return (struct ell_obj *) lnode_get(ell_list_range_cur(range));
 ELL_END
 
 ELL_DEFMETHOD(list_range, pop_front, 1)
 ELL_PARAM(range, 0)
+if (ell_list_range_cur(range) == NULL) {
+    printf("range empty\n");
+    exit(EXIT_FAILURE);
+}
 ell_list_range_set_cur(range, list_next(ell_list_range_elts(range), ell_list_range_cur(range)));
 return ell_unspecified;
 ELL_END
@@ -724,10 +732,11 @@ ell_box_read(struct ell_obj **box)
     return *box;
 }
 
-void
+struct ell_obj *
 ell_box_write(struct ell_obj **box, struct ell_obj *value)
 {
     *box = value;
+    return ell_unspecified;
 }
 
 /**** Data Structure Utilities ****/
