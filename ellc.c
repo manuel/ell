@@ -1107,15 +1107,25 @@ ellc_emit_glo_ref(struct ellc_st *st, struct ellc_ast *ast)
 }
 
 static void
+ellc_emit_arg_ref_plain(struct ellc_st *st, struct ellc_ast *ast)
+{
+    fprintf(st->f, "%s", ellc_mangle_param_id(ast->arg_ref.param->id));
+}
+
+static void
+ellc_emit_env_ref_plain(struct ellc_st *st, struct ellc_ast *ast)
+{
+    fprintf(st->f, "(__ell_env->%s)", ellc_mangle_env_id(ast->env_ref.param->id));
+}
+
+static void
 ellc_emit_arg_ref(struct ellc_st *st, struct ellc_ast *ast)
 {
-    fprintf(st->f, "({ struct ell_obj *val = ");
     if (ellc_param_boxed(ast->arg_ref.param)) {
         fprintf(st->f, "ell_box_read(%s)", ellc_mangle_param_id(ast->arg_ref.param->id));
     } else {
-        fprintf(st->f, "%s", ellc_mangle_param_id(ast->arg_ref.param->id));
+        ellc_emit_arg_ref_plain(st, ast);
     }
-    fprintf(st->f, "; val != ell_unbound ? val : ell_unbound_arg(); })");
 }
 
 static void
@@ -1124,7 +1134,7 @@ ellc_emit_env_ref(struct ellc_st *st, struct ellc_ast *ast)
     if (ellc_param_boxed(ast->env_ref.param)) {
         fprintf(st->f, "ell_box_read(__ell_env->%s)", ellc_mangle_env_id(ast->env_ref.param->id));
     } else {
-        fprintf(st->f, "(__ell_env->%s)", ellc_mangle_env_id(ast->env_ref.param->id));
+        ellc_emit_env_ref_plain(st, ast);
     }
 }
 
@@ -1171,7 +1181,7 @@ ellc_emit_env_set(struct ellc_st *st, struct ellc_ast *ast)
 {
     struct ellc_ast_env_set *env_set = &ast->env_set;
     if (ellc_param_boxed(env_set->param)) {
-        fprintf(st->f, "(ell_box_write(env->%s, ", ellc_mangle_env_id(env_set->param->id));
+        fprintf(st->f, "(ell_box_write(__ell_env->%s, ", ellc_mangle_env_id(env_set->param->id));
         ellc_emit_ast(st, env_set->val);
         fprintf(st->f, "))");
     } else {
@@ -1245,7 +1255,21 @@ ellc_emit_lam(struct ellc_st *st, struct ellc_ast *ast)
         for (dnode_t *n = dict_first(lam->env); n; n = dict_next(lam->env, n)) {
             struct ellc_id *env_id = (struct ellc_id *) dnode_getkey(n);
             fprintf(st->f, "__lam_env->%s = ", ellc_mangle_env_id(env_id));
-            ellc_emit_ast(st, (struct ellc_ast *) dnode_get(n));
+            struct ellc_ast *ref_ast = (struct ellc_ast *) dnode_get(n);
+            /* Tricky: if a variable is boxed, the closure environment
+               needs to contain the box, not the box's contents.  This
+               means we need to override emit references specially
+               here, so that they always act as if the variable was
+               unboxed, even for boxed ones. */
+            switch(ref_ast->type) {
+            case ELLC_AST_ENV_REF:
+                ellc_emit_env_ref_plain(st, ref_ast); break;
+            case ELLC_AST_ARG_REF:
+                ellc_emit_arg_ref_plain(st, ref_ast); break;
+            default:
+                printf("bad closure environment reference\n");
+                exit(EXIT_FAILURE);
+            }
             fprintf(st->f, "; ");
         }
     }
