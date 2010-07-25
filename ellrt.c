@@ -143,6 +143,12 @@ ell_add_superclass(struct ell_obj *class, struct ell_obj *superclass)
 }
 
 struct ell_obj *
+ell_obj_class(struct ell_obj *obj)
+{
+    return obj->brand->class;
+}
+
+struct ell_obj *
 ell_brand_class(struct ell_brand *brand)
 {
     return brand->class;
@@ -191,6 +197,25 @@ ell_set_slot_value(struct ell_obj *obj, struct ell_obj *slot_sym, struct ell_obj
     ell_assert_brand(slot_sym, ELL_BRAND(sym));
     ell_util_dict_put((dict_t *) obj->data, slot_sym, val);
     return val;
+}
+
+bool
+ell_is_subclass(struct ell_obj *class, struct ell_obj *superclass)
+{
+    list_t *superclasses = ell_class_superclasses(class);
+    for (lnode_t *n = list_first(superclasses); n; n = list_next(superclasses, n)) {
+        struct ell_obj *c = (struct ell_obj *) lnode_get(n);
+        if ((c == superclass) || ell_is_subclass(c, superclass))
+            return true;
+    }
+    return false;
+}
+
+bool
+ell_is_instance(struct ell_obj *obj, struct ell_obj *class)
+{
+    struct ell_obj *obj_class = ell_obj_class(obj);
+    return (obj_class == class) || ell_is_subclass(obj_class, class);
 }
 
 /**** Closures ****/
@@ -572,6 +597,12 @@ bool
 ell_is_true(struct ell_obj *obj)
 {
     return obj != ell_f;
+}
+
+struct ell_obj *
+ell_truth(bool b)
+{
+    return b ? ell_t : ell_f;
 }
 
 /**** Ranges ****/
@@ -1161,6 +1192,17 @@ ell_set_slot_value_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struc
     return ell_set_slot_value(args[0], args[1], args[2]);
 }
 
+/* (instancep object class) -> boolean */
+
+struct ell_obj *__ell_g_instancep_2_;
+
+struct ell_obj *
+ell_instancep_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    ell_check_npos(npos, 2);
+    return ell_truth(ell_is_instance(args[0], args[1]));
+}
+
 /* (exit) */
 
 struct ell_obj *__ell_g_exit_2_;
@@ -1229,6 +1271,7 @@ ell_init()
     __ell_g_make_2_ = ell_make_clo(&ell_make_code, NULL);
     __ell_g_slotDvalue_2_ = ell_make_clo(&ell_slot_value_code, NULL);
     __ell_g_setDslotDvalue_2_ = ell_make_clo(&ell_set_slot_value_code, NULL);
+    __ell_g_instancep_2_ = ell_make_clo(&ell_instancep_code, NULL);
 
     __ell_g_exit_2_ = ell_make_clo(&ell_exit_code, NULL);
 }

@@ -45,6 +45,8 @@ ell_make_brand(struct ell_obj *class);
 struct ell_obj *
 ell_make_class();
 struct ell_obj *
+ell_obj_class(struct ell_obj *obj);
+struct ell_obj *
 ell_brand_class(struct ell_brand *brand);
 list_t *
 ell_class_superclasses(struct ell_obj *class);
@@ -52,6 +54,14 @@ struct ell_brand *
 ell_class_current_brand(struct ell_obj *class);
 void
 ell_assert_brand(struct ell_obj *obj, struct ell_brand *brand);
+struct ell_obj *
+ell_slot_value(struct ell_obj *obj, struct ell_obj *slot_sym);
+struct ell_obj *
+ell_set_slot_value(struct ell_obj *obj, struct ell_obj *slot_sym, struct ell_obj *val);
+bool
+ell_is_subclass(struct ell_obj *class, struct ell_obj *superclass);
+bool
+ell_is_instance(struct ell_obj *obj, struct ell_obj *class);
 
 #define ELL_CLASS(name) __ell_class_##name
 #define ELL_BRAND(name) __ell_brand_##name
@@ -206,6 +216,8 @@ struct ell_obj *ell_f;
 
 bool
 ell_is_true(struct ell_obj *obj);
+struct ell_obj *
+ell_truth(bool b);
 
 /**** Unspecified value ****/
 
