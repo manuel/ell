@@ -1,5 +1,8 @@
 -*-org-*-
 * Bugs
+** Create built-in-class as metaclass for built-in classes
+Prohibit subclassing of built-in classes and slot accesses to
+instances of classes whose metaclass is built-in-class.
 ** Revisit access to unbound parameters inside parameter init forms
 This happens if a parameter's init form accesses a parameter to the right of it.
 * Language Issues
@@ -12,5 +15,9 @@ IOW, are macro names symbols or (hygiene-contextual) identifiers?
 ** Ensure that function parameters names' are unique
 ** Ensure that only optional and keyword parameters have init forms
 ** Ignore unsyntax inside syntax -- currently uses same normalizer as quasisyntax
+* Language Enhancements
+** Provide boundp that evaluates argument
+Via dlsym(3).
 * Code Enhancements
 ** Keep track of all used symbols in unit and intern them only once at load-time
+** Allocate string data using GC_alloc_atomic
