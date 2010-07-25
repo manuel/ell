@@ -1570,7 +1570,7 @@ ellc_compile(struct ell_obj *stx_lst, struct ellc_st **st_out)
     }
     
     char cmdline[256];
-    sprintf(cmdline, "gcc -std=c99 -shared -fPIC -I. -o %s -x c %s", onam, cnam);
+    sprintf(cmdline, "gcc -pipe -std=c99 -shared -fPIC -I. -o %s -x c %s", onam, cnam);
 
     if (system(cmdline) == -1) {
         printf("error compiling file\n");
