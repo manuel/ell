@@ -38,8 +38,6 @@ struct ell_class_data {
     struct ell_brand *current_brand;
 };
 
-struct ell_obj *ell_built_in_class;
-
 struct ell_obj *
 ell_make_obj(struct ell_brand *brand, void *data);
 struct ell_brand *

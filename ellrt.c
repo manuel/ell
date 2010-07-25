@@ -171,6 +171,28 @@ ell_assert_brand(struct ell_obj *obj, struct ell_brand *brand)
     }
 }
 
+struct ell_obj *
+ell_slot_value(struct ell_obj *obj, struct ell_obj *slot_sym)
+{
+    ell_assert_brand(slot_sym, ELL_BRAND(sym));
+    dnode_t *n = dict_lookup((dict_t *) obj->data, slot_sym);
+    if (n) {
+        return (struct ell_obj *) dnode_get(n);
+    } else {
+        printf("unbound slot: %s\n", ell_str_chars(ell_sym_name(slot_sym)));
+        exit(EXIT_FAILURE);
+        return NULL;
+    }
+}
+
+struct ell_obj *
+ell_set_slot_value(struct ell_obj *obj, struct ell_obj *slot_sym, struct ell_obj *val)
+{
+    ell_assert_brand(slot_sym, ELL_BRAND(sym));
+    ell_util_dict_put((dict_t *) obj->data, slot_sym, val);
+    return val;
+}
+
 /**** Closures ****/
 
 struct ell_obj *
@@ -1113,7 +1135,30 @@ struct ell_obj *
 ell_make_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
 {
     ell_check_npos(npos, 1);
-    return ell_make_obj(ell_class_current_brand(args[0]), NULL);
+    return ell_make_obj(ell_class_current_brand(args[0]),
+                        ell_util_make_dict((dict_comp_t) &ell_sym_cmp));
+}
+
+/* (slot-value object slot-name) -> value */
+
+struct ell_obj *__ell_g_slotDvalue_2_;
+
+struct ell_obj *
+ell_slot_value_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    ell_check_npos(npos, 2);
+    return ell_slot_value(args[0], args[1]);
+}
+
+/* (set-slot-value object slot-name value) -> value */
+
+struct ell_obj *__ell_g_setDslotDvalue_2_;
+
+struct ell_obj *
+ell_set_slot_value_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    ell_check_npos(npos, 3);
+    return ell_set_slot_value(args[0], args[1], args[2]);
 }
 
 /* (exit) */
@@ -1182,6 +1227,8 @@ ell_init()
     __ell_g_putDmethod_2_ = ell_make_clo(&ell_put_method_code, NULL);
     __ell_g_findDmethod_2_ = ell_make_clo(&ell_find_method_code, NULL);
     __ell_g_make_2_ = ell_make_clo(&ell_make_code, NULL);
+    __ell_g_slotDvalue_2_ = ell_make_clo(&ell_slot_value_code, NULL);
+    __ell_g_setDslotDvalue_2_ = ell_make_clo(&ell_set_slot_value_code, NULL);
 
     __ell_g_exit_2_ = ell_make_clo(&ell_exit_code, NULL);
 }
