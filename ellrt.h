@@ -19,9 +19,12 @@
 
 #define ell_alloc GC_MALLOC
 
-/**** Brands and Objects ****/
+/**** Objects, Brands, Classes ****/
+
+struct ell_obj;
 
 struct ell_brand {
+    struct ell_obj *class;
     dict_t methods;
 };
 
@@ -30,18 +33,39 @@ struct ell_obj {
     void *data;
 };
 
+struct ell_class_data {
+    list_t *superclasses;
+    struct ell_brand *current_brand;
+};
+
+struct ell_obj *ell_built_in_class;
+
 struct ell_obj *
 ell_make_obj(struct ell_brand *brand, void *data);
 struct ell_brand *
-ell_make_brand();
+ell_make_brand(struct ell_obj *class);
+struct ell_obj *
+ell_make_class();
+struct ell_obj *
+ell_brand_class(struct ell_brand *brand);
+list_t *
+ell_class_superclasses(struct ell_obj *class);
+struct ell_brand *
+ell_class_current_brand(struct ell_obj *class);
 void
 ell_assert_brand(struct ell_obj *obj, struct ell_brand *brand);
 
+#define ELL_CLASS(name) __ell_class_##name
 #define ELL_BRAND(name) __ell_brand_##name
 
-#define ELL_DEFBRAND(name) struct ell_brand *ELL_BRAND(name);
-#include "brands.h"
-#undef ELL_DEFBRAND
+struct ell_obj *ELL_CLASS(class);
+struct ell_brand *ELL_BRAND(class);
+
+#define ELL_DEFBUILTIN(name)           \
+    struct ell_obj *ELL_CLASS(name);   \
+    struct ell_brand *ELL_BRAND(name);
+#include "built-ins.h"
+#undef ELL_DEFBUILTIN
 
 /**** Closures ****/
 
@@ -72,7 +96,7 @@ ell_check_npos(unsigned formal_npos, unsigned actual_npos);
 /**** Methods ****/
 
 void
-ell_put_method(struct ell_brand *brand, struct ell_obj *msg_sym, struct ell_obj *clo);
+ell_put_method(struct ell_obj *class, struct ell_obj *msg_sym, struct ell_obj *clo);
 struct ell_obj *
 ell_find_method(struct ell_obj *rcv, struct ell_obj *msg_sym);
 struct ell_obj *
@@ -87,21 +111,21 @@ ell_send(struct ell_obj *rcv, struct ell_obj *msg_sym,
         ell_send(__ell_rcv, ELL_SYM(msg), npos, 0, __ell_send_args);    \
     })
 
-#define ELL_METHOD_CODE(brand, msg) __ell_method_code_##brand##_##msg
+#define ELL_METHOD_CODE(class, msg) __ell_method_code_##class##_##msg
 
-#define ELL_DEFMETHOD(brand, msg, formal_npos)                          \
-    ell_code ELL_METHOD_CODE(brand, msg);                               \
+#define ELL_DEFMETHOD(class, msg, formal_npos)                          \
+    ell_code ELL_METHOD_CODE(class, msg);                               \
                                                                         \
     __attribute__((constructor(201))) static void                       \
-    __ell_init_method_##brand##_##msg()                                 \
+    __ell_init_method_##class##_##msg()                                 \
     {                                                                   \
         struct ell_obj *clo =                                           \
-            ell_make_clo(&ELL_METHOD_CODE(brand, msg), NULL);           \
-        ell_put_method(ELL_BRAND(brand), ELL_SYM(msg), clo);            \
+            ell_make_clo(&ELL_METHOD_CODE(class, msg), NULL);           \
+        ell_put_method(ELL_CLASS(class), ELL_SYM(msg), clo);            \
     }                                                                   \
                                                                         \
     struct ell_obj *                                                    \
-    ELL_METHOD_CODE(brand, msg)(struct ell_obj *clo, unsigned npos,     \
+    ELL_METHOD_CODE(class, msg)(struct ell_obj *clo, unsigned npos,     \
                                 unsigned nkey, struct ell_obj **args)   \
     {                                                                   \
         ell_check_npos(formal_npos, npos);

@@ -104,7 +104,7 @@ ell_parser_push_unsyntax_splicing()
     ell_parser_push_special(ELL_SYM(core_unsyntax_splicing));
 }
 
-/**** Brands and Objects ****/
+/**** Objects, Brands, Classes ****/
 
 struct ell_obj *
 ell_make_obj(struct ell_brand *brand, void *data)
@@ -116,11 +116,42 @@ ell_make_obj(struct ell_brand *brand, void *data)
 }
 
 struct ell_brand *
-ell_make_brand()
+ell_make_brand(struct ell_obj *class)
 {
     struct ell_brand *brand = (struct ell_brand *) ell_alloc(sizeof(*brand));
+    brand->class = class;
     dict_init(&brand->methods, DICTCOUNT_T_MAX, (dict_comp_t) &ell_sym_cmp);
     return brand;
+}
+
+struct ell_obj *
+ell_make_class()
+{
+    struct ell_class_data *data = (struct ell_class_data *) ell_alloc(sizeof(*data));
+    data->superclasses = ell_util_make_list();
+    struct ell_obj *class = ell_make_obj(ELL_BRAND(class), data);
+    data->current_brand = ell_make_brand(class);
+    return class;
+}
+
+struct ell_obj *
+ell_brand_class(struct ell_brand *brand)
+{
+    return brand->class;
+}
+
+list_t *
+ell_class_superclasses(struct ell_obj *class)
+{
+    ell_assert_brand(class, ELL_BRAND(class));
+    return ((struct ell_class_data *) class->data)->superclasses;
+}
+
+struct ell_brand *
+ell_class_current_brand(struct ell_obj *class)
+{
+    ell_assert_brand(class, ELL_BRAND(class));
+    return ((struct ell_class_data *) class->data)->current_brand;
 }
 
 void
@@ -168,22 +199,49 @@ ell_check_npos(unsigned formal_npos, unsigned actual_npos)
 /**** Methods ****/
 
 void
-ell_put_method(struct ell_brand *brand, struct ell_obj *msg_sym, struct ell_obj *clo)
+ell_put_method(struct ell_obj *class, struct ell_obj *msg_sym, struct ell_obj *clo)
 {
+    ell_assert_brand(class, ELL_BRAND(class));
     ell_assert_brand(clo, ELL_BRAND(clo));
     ell_assert_brand(msg_sym, ELL_BRAND(sym));
-    ell_util_dict_put(&brand->methods, msg_sym, clo);
+    ell_util_dict_put(&(ell_class_current_brand(class))->methods, msg_sym, clo);
 }
 
 struct ell_obj *
-ell_find_method(struct ell_obj *rcv, struct ell_obj *msg_sym)
+ell_find_method_in_class(struct ell_obj *class, struct ell_obj *msg_sym)
 {
-    dnode_t *node = dict_lookup(&rcv->brand->methods, msg_sym);
+    dnode_t *node = dict_lookup(&(ell_class_current_brand(class))->methods, msg_sym);
     if (node) {
         return (struct ell_obj *) dnode_get(node);
     } else {
         return NULL;
     }
+}
+
+struct ell_obj *
+ell_find_method_in_superclasses(struct ell_obj *class, struct ell_obj *msg_sym)
+{
+    struct ell_obj *found_clo = NULL;
+    list_t *superclasses = ell_class_superclasses(class);
+    for (lnode_t *n = list_first(superclasses); n; n = list_next(superclasses, n)) {
+        struct ell_obj *superclass = (struct ell_obj *) lnode_get(n);
+        struct ell_obj *clo = ell_find_method_in_class(superclass, msg_sym);
+        if (clo) {
+            if (found_clo != NULL) {
+                printf("ambiguous method error %s\n", ell_str_chars(ell_sym_name(msg_sym)));
+                exit(EXIT_FAILURE);
+            } else {
+                found_clo = clo;
+            }
+        }
+    }
+    return found_clo;
+}
+
+struct ell_obj *
+ell_find_method(struct ell_obj *rcv, struct ell_obj *msg_sym)
+{
+    return ell_find_method_in_class(ell_brand_class(rcv->brand), msg_sym);
 }
 
 struct ell_obj *
@@ -985,9 +1043,16 @@ ell_exit_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj 
 __attribute__((constructor(200))) static void
 ell_init()
 {
-#define ELL_DEFBRAND(name) ELL_BRAND(name) = ell_make_brand();
-#include "brands.h"
-#undef ELL_DEFBRAND
+    // Boostrap class class.
+    ELL_BRAND(class) = NULL;
+    ELL_CLASS(class) = ell_make_class();
+    ELL_CLASS(class)->brand = ell_class_current_brand(ELL_CLASS(class));
+
+#define ELL_DEFBUILTIN(name)                                    \
+    ELL_CLASS(name) = ell_make_class();                         \
+    ELL_BRAND(name) = ell_class_current_brand(ELL_CLASS(name));
+#include "built-ins.h"
+#undef ELL_DEFBUILTIN
 
     dict_init(&ell_sym_tab, DICTCOUNT_T_MAX, (dict_comp_t) &strcmp);
 
@@ -995,6 +1060,8 @@ ell_init()
     if (!ELL_SYM(name)) ELL_SYM(name) = ell_intern(ell_make_str(lisp_name));
 #include "syms.h"
 #undef ELL_DEFSYM
+
+    ell_built_in_class = ell_make_class();
 
     __ell_g_Ot_1_ = ell_make_obj(ELL_BRAND(boolean), NULL);
     ell_t = __ell_g_Ot_1_;
