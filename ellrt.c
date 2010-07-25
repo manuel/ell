@@ -1024,6 +1024,20 @@ ell_datum_syntax_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct 
     return ell_make_stx_sym_cx(sym, ell_stx_sym_cx(stx));
 }
 
+/* (syntax->datum stx-sym) -> sym
+
+   Note that this implements only a subset of SRFI-72 functionality:
+   The argument must be a syntax symbol. */
+
+struct ell_obj *__ell_g_syntaxDGdatum_2_;
+
+struct ell_obj *
+ell_syntax_datum_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    ell_check_npos(1, npos);
+    return ell_stx_sym_sym(args[0]);
+}
+
 /* (map-list function list) -> list */
 
 struct ell_obj *__ell_g_mapDlist_2_;
@@ -1078,6 +1092,17 @@ ell_put_method_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct el
     ell_check_npos(npos, 3);
     ell_put_method(args[0], args[1], args[2]);
     return ell_unspecified;
+}
+
+/* (find-method receiver msg-sym) -> clo */
+
+struct ell_obj *__ell_g_findDmethod_2_;
+
+struct ell_obj *
+ell_find_method_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    ell_check_npos(npos, 2);
+    return ell_find_method(args[0], args[1]);
 }
 
 /* (make class) -> instance */
@@ -1148,12 +1173,14 @@ ell_init()
     __ell_g_appendDsyntaxDlists_2_ = ell_make_clo(&ell_append_syntax_lists_code, NULL);
     __ell_g_applyDsyntaxDlist_2_ = ell_make_clo(&ell_apply_syntax_list_code, NULL);
     __ell_g_datumDGsyntax_2_ = ell_make_clo(&ell_datum_syntax_code, NULL);
+    __ell_g_syntaxDGdatum_2_ = ell_make_clo(&ell_syntax_datum_code, NULL);
 
     __ell_g_mapDlist_2_ = ell_make_clo(&ell_map_list_code, NULL);
 
     __ell_g_makeDclass_2_ = ell_make_clo(&ell_make_class_code, NULL);
     __ell_g_addDsuperclass_2_ = ell_make_clo(&ell_add_superclass_code, NULL);
     __ell_g_putDmethod_2_ = ell_make_clo(&ell_put_method_code, NULL);
+    __ell_g_findDmethod_2_ = ell_make_clo(&ell_find_method_code, NULL);
     __ell_g_make_2_ = ell_make_clo(&ell_make_code, NULL);
 
     __ell_g_exit_2_ = ell_make_clo(&ell_exit_code, NULL);

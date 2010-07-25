@@ -89,3 +89,16 @@
                     #`(add-superclass ,name ,superclass))
                   superclasses)
       unspecified))
+
+(defmacro defgeneric (name &optional params)
+  #`(defun ,name (&rest args)
+      (let ((receiver (send (send args 'all) 'front)))
+        (funcall (find-method receiver ',name) args))))
+
+(defmacro defmethod (name params &rest body)
+  #`(progn
+      (defgeneric ,name)
+      (put-method ,(send (send params 'first) 'second) 
+                  ',name
+                  (lambda ,params ,@body))
+      unspecified))
