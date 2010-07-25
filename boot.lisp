@@ -81,3 +81,11 @@
   #`(funcall (lambda (,@(map-list (lambda (binding) (send binding 'first)) bindings))
                ,@body)
              ,@(map-list (lambda (binding) (send binding 'second)) bindings)))
+
+(defmacro defclass (name &optional (superclasses #'()))
+  #`(progn
+      (defvar ,name (make-class))
+      ,@(map-list (lambda (superclass)
+                    #`(add-superclass ,name ,superclass))
+                  superclasses)
+      unspecified))

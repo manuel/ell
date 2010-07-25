@@ -134,6 +134,14 @@ ell_make_class()
     return class;
 }
 
+void
+ell_add_superclass(struct ell_obj *class, struct ell_obj *superclass)
+{
+    ell_assert_brand(class, ELL_BRAND(class));
+    ell_assert_brand(superclass, ELL_BRAND(class));
+    ell_util_set_add(ell_class_superclasses(class), superclass, (dict_comp_t) &ell_ptr_cmp);
+}
+
 struct ell_obj *
 ell_brand_class(struct ell_brand *brand)
 {
@@ -198,12 +206,17 @@ ell_check_npos(unsigned formal_npos, unsigned actual_npos)
 
 /**** Methods ****/
 
+struct ell_obj *
+ell_find_method_in_class(struct ell_obj *class, struct ell_obj *msg_sym);
+struct ell_obj *
+ell_find_method_in_superclasses(struct ell_obj *class, struct ell_obj *msg_sym);
+
 void
 ell_put_method(struct ell_obj *class, struct ell_obj *msg_sym, struct ell_obj *clo)
 {
     ell_assert_brand(class, ELL_BRAND(class));
-    ell_assert_brand(clo, ELL_BRAND(clo));
     ell_assert_brand(msg_sym, ELL_BRAND(sym));
+    ell_assert_brand(clo, ELL_BRAND(clo));
     ell_util_dict_put(&(ell_class_current_brand(class))->methods, msg_sym, clo);
 }
 
@@ -214,7 +227,7 @@ ell_find_method_in_class(struct ell_obj *class, struct ell_obj *msg_sym)
     if (node) {
         return (struct ell_obj *) dnode_get(node);
     } else {
-        return NULL;
+        return ell_find_method_in_superclasses(class, msg_sym);
     }
 }
 
@@ -641,6 +654,11 @@ ELL_END
 
 /**** Library ****/
 
+ELL_DEFMETHOD(class, print_object, 1)
+printf("#<class>");
+return ell_unspecified;
+ELL_END
+
 ELL_DEFMETHOD(boolean, print_object, 1)
 ELL_PARAM(boolean, 0)
 if (ell_is_true(boolean)) {
@@ -1027,6 +1045,52 @@ ell_map_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_
     return res;
 }
 
+/* (make-class) -> class */
+
+struct ell_obj *__ell_g_makeDclass_2_;
+
+struct ell_obj *
+ell_make_class_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    ell_check_npos(npos, 0);
+    return ell_make_class();
+}
+
+/* (add-superclass class superclass) -> unspecified */
+
+struct ell_obj *__ell_g_addDsuperclass_2_;
+
+struct ell_obj *
+ell_add_superclass_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    ell_check_npos(npos, 2);
+    ell_add_superclass(args[0], args[1]);
+    return ell_unspecified;
+}
+
+/* (put-method class msg-sym clo) -> unspecified */
+
+struct ell_obj *__ell_g_putDmethod_2_;
+
+struct ell_obj *
+ell_put_method_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    ell_check_npos(npos, 3);
+    ell_put_method(args[0], args[1], args[2]);
+    return ell_unspecified;
+}
+
+/* (make class) -> instance */
+
+struct ell_obj *__ell_g_make_2_;
+
+struct ell_obj *
+ell_make_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    ell_check_npos(npos, 1);
+    return ell_make_obj(ell_class_current_brand(args[0]), NULL);
+}
+
 /* (exit) */
 
 struct ell_obj *__ell_g_exit_2_;
@@ -1043,10 +1107,14 @@ ell_exit_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj 
 __attribute__((constructor(200))) static void
 ell_init()
 {
-    // Boostrap class class.
+    // Boostrap class class.  Because 'ell_make_class' sets the new
+    // class's brand to 'ELL_BRAND(class)', which can't be defined
+    // without a class, we need to fix up the the class brand and
+    // class class's brand afterwards.
     ELL_BRAND(class) = NULL;
     ELL_CLASS(class) = ell_make_class();
-    ELL_CLASS(class)->brand = ell_class_current_brand(ELL_CLASS(class));
+    ELL_BRAND(class) = ell_class_current_brand(ELL_CLASS(class));
+    ELL_CLASS(class)->brand = ELL_BRAND(class);
 
 #define ELL_DEFBUILTIN(name)                                    \
     ELL_CLASS(name) = ell_make_class();                         \
@@ -1060,8 +1128,6 @@ ell_init()
     if (!ELL_SYM(name)) ELL_SYM(name) = ell_intern(ell_make_str(lisp_name));
 #include "syms.h"
 #undef ELL_DEFSYM
-
-    ell_built_in_class = ell_make_class();
 
     __ell_g_Ot_1_ = ell_make_obj(ELL_BRAND(boolean), NULL);
     ell_t = __ell_g_Ot_1_;
@@ -1084,5 +1150,11 @@ ell_init()
     __ell_g_datumDGsyntax_2_ = ell_make_clo(&ell_datum_syntax_code, NULL);
 
     __ell_g_mapDlist_2_ = ell_make_clo(&ell_map_list_code, NULL);
+
+    __ell_g_makeDclass_2_ = ell_make_clo(&ell_make_class_code, NULL);
+    __ell_g_addDsuperclass_2_ = ell_make_clo(&ell_add_superclass_code, NULL);
+    __ell_g_putDmethod_2_ = ell_make_clo(&ell_put_method_code, NULL);
+    __ell_g_make_2_ = ell_make_clo(&ell_make_code, NULL);
+
     __ell_g_exit_2_ = ell_make_clo(&ell_exit_code, NULL);
 }
