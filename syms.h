@@ -12,6 +12,8 @@ ELL_DEFSYM(pop_front, "pop-front")
 
 ELL_DEFSYM(core_send, "send")
 
+ELL_DEFSYM(default_handle, "default-handle")
+
 ELL_DEFSYM(core_fref, "ell-fref")
 ELL_DEFSYM(core_def,  "ell-def")
 ELL_DEFSYM(core_fdef, "ell-fdef")
@@ -35,9 +37,6 @@ ELL_DEFSYM(core_unsyntax_splicing, "unsyntax-splicing")
 ELL_DEFSYM(core_syntax_list, "syntax-list")
 ELL_DEFSYM(core_append_syntax_lists, "append-syntax-lists")
 ELL_DEFSYM(core_apply_syntax_list, "apply-syntax-list")
-
-ELL_DEFSYM(core_require, "require")
-ELL_DEFSYM(core_require_when_compile, "require-when-compile")
 
 ELL_DEFSYM(param_optional, "&optional")
 ELL_DEFSYM(param_key, "&key")

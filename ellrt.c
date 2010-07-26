@@ -379,6 +379,33 @@ ell_unwind_protectFf_code(struct ell_obj *clo, unsigned npos, unsigned nkey, str
 struct ell_obj *__ell_g_blockFf_2_;
 struct ell_obj *__ell_g_unwindDprotectFf_2_;
 
+/**** Conditions ****/
+
+struct ell_obj *
+ell_handler_reset_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    ell_current_handler = ell_current_handler->parent;
+}
+
+struct ell_obj *
+ell_handler_push(struct ell_obj *handler_fun, struct ell_obj *body_thunk)
+{
+    struct ell_handler handler = { .parent = ell_current_handler,
+                                   .handler_fun = handler_fun };
+    ell_current_handler = &handler;
+    struct ell_obj *reset_fun = ell_make_clo(&ell_handler_reset_code, NULL);
+    return ell_unwind_protect(body_thunk, reset_fun);
+}
+
+struct ell_obj *
+ell_signal(struct ell_obj *condition)
+{
+    if (ell_current_handler)
+        return ELL_CALL(ell_current_handler->handler_fun, condition);
+    else
+        ELL_SEND(condition, default_handle);
+}
+
 /**** Strings ****/
 
 struct ell_obj *
@@ -1203,6 +1230,30 @@ ell_instancep_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell
     return ell_truth(ell_is_instance(args[0], args[1]));
 }
 
+/* (handler-push handler-fun body-fun) -> result */
+
+struct ell_obj *__ell_g_handlerDpush_2_;
+
+struct ell_obj *
+ell_handler_push_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    ell_check_npos(npos, 2);
+    ell_assert_brand(args[0], ELL_BRAND(clo));
+    ell_assert_brand(args[1], ELL_BRAND(clo));
+    return ell_handler_push(args[0], args[1]);
+}
+
+/* (signal condition) -> result */
+
+struct ell_obj *__ell_g_signal_2_;
+
+struct ell_obj *
+ell_signal_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    ell_check_npos(npos, 1);
+    return ell_signal(args[0]);
+}
+
 /* (exit) */
 
 struct ell_obj *__ell_g_exit_2_;
@@ -1272,6 +1323,8 @@ ell_init()
     __ell_g_slotDvalue_2_ = ell_make_clo(&ell_slot_value_code, NULL);
     __ell_g_setDslotDvalue_2_ = ell_make_clo(&ell_set_slot_value_code, NULL);
     __ell_g_instancep_2_ = ell_make_clo(&ell_instancep_code, NULL);
+    __ell_g_handlerDpush_2_ = ell_make_clo(&ell_handler_push_code, NULL);
+    __ell_g_signal_2_ = ell_make_clo(&ell_signal_code, NULL);
 
     __ell_g_exit_2_ = ell_make_clo(&ell_exit_code, NULL);
 }

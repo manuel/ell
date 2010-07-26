@@ -165,6 +165,18 @@ ell_block(struct ell_obj *fun);
 struct ell_obj *
 ell_unwind_protect(struct ell_obj *protected, struct ell_obj *cleanup);
 
+/**** Conditions ****/
+
+struct ell_handler {
+    struct ell_handler *parent;
+    struct ell_obj *handler_fun; // condition -> result
+};
+
+struct ell_handler *ell_current_handler; // maybe NULL
+
+struct ell_obj *
+ell_handler_push(struct ell_obj *handler_fun, struct ell_obj *body_thunk);
+
 /**** Strings ****/
 
 struct ell_str_data {
