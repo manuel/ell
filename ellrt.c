@@ -288,7 +288,7 @@ ell_find_method_in_superclasses(struct ell_obj *class, struct ell_obj *msg_sym)
         struct ell_obj *clo = ell_find_method_in_class(superclass, msg_sym);
         if (clo) {
             if (found_clo != NULL) {
-                printf("ambiguous method error %s\n", ell_str_chars(ell_sym_name(msg_sym)));
+                printf("ambiguous method error: %s\n", ell_str_chars(ell_sym_name(msg_sym)));
                 exit(EXIT_FAILURE);
             } else {
                 found_clo = clo;
@@ -301,7 +301,12 @@ ell_find_method_in_superclasses(struct ell_obj *class, struct ell_obj *msg_sym)
 struct ell_obj *
 ell_find_method(struct ell_obj *rcv, struct ell_obj *msg_sym)
 {
-    return ell_find_method_in_class(ell_brand_class(rcv->brand), msg_sym);
+    struct ell_obj *clo = ell_find_method_in_class(ell_brand_class(rcv->brand), msg_sym);
+    if (!clo) {
+        printf("method not found: %s\n", ell_str_chars(ell_sym_name(msg_sym)));
+        exit(EXIT_FAILURE);        
+    }
+    return clo;
 }
 
 struct ell_obj *
