@@ -49,7 +49,9 @@ quasisyntax       = "#`"  { ell_parser_push_quasisyntax(); }       expr { ell_pa
 unsyntax          = ","   { ell_parser_push_unsyntax(); }          expr { ell_parser_pop(); }
 unsyntax-splicing = ",@"  { ell_parser_push_unsyntax_splicing(); } expr { ell_parser_pop(); }
 
-doc = "$" { ell_parser_push(); } sym? ("[" exprs "]")? { ell_parser_pop(); }
+doc        = "$" { ell_parser_push(); } sym? ("[" exprs "]")? ("{" contents* "}")? { ell_parser_pop(); }
+contents   = < [^$}]+ > { ell_parser_add_str(yytext); }
+           | doc
 
 spc-char   = [ \t] | eol
 spc        = spc-char+

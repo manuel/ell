@@ -102,3 +102,5 @@
                   ',name
                   (lambda ,params ,@body))
       unspecified))
+
+(defgeneric print-object (object))
