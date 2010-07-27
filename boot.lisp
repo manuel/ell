@@ -37,7 +37,7 @@
 (defmacro defparameter (name value)
   #`(ell-def ,name ,value))
 
-(defmacro defvar (name value)
+(defmacro defvar (name &optional (value #'unspecified))
   #`(defparameter ,name (if (definedp ,name) ,name ,value)))
 
 (defmacro defun/f (name function)
@@ -82,7 +82,7 @@
                ,@body)
              ,@(map-list (lambda (binding) (send binding 'second)) bindings)))
 
-(defmacro defclass (name &optional (superclasses #'()))
+(defmacro defclass (name &optional (superclasses #'()) &rest slot-specs)
   #`(progn
       (defvar ,name (make-class))
       ,@(map-list (lambda (superclass)
