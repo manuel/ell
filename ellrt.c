@@ -1265,6 +1265,20 @@ ell_exit_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj 
     return NULL;
 }
 
+/**** Export built-in classes to Lisp ****/
+
+struct ell_obj *__ell_g_LbooleanG_1_;
+struct ell_obj *__ell_g_LclassG_1_;
+struct ell_obj *__ell_g_LfunctionG_1_;
+struct ell_obj *__ell_g_LlinkedDlistG_1_;
+struct ell_obj *__ell_g_LlistDrangeG_1_;
+struct ell_obj *__ell_g_LstringG_1_;
+struct ell_obj *__ell_g_LsymbolG_1_;
+struct ell_obj *__ell_g_LsyntaxDlistG_1_;
+struct ell_obj *__ell_g_LsyntaxDstringG_1_;
+struct ell_obj *__ell_g_LsyntaxDsymbolG_1_;
+struct ell_obj *__ell_g_LunspecifiedG_1_;
+
 /**** Initialization ****/
 
 __attribute__((constructor(200))) static void
@@ -1284,6 +1298,18 @@ ell_init()
     ELL_BRAND(name) = ell_class_current_brand(ELL_CLASS(name));
 #include "built-ins.h"
 #undef ELL_DEFBUILTIN
+
+    __ell_g_LbooleanG_1_ = ELL_CLASS(boolean);
+    __ell_g_LclassG_1_ = ELL_CLASS(class);
+    __ell_g_LfunctionG_1_ = ELL_CLASS(clo);
+    __ell_g_LlinkedDlistG_1_ = ELL_CLASS(lst);
+    __ell_g_LlistDrangeG_1_ = ELL_CLASS(list_range);
+    __ell_g_LstringG_1_ = ELL_CLASS(str);
+    __ell_g_LsymbolG_1_ = ELL_CLASS(sym);
+    __ell_g_LsyntaxDlistG_1_ = ELL_CLASS(stx_lst);
+    __ell_g_LsyntaxDstringG_1_ = ELL_CLASS(stx_str);
+    __ell_g_LsyntaxDsymbolG_1_ = ELL_CLASS(stx_sym);
+    __ell_g_LunspecifiedG_1_ = ELL_CLASS(unspecified);
 
     dict_init(&ell_sym_tab, DICTCOUNT_T_MAX, (dict_comp_t) &strcmp);
 

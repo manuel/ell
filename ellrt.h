@@ -66,6 +66,8 @@ ell_is_instance(struct ell_obj *obj, struct ell_obj *class);
 #define ELL_CLASS(name) __ell_class_##name
 #define ELL_BRAND(name) __ell_brand_##name
 
+/* Class class, the class of which classes are instances.
+   Is an instance of itself, although that may change. */
 struct ell_obj *ELL_CLASS(class);
 struct ell_brand *ELL_BRAND(class);
 
