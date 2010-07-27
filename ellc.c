@@ -1020,6 +1020,7 @@ ellc_mangle_char(char c)
     case '/': return 'F';
     case '<': return 'L';
     case '>': return 'G';
+    case '*': return 'Z';
     default: return c;
     }
 }
