@@ -1219,11 +1219,20 @@ ellc_emit_app(struct ellc_st *st, struct ellc_ast *ast)
 {
     struct ellc_ast_app *app = &ast->app;
     listcount_t npos = list_count(&app->args->pos);
+    dictcount_t nkey = dict_count(&app->args->key);
     fprintf(st->f, "({");
-    if (npos > 0) {
+    if (npos || nkey) {
         fprintf(st->f, "struct ell_obj *__ell_args[] = {");
         for (lnode_t *n = list_first(&app->args->pos); n; n = list_next(&app->args->pos, n)) {
             struct ellc_ast *arg_ast = (struct ellc_ast *) lnode_get(n);
+            ellc_emit_ast(st, arg_ast);
+            fprintf(st->f, ", ");
+        }
+        for (dnode_t *n = dict_first(&app->args->key); n; n = dict_next(&app->args->key, n)) {
+            struct ell_obj *arg_key_sym = (struct ell_obj *) dnode_getkey(n);
+            struct ellc_ast *arg_ast = (struct ellc_ast *) dnode_get(n);
+            fprintf(st->f, "ell_intern(ell_make_str(\"%s\"))", ell_str_chars(ell_sym_name(arg_key_sym)));
+            fprintf(st->f, ", ");
             ellc_emit_ast(st, arg_ast);
             fprintf(st->f, ", ");
         }
@@ -1231,7 +1240,7 @@ ellc_emit_app(struct ellc_st *st, struct ellc_ast *ast)
     }
     fprintf(st->f, "ell_call(");
     ellc_emit_ast(st, app->op);
-    fprintf(st->f, ", %lu, 0, %s);", npos, (npos > 0 ? "__ell_args" : "NULL"));
+    fprintf(st->f, ", %lu, %lu, %s);", npos, nkey, ((npos || nkey) ? "__ell_args" : "NULL"));
     fprintf(st->f, "})");
 }
 
@@ -1412,6 +1421,27 @@ ellc_emit_opt_param_val(struct ellc_st *st, struct ellc_param *p, unsigned i)
 }
 
 static void
+ellc_emit_key_param_val(struct ellc_st *st, struct ellc_param *p)
+{
+    // Construct a call to the lookup routine using the param's symbolic name
+    fprintf(st->f, "({ struct ell_obj *__ell_key_val = ell_lookup_key(");
+    fprintf(st->f, "ell_intern(ell_make_str(\"%s\"))", ell_str_chars(ell_sym_name(p->id->sym)));
+    fprintf(st->f, ", __ell_npos, __ell_nkey, __ell_args);");
+
+    if (ellc_param_boxed(p))
+        fprintf(st->f, "__ell_key_val ? ell_make_box(__ell_key_val) : ");
+    else
+        fprintf(st->f, "__ell_key_val ? __ell_key_val : ");
+
+    if (p->init)
+        ellc_emit_ast(st, p->init);
+    else
+        fprintf(st->f, "ell_unbound");
+
+    fprintf(st->f, "; })");
+}
+
+static void
 ellc_emit_params(struct ellc_st *st, struct ellc_ast_lam *lam)
 {
     listcount_t nreq = list_count(lam->params->req);
@@ -1458,9 +1488,12 @@ ellc_emit_params(struct ellc_st *st, struct ellc_ast_lam *lam)
         }
     }
 
-    if (list_count(lam->params->key) > 0) {
-        printf("keyword parameters not yet supported\n");
-        exit(EXIT_FAILURE);
+    // key
+    for (lnode_t *n = list_first(lam->params->key); n; n = list_next(lam->params->key, n)) {
+        struct ellc_param *p = (struct ellc_param *) lnode_get(n);
+        fprintf(st->f, "\tvoid *%s = ", ellc_mangle_param_id(p->id));
+        ellc_emit_key_param_val(st, p);
+        fprintf(st->f, ";\n");
     }
 
     if (lam->params->all_keys) {

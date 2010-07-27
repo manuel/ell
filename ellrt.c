@@ -900,6 +900,20 @@ ell_box_write(struct ell_obj **box, struct ell_obj *value)
     return ell_unspecified;
 }
 
+/* Looks up the value of a keyword parameter in the arguments array. */
+struct ell_obj *
+ell_lookup_key(struct ell_obj *key_sym, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    if (nkey > 0) {
+        for (unsigned i = 0; i < (nkey * 2); i += 2) {
+            if (args[npos + i] == key_sym) {
+                return args[npos + i + 1];
+            }
+        }
+    }
+    return NULL;
+}
+
 /**** Data Structure Utilities ****/
 
 list_t *

@@ -369,5 +369,7 @@ struct ell_obj *
 ell_box_read(struct ell_obj **box);
 struct ell_obj *
 ell_box_write(struct ell_obj **box, struct ell_obj *value);
+struct ell_obj *
+ell_lookup_key(struct ell_obj *key_sym, unsigned npos, unsigned nkey, struct ell_obj **args);
 
 #endif
