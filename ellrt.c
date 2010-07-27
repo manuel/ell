@@ -999,6 +999,28 @@ ell_ptr_cmp(void *a, void *b)
 
 /**** Built-in Functions ****/
 
+/* (apply function list) -> result */
+
+struct ell_obj *__ell_g_apply_2_;
+
+struct ell_obj *
+ell_apply_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
+{
+    ell_check_npos(2, npos);
+    struct ell_obj *fun = args[0];
+    struct ell_obj *lst = args[1];
+    ell_assert_brand(fun, ELL_BRAND(clo));
+    ell_assert_brand(lst, ELL_BRAND(lst));
+    list_t *elts = ell_lst_elts(lst);
+    listcount_t len = list_count(elts);
+    struct ell_obj *the_args[len];
+    int i = 0;
+    for (lnode_t *n = list_first(elts); n; n = list_next(elts, n)) {
+        the_args[i++] = (struct ell_obj *) lnode_get(n);
+    }
+    return ell_call(fun, len, 0, the_args);
+}
+
 /* (send rcv msg &rest args) -> result */
 
 struct ell_obj *__ell_g_send_2_;
@@ -1336,6 +1358,7 @@ ell_init()
     __ell_g_blockFf_2_ = ell_make_clo(&ell_blockFf_code, NULL);
     __ell_g_unwindDprotectFf_2_ = ell_make_clo(&ell_unwind_protectFf_code, NULL);
 
+    __ell_g_apply_2_ = ell_make_clo(&ell_apply_code, NULL);
     __ell_g_send_2_ = ell_make_clo(&ell_send_code, NULL);
     __ell_g_syntaxDlist_2_ = ell_make_clo(&ell_syntax_list_code, NULL);
     __ell_g_syntaxDlistDrest_2_ = ell_make_clo(&ell_syntax_list_rest_code, NULL);

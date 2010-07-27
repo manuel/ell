@@ -93,7 +93,7 @@
 (defmacro defgeneric (name &optional params)
   #`(defun ,name (&rest args)
       (let ((receiver (send (send args 'all) 'front)))
-        (funcall (find-method receiver ',name) args))))
+        (apply (find-method receiver ',name) args))))
 
 (defmacro defmethod (name params &rest body)
   #`(progn
