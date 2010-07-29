@@ -1399,12 +1399,12 @@ ellc_emit_globals_initializations(struct ellc_st *st)
 }
 
 static void
-ellc_emit_req_param_val(struct ellc_st *st, struct ellc_param *p, unsigned pos)
+ellc_emit_req_param_val(struct ellc_st *st, struct ellc_param *p, unsigned i)
 {
     if (ellc_param_boxed(p))
-        fprintf(st->f, "ell_make_box(__ell_args[%u])", pos);
+        fprintf(st->f, "ell_make_box(__ell_args[%u])", i);
     else
-        fprintf(st->f, "__ell_args[%u]", pos);
+        fprintf(st->f, "__ell_args[%u]", i);
 }
 
 static void
@@ -1521,8 +1521,8 @@ ellc_emit_codes(struct ellc_st *st)
         }
         // code
         fprintf(st->f, "static struct ell_obj *");
-        fprintf(st->f, "__ell_code_%u(struct ell_obj *__ell_clo, unsigned __ell_npos, "
-               "unsigned __ell_nkey, struct ell_obj **__ell_args) {\n", code_id);
+        fprintf(st->f, "__ell_code_%u(struct ell_obj *__ell_clo, ell_arg_ct __ell_npos, "
+               "ell_arg_ct __ell_nkey, struct ell_obj **__ell_args) {\n", code_id);
         ellc_emit_params(st, lam);
         fprintf(st->f, "\tstruct __ell_env_%u *__ell_env = (struct __ell_env_%u *)"
                "((struct ell_clo_data *) __ell_clo->data)->env;\n", code_id, code_id);

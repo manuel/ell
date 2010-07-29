@@ -86,8 +86,10 @@ struct ell_wrapper *ELL_WRAPPER(class);
 
 /**** Closures ****/
 
+typedef unsigned int ell_arg_ct;
+
 typedef struct ell_obj *
-ell_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args);
+ell_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args);
 
 struct ell_clo_data {
     ell_code *code;
@@ -97,16 +99,16 @@ struct ell_clo_data {
 struct ell_obj *
 ell_make_clo(ell_code *code, void *env);
 struct ell_obj *
-ell_call_unchecked(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args);
+ell_call_unchecked(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args);
 struct ell_obj *
-ell_call(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args);
+ell_call(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args);
 void
-ell_check_npos(unsigned formal_npos, unsigned actual_npos);
+ell_check_npos(ell_arg_ct formal_npos, ell_arg_ct actual_npos);
 
 #define ELL_CALL(clo, ...)                                              \
     ({                                                                  \
         struct ell_obj *__ell_args[] = { __VA_ARGS__ };                 \
-        unsigned npos = sizeof(__ell_args) / sizeof(struct ell_obj *);  \
+        ell_arg_ct npos = sizeof(__ell_args) / sizeof(struct ell_obj *); \
         ell_call(clo, npos, 0, __ell_args);                             \
     })
 
@@ -118,13 +120,13 @@ struct ell_obj *
 ell_find_method(struct ell_obj *rcv, struct ell_obj *msg_sym);
 struct ell_obj *
 ell_send(struct ell_obj *rcv, struct ell_obj *msg_sym,
-         unsigned npos, unsigned nkey, struct ell_obj **args);
+         ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args);
 
 #define ELL_SEND(rcv, msg, ...)                                         \
     ({                                                                  \
         struct ell_obj *__ell_rcv = rcv;                                \
         struct ell_obj *__ell_send_args[] = { __ell_rcv, __VA_ARGS__ }; \
-        unsigned npos = sizeof(__ell_send_args) / sizeof(struct ell_obj *); \
+        ell_arg_ct npos = sizeof(__ell_send_args) / sizeof(struct ell_obj *); \
         ell_send(__ell_rcv, ELL_SYM(msg), npos, 0, __ell_send_args);    \
     })
 
@@ -142,15 +144,15 @@ ell_send(struct ell_obj *rcv, struct ell_obj *msg_sym,
     }                                                                   \
                                                                         \
     struct ell_obj *                                                    \
-    ELL_METHOD_CODE(class, msg)(struct ell_obj *clo, unsigned npos,     \
-                                unsigned nkey, struct ell_obj **args)   \
+    ELL_METHOD_CODE(class, msg)(struct ell_obj *clo, ell_arg_ct npos,   \
+                                ell_arg_ct nkey, struct ell_obj **args) \
     {                                                                   \
         ell_check_npos(formal_npos, npos);
 
-#define ELL_PARAM(name, i) \
+#define ELL_PARAM(name, i)                      \
     struct ell_obj *name = args[i];
 
-#define ELL_END \
+#define ELL_END                                 \
     }
 
 /**** Control Flow ****/
@@ -377,6 +379,6 @@ ell_box_read(struct ell_obj **box);
 struct ell_obj *
 ell_box_write(struct ell_obj **box, struct ell_obj *value);
 struct ell_obj *
-ell_lookup_key(struct ell_obj *key_sym, unsigned npos, unsigned nkey, struct ell_obj **args);
+ell_lookup_key(struct ell_obj *key_sym, ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args);
 
 #endif
