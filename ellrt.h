@@ -21,6 +21,11 @@
 
 /**** Objects, Wrappers, Classes ****/
 
+/* Wrappers introduce a level of indirection between objects and their
+   classes, which will allow efficient implementation of method
+   lookup.  See the paper ``Efficient Method Dispatch in PCL'' by
+   Gregor J. Kiczales and Luis H. Rodriguez Jr. */
+
 struct ell_obj;
 
 struct ell_wrapper {
@@ -40,28 +45,30 @@ struct ell_class_data {
 
 struct ell_obj *
 ell_make_obj(struct ell_wrapper *wrapper, void *data);
-struct ell_wrapper *
-ell_make_wrapper(struct ell_obj *class);
-struct ell_obj *
-ell_make_class();
-struct ell_obj *
-ell_obj_class(struct ell_obj *obj);
-struct ell_obj *
-ell_wrapper_class(struct ell_wrapper *wrapper);
-list_t *
-ell_class_superclasses(struct ell_obj *class);
-struct ell_wrapper *
-ell_class_wrapper(struct ell_obj *class);
-void
-ell_assert_wrapper(struct ell_obj *obj, struct ell_wrapper *wrapper);
 struct ell_obj *
 ell_slot_value(struct ell_obj *obj, struct ell_obj *slot_sym);
 struct ell_obj *
 ell_set_slot_value(struct ell_obj *obj, struct ell_obj *slot_sym, struct ell_obj *val);
-bool
-ell_is_subclass(struct ell_obj *class, struct ell_obj *superclass);
+struct ell_obj *
+ell_obj_class(struct ell_obj *obj);
 bool
 ell_is_instance(struct ell_obj *obj, struct ell_obj *class);
+
+struct ell_wrapper *
+ell_make_wrapper(struct ell_obj *class);
+struct ell_obj *
+ell_wrapper_class(struct ell_wrapper *wrapper);
+void
+ell_assert_wrapper(struct ell_obj *obj, struct ell_wrapper *wrapper);
+
+struct ell_obj *
+ell_make_class();
+list_t *
+ell_class_superclasses(struct ell_obj *class);
+struct ell_wrapper *
+ell_class_wrapper(struct ell_obj *class);
+bool
+ell_is_subclass(struct ell_obj *class, struct ell_obj *superclass);
 
 #define ELL_CLASS(name) __ell_class_##name
 #define ELL_WRAPPER(name) __ell_wrapper_##name
