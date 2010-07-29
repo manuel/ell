@@ -63,6 +63,8 @@ ell_assert_wrapper(struct ell_obj *obj, struct ell_wrapper *wrapper);
 
 struct ell_obj *
 ell_make_class();
+void
+ell_add_superclass(struct ell_obj *class, struct ell_obj *superclass);
 list_t *
 ell_class_superclasses(struct ell_obj *class);
 struct ell_wrapper *
@@ -86,10 +88,23 @@ struct ell_wrapper *ELL_WRAPPER(class);
 
 /**** Closures ****/
 
+/* The calling convention for closures: the closure receives itself as
+   first argument, the counts of positional and keyword arguments
+   next, and finally the actual arguments array, allocated on the
+   stack by the caller.  The array contains the positional arguments,
+   followed by symbol/argument pairs for the keyword arguments. */
+
 typedef unsigned int ell_arg_ct;
 
 typedef struct ell_obj *
 ell_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args);
+
+/* A closure consists of a code pointer and an environment pointer.
+   Usually, the environment contains the free variables of the
+   closure, and is populated by the compiler, but sometimes the
+   runtime constructs special-purpose closures (such as the exit
+   function passed to a block), that make special (or no) use of the
+   environment pointer. */
 
 struct ell_clo_data {
     ell_code *code;
