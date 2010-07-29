@@ -25,7 +25,7 @@ ellc_eval(struct ell_obj *stx_lst);
 static struct ellc_id *
 ellc_make_id_cx(struct ell_obj *sym, enum ellc_ns ns, struct ell_cx *cx)
 {
-    ell_assert_brand(sym, ELL_BRAND(sym));
+    ell_assert_wrapper(sym, ELL_WRAPPER(sym));
     struct ellc_id *id = (struct ellc_id *) ell_alloc(sizeof(*id));
     id->sym = sym;
     id->ns = ns;
@@ -270,7 +270,7 @@ ellc_is_key_arg_sym(struct ell_obj *sym)
 static struct ell_obj *
 ellc_clean_key_arg_sym(struct ell_obj *sym)
 {
-    ell_assert_brand(sym, ELL_BRAND(sym));
+    ell_assert_wrapper(sym, ELL_WRAPPER(sym));
     struct ell_obj *name_str = ell_sym_name(sym);
     return ell_intern(ell_str_poplast(name_str));
 }
@@ -290,7 +290,7 @@ ellc_dissect_args(struct ellc_st *st, list_t *args_stx)
     struct ellc_args *args = ellc_make_args();
     for (lnode_t *n = list_first(args_stx); n; n = list_next(args_stx, n)) {
         struct ell_obj *arg_stx = lnode_get(n);
-        if ((arg_stx->brand == ELL_BRAND(stx_sym)) &&
+        if ((arg_stx->wrapper == ELL_WRAPPER(stx_sym)) &&
             ellc_is_key_arg_sym(ell_stx_sym_sym(arg_stx)))
         {
             n = list_next(args_stx, n);
@@ -332,7 +332,7 @@ ellc_norm_ordinary_app(struct ellc_st *st, struct ell_obj *stx_lst)
 {
     ell_assert_stx_lst_len_min(stx_lst, 1);
     struct ell_obj *op_sym_stx = ELL_SEND(stx_lst, first);
-    ell_assert_brand(op_sym_stx, ELL_BRAND(stx_sym));
+    ell_assert_wrapper(op_sym_stx, ELL_WRAPPER(stx_sym));
     struct ellc_ast *op_ast = ellc_make_ast(ELLC_AST_REF);
     op_ast->ref.id = ellc_make_id_cx(ell_stx_sym_sym(op_sym_stx), ELLC_NS_FUN,
                                      ell_stx_sym_cx(op_sym_stx));
@@ -346,10 +346,10 @@ static struct ellc_param *
 ellc_dissect_param(struct ellc_st *st, struct ell_obj *p_stx, dict_t *deferred_inits)
 {
     struct ellc_param *p = (struct ellc_param *) ell_alloc(sizeof(*p));
-    if (p_stx->brand == ELL_BRAND(stx_sym)) {
+    if (p_stx->wrapper == ELL_WRAPPER(stx_sym)) {
         p->id = ellc_make_id_cx(ell_stx_sym_sym(p_stx), ELLC_NS_VAR,
                                 ell_stx_sym_cx(p_stx));
-    } else if (p_stx->brand == ELL_BRAND(stx_lst)) {
+    } else if (p_stx->wrapper == ELL_WRAPPER(stx_lst)) {
         ell_assert_stx_lst_len(p_stx, 2);
         struct ell_obj *name_stx = ELL_SEND(p_stx, first);
         struct ell_obj *init_stx = ELL_SEND(p_stx, second);
@@ -375,7 +375,7 @@ ellc_dissect_params(struct ellc_st *st, list_t *params_stx, dict_t *deferred_ini
     list_t *cur = req;
     for (lnode_t *n = list_first(params_stx); n; n = list_next(params_stx, n)) {
         struct ell_obj *p_stx = lnode_get(n);
-        if (p_stx->brand == ELL_BRAND(stx_sym)) {
+        if (p_stx->wrapper == ELL_WRAPPER(stx_sym)) {
             struct ell_obj *p_sym = ell_stx_sym_sym(p_stx);
             if (p_sym == ELL_SYM(param_optional)) {
                 cur = opt;
@@ -415,7 +415,7 @@ ellc_norm_lam(struct ellc_st *st, struct ell_obj *stx_lst)
 {
     ell_assert_stx_lst_len(stx_lst, 3);
     struct ell_obj *params_stx = ELL_SEND(stx_lst, second);
-    ell_assert_brand(params_stx, ELL_BRAND(stx_lst));
+    ell_assert_wrapper(params_stx, ELL_WRAPPER(stx_lst));
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_LAM);
     struct ellc_contour *c = (struct ellc_contour *) ell_alloc(sizeof(*c));
     c->lam = &ast->lam;
@@ -468,8 +468,8 @@ static struct ellc_ast *
 ellc_build_syntax(struct ellc_st *st, struct ell_obj *stx)
 {
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_LIT_STX);
-    if (!((stx->brand == ELL_BRAND(stx_sym))
-          || (stx->brand == ELL_BRAND(stx_str)))) {
+    if (!((stx->wrapper == ELL_WRAPPER(stx_sym))
+          || (stx->wrapper == ELL_WRAPPER(stx_str)))) {
         printf("can't build syntax AST from non-syntax object\n");
         exit(EXIT_FAILURE);
     }
@@ -529,24 +529,24 @@ ellc_build_unsyntax_splicing(struct ellc_st *st, struct ell_obj *stx, unsigned d
 static bool
 ellc_is_unsyntax_splicing_list(struct ellc_st *st, struct ell_obj *stx)
 {
-    if (stx->brand != ELL_BRAND(stx_lst)) return 0;
+    if (stx->wrapper != ELL_WRAPPER(stx_lst)) return 0;
     if (ell_stx_lst_len(stx) != 2) return 0;
     struct ell_obj *op_stx = ELL_SEND(stx, first);
-    return ((op_stx->brand == ELL_BRAND(stx_sym))
+    return ((op_stx->wrapper == ELL_WRAPPER(stx_sym))
             && (ell_stx_sym_sym(op_stx) == ELL_SYM(core_unsyntax_splicing)));
 }
 
 static bool
 ellc_is_unsyntax(struct ellc_st *st, struct ell_obj *op_stx)
 {
-    return ((op_stx->brand == ELL_BRAND(stx_sym))
+    return ((op_stx->wrapper == ELL_WRAPPER(stx_sym))
             && (ell_stx_sym_sym(op_stx) == ELL_SYM(core_unsyntax)));
 }
 
 static bool
 ellc_is_quasisyntax(struct ellc_st *st, struct ell_obj *op_stx)
 {
-    return ((op_stx->brand == ELL_BRAND(stx_sym))
+    return ((op_stx->wrapper == ELL_WRAPPER(stx_sym))
             && (ell_stx_sym_sym(op_stx) == ELL_SYM(core_quasisyntax)));
 }
 
@@ -615,10 +615,10 @@ ellc_norm_qs(struct ellc_st *st, struct ell_obj *arg_stx, unsigned depth)
         exit(EXIT_FAILURE);
     }
 
-    if ((arg_stx->brand == ELL_BRAND(stx_str)) ||
-        (arg_stx->brand == ELL_BRAND(stx_sym))) {
+    if ((arg_stx->wrapper == ELL_WRAPPER(stx_str)) ||
+        (arg_stx->wrapper == ELL_WRAPPER(stx_sym))) {
         return ellc_build_syntax(st, arg_stx);
-    } else if (arg_stx->brand == ELL_BRAND(stx_lst)) {
+    } else if (arg_stx->wrapper == ELL_WRAPPER(stx_lst)) {
         return ellc_norm_qs_lst(st, arg_stx, depth);
     } else {
         printf("bad quasiquoted syntax object\n");
@@ -643,20 +643,20 @@ ellc_norm_quasisyntax(struct ellc_st *st, struct ell_obj *stx_lst)
 static bool
 ellc_is_seq(struct ell_obj *stx)
 {
-    if (stx->brand != ELL_BRAND(stx_lst)) return 0;
+    if (stx->wrapper != ELL_WRAPPER(stx_lst)) return 0;
     if (list_count(ell_stx_lst_elts(stx)) < 2) return 0; // todo: handle better
     struct ell_obj *op_stx = ELL_SEND(stx, first);
-    return ((op_stx->brand == ELL_BRAND(stx_sym))
+    return ((op_stx->wrapper == ELL_WRAPPER(stx_sym))
             && (ell_stx_sym_sym(op_stx) == ELL_SYM(core_seq)));
 }
 
 static bool
 ellc_is_mdef(struct ell_obj *stx)
 {
-    if (stx->brand != ELL_BRAND(stx_lst)) return 0;
+    if (stx->wrapper != ELL_WRAPPER(stx_lst)) return 0;
     if (list_count(ell_stx_lst_elts(stx)) != 3) return 0; // todo: handle better
     struct ell_obj *op_stx = ELL_SEND(stx, first);
-    return ((op_stx->brand == ELL_BRAND(stx_sym))
+    return ((op_stx->wrapper == ELL_WRAPPER(stx_sym))
             && (ell_stx_sym_sym(op_stx) == ELL_SYM(core_mdef)));
 }
 
@@ -665,7 +665,7 @@ ellc_norm_mdef(struct ellc_st *st, struct ell_obj *mdef_stx)
 {
     ell_assert_stx_lst_len(mdef_stx, 3);
     struct ell_obj *name_stx = ELL_SEND(mdef_stx, second);
-    ell_assert_brand(name_stx, ELL_BRAND(stx_sym));
+    ell_assert_wrapper(name_stx, ELL_WRAPPER(stx_sym));
     struct ell_obj *expander_stx = ELL_SEND(mdef_stx, third);
     ell_util_dict_put(st->defined_macros, ell_stx_sym_sym(name_stx), expander_stx);
     // Right now, eval requires a syntax list as input, so we need to
@@ -706,9 +706,9 @@ ellc_init()
 static struct ellc_ast *
 ellc_norm_lst(struct ellc_st *st, struct ell_obj *stx_lst)
 {
-    ell_assert_brand(stx_lst, ELL_BRAND(stx_lst));
+    ell_assert_wrapper(stx_lst, ELL_WRAPPER(stx_lst));
     struct ell_obj *op_stx = ELL_SEND(stx_lst, first);
-    ell_assert_brand(op_stx, ELL_BRAND(stx_sym));
+    ell_assert_wrapper(op_stx, ELL_WRAPPER(stx_sym));
     struct ell_obj *op_sym = ell_stx_sym_sym(op_stx);
     struct ell_cx *cx = ell_stx_sym_cx(op_stx);
     struct ellc_id *id = ellc_make_id_cx(op_sym, ELLC_NS_FUN, cx);
@@ -748,11 +748,11 @@ ellc_norm_lit_str(struct ellc_st *st, struct ell_obj *stx)
 static struct ellc_ast *
 ellc_norm_stx(struct ellc_st *st, struct ell_obj *stx)
 {
-    if (stx->brand == ELL_BRAND(stx_sym)) {
+    if (stx->wrapper == ELL_WRAPPER(stx_sym)) {
         return ellc_norm_ref(st, stx);
-    } else if (stx->brand == ELL_BRAND(stx_lst)) {
+    } else if (stx->wrapper == ELL_WRAPPER(stx_lst)) {
         return ellc_norm_lst(st, stx);
-    } else if (stx->brand == ELL_BRAND(stx_str)) {
+    } else if (stx->wrapper == ELL_WRAPPER(stx_str)) {
         return ellc_norm_lit_str(st, stx);
     } else {
         printf("syntax normalization failure\n");
@@ -778,7 +778,7 @@ ellc_norm_macro_pass(struct ellc_st *st, list_t *stx_elts, list_t *deferred)
 static struct ellc_ast_seq *
 ellc_norm(struct ellc_st *st, struct ell_obj *stx_lst)
 {
-    ell_assert_brand(stx_lst, ELL_BRAND(stx_lst));
+    ell_assert_wrapper(stx_lst, ELL_WRAPPER(stx_lst));
     list_t *deferred = ell_util_make_list();
     ellc_norm_macro_pass(st, ell_stx_lst_elts(stx_lst), deferred);
 
@@ -1318,10 +1318,10 @@ static void
 ellc_emit_lit_stx(struct ellc_st *st, struct ellc_ast *ast)
 {
     struct ell_obj *stx = ast->lit_stx.stx;
-    if (stx->brand == ELL_BRAND(stx_sym)) {
+    if (stx->wrapper == ELL_WRAPPER(stx_sym)) {
         fprintf(st->f, "ell_make_stx_sym_cx(ell_intern(ell_make_str(\"%s\")), __ell_cur_cx)",
                 ell_str_chars(ell_sym_name(ell_stx_sym_sym(stx))));
-    } else if (stx->brand == ELL_BRAND(stx_str)) {
+    } else if (stx->wrapper == ELL_WRAPPER(stx_str)) {
         fprintf(st->f, "ell_make_stx_str(ell_make_str(\"%s\"))", 
                 ell_str_chars(ell_stx_str_str(stx)));
     } else {
@@ -1573,7 +1573,7 @@ ellc_make_st(FILE *f)
 static char *
 ellc_compile(struct ell_obj *stx_lst, struct ellc_st **st_out)
 {
-    ell_assert_brand(stx_lst, ELL_BRAND(stx_lst));
+    ell_assert_wrapper(stx_lst, ELL_WRAPPER(stx_lst));
 
     char *cnam = ell_alloc(L_tmpnam);
     if (!tmpnam(cnam)) {
@@ -1604,7 +1604,7 @@ ellc_compile(struct ell_obj *stx_lst, struct ellc_st **st_out)
     }
     
     char cmdline[256];
-    sprintf(cmdline, "gcc -pipe -std=c99 -shared -fPIC -I. -o %s -x c %s", onam, cnam);
+    sprintf(cmdline, "gcc -pipe -std=c99 -shared -g -fPIC -I. -o %s -x c %s", onam, cnam);
 
     if (system(cmdline) == -1) {
         printf("error compiling file\n");

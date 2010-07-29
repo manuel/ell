@@ -19,41 +19,41 @@
 
 #define ell_alloc GC_MALLOC
 
-/**** Objects, Brands, Classes ****/
+/**** Objects, Wrappers, Classes ****/
 
 struct ell_obj;
 
-struct ell_brand {
+struct ell_wrapper {
     struct ell_obj *class;
     dict_t methods;
 };
 
 struct ell_obj {
-    struct ell_brand *brand;
+    struct ell_wrapper *wrapper;
     void *data;
 };
 
 struct ell_class_data {
     list_t *superclasses;
-    struct ell_brand *current_brand;
+    struct ell_wrapper *current_wrapper;
 };
 
 struct ell_obj *
-ell_make_obj(struct ell_brand *brand, void *data);
-struct ell_brand *
-ell_make_brand(struct ell_obj *class);
+ell_make_obj(struct ell_wrapper *wrapper, void *data);
+struct ell_wrapper *
+ell_make_wrapper(struct ell_obj *class);
 struct ell_obj *
 ell_make_class();
 struct ell_obj *
 ell_obj_class(struct ell_obj *obj);
 struct ell_obj *
-ell_brand_class(struct ell_brand *brand);
+ell_wrapper_class(struct ell_wrapper *wrapper);
 list_t *
 ell_class_superclasses(struct ell_obj *class);
-struct ell_brand *
-ell_class_current_brand(struct ell_obj *class);
+struct ell_wrapper *
+ell_class_current_wrapper(struct ell_obj *class);
 void
-ell_assert_brand(struct ell_obj *obj, struct ell_brand *brand);
+ell_assert_wrapper(struct ell_obj *obj, struct ell_wrapper *wrapper);
 struct ell_obj *
 ell_slot_value(struct ell_obj *obj, struct ell_obj *slot_sym);
 struct ell_obj *
@@ -64,16 +64,16 @@ bool
 ell_is_instance(struct ell_obj *obj, struct ell_obj *class);
 
 #define ELL_CLASS(name) __ell_class_##name
-#define ELL_BRAND(name) __ell_brand_##name
+#define ELL_WRAPPER(name) __ell_wrapper_##name
 
 /* Class class, the class of which classes are instances.
    Is an instance of itself, although that may change. */
 struct ell_obj *ELL_CLASS(class);
-struct ell_brand *ELL_BRAND(class);
+struct ell_wrapper *ELL_WRAPPER(class);
 
-#define ELL_DEFBUILTIN(name)           \
-    struct ell_obj *ELL_CLASS(name);   \
-    struct ell_brand *ELL_BRAND(name);
+#define ELL_DEFBUILTIN(name)                    \
+    struct ell_obj *ELL_CLASS(name);            \
+    struct ell_wrapper *ELL_WRAPPER(name);
 #include "built-ins.h"
 #undef ELL_DEFBUILTIN
 

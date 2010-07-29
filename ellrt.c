@@ -104,24 +104,24 @@ ell_parser_push_unsyntax_splicing()
     ell_parser_push_special(ELL_SYM(core_unsyntax_splicing));
 }
 
-/**** Objects, Brands, Classes ****/
+/**** Objects, Wrappers, Classes ****/
 
 struct ell_obj *
-ell_make_obj(struct ell_brand *brand, void *data)
+ell_make_obj(struct ell_wrapper *wrapper, void *data)
 {
     struct ell_obj *obj = (struct ell_obj *) ell_alloc(sizeof(*obj));
-    obj->brand = brand;
+    obj->wrapper = wrapper;
     obj->data = data;
     return obj;
 }
 
-struct ell_brand *
-ell_make_brand(struct ell_obj *class)
+struct ell_wrapper *
+ell_make_wrapper(struct ell_obj *class)
 {
-    struct ell_brand *brand = (struct ell_brand *) ell_alloc(sizeof(*brand));
-    brand->class = class;
-    dict_init(&brand->methods, DICTCOUNT_T_MAX, (dict_comp_t) &ell_sym_cmp);
-    return brand;
+    struct ell_wrapper *wrapper = (struct ell_wrapper *) ell_alloc(sizeof(*wrapper));
+    wrapper->class = class;
+    dict_init(&wrapper->methods, DICTCOUNT_T_MAX, (dict_comp_t) &ell_sym_cmp);
+    return wrapper;
 }
 
 struct ell_obj *
@@ -129,50 +129,50 @@ ell_make_class()
 {
     struct ell_class_data *data = (struct ell_class_data *) ell_alloc(sizeof(*data));
     data->superclasses = ell_util_make_list();
-    struct ell_obj *class = ell_make_obj(ELL_BRAND(class), data);
-    data->current_brand = ell_make_brand(class);
+    struct ell_obj *class = ell_make_obj(ELL_WRAPPER(class), data);
+    data->current_wrapper = ell_make_wrapper(class);
     return class;
 }
 
 void
 ell_add_superclass(struct ell_obj *class, struct ell_obj *superclass)
 {
-    ell_assert_brand(class, ELL_BRAND(class));
-    ell_assert_brand(superclass, ELL_BRAND(class));
+    ell_assert_wrapper(class, ELL_WRAPPER(class));
+    ell_assert_wrapper(superclass, ELL_WRAPPER(class));
     ell_util_set_add(ell_class_superclasses(class), superclass, (dict_comp_t) &ell_ptr_cmp);
 }
 
 struct ell_obj *
 ell_obj_class(struct ell_obj *obj)
 {
-    return obj->brand->class;
+    return obj->wrapper->class;
 }
 
 struct ell_obj *
-ell_brand_class(struct ell_brand *brand)
+ell_wrapper_class(struct ell_wrapper *wrapper)
 {
-    return brand->class;
+    return wrapper->class;
 }
 
 list_t *
 ell_class_superclasses(struct ell_obj *class)
 {
-    ell_assert_brand(class, ELL_BRAND(class));
+    ell_assert_wrapper(class, ELL_WRAPPER(class));
     return ((struct ell_class_data *) class->data)->superclasses;
 }
 
-struct ell_brand *
-ell_class_current_brand(struct ell_obj *class)
+struct ell_wrapper *
+ell_class_current_wrapper(struct ell_obj *class)
 {
-    ell_assert_brand(class, ELL_BRAND(class));
-    return ((struct ell_class_data *) class->data)->current_brand;
+    ell_assert_wrapper(class, ELL_WRAPPER(class));
+    return ((struct ell_class_data *) class->data)->current_wrapper;
 }
 
 void
-ell_assert_brand(struct ell_obj *obj, struct ell_brand *brand)
+ell_assert_wrapper(struct ell_obj *obj, struct ell_wrapper *wrapper)
 {
-    if (obj->brand != brand) {
-        printf("brand assertion failed\n");
+    if (obj->wrapper != wrapper) {
+        printf("wrapper assertion failed\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -180,7 +180,7 @@ ell_assert_brand(struct ell_obj *obj, struct ell_brand *brand)
 struct ell_obj *
 ell_slot_value(struct ell_obj *obj, struct ell_obj *slot_sym)
 {
-    ell_assert_brand(slot_sym, ELL_BRAND(sym));
+    ell_assert_wrapper(slot_sym, ELL_WRAPPER(sym));
     dnode_t *n = dict_lookup((dict_t *) obj->data, slot_sym);
     if (n) {
         return (struct ell_obj *) dnode_get(n);
@@ -194,7 +194,7 @@ ell_slot_value(struct ell_obj *obj, struct ell_obj *slot_sym)
 struct ell_obj *
 ell_set_slot_value(struct ell_obj *obj, struct ell_obj *slot_sym, struct ell_obj *val)
 {
-    ell_assert_brand(slot_sym, ELL_BRAND(sym));
+    ell_assert_wrapper(slot_sym, ELL_WRAPPER(sym));
     ell_util_dict_put((dict_t *) obj->data, slot_sym, val);
     return val;
 }
@@ -226,7 +226,7 @@ ell_make_clo(ell_code *code, void *env)
     struct ell_clo_data *data = (struct ell_clo_data *) ell_alloc(sizeof(*data));
     data->code = code;
     data->env = env;
-    return ell_make_obj(ELL_BRAND(clo), data);
+    return ell_make_obj(ELL_WRAPPER(clo), data);
 }
 
 struct ell_obj *
@@ -238,7 +238,7 @@ ell_call_unchecked(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell
 struct ell_obj *
 ell_call(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
 {
-    ell_assert_brand(clo, ELL_BRAND(clo));
+    ell_assert_wrapper(clo, ELL_WRAPPER(clo));
     return ell_call_unchecked(clo, npos, nkey, args);
 }
 
@@ -261,16 +261,16 @@ ell_find_method_in_superclasses(struct ell_obj *class, struct ell_obj *msg_sym);
 void
 ell_put_method(struct ell_obj *class, struct ell_obj *msg_sym, struct ell_obj *clo)
 {
-    ell_assert_brand(class, ELL_BRAND(class));
-    ell_assert_brand(msg_sym, ELL_BRAND(sym));
-    ell_assert_brand(clo, ELL_BRAND(clo));
-    ell_util_dict_put(&(ell_class_current_brand(class))->methods, msg_sym, clo);
+    ell_assert_wrapper(class, ELL_WRAPPER(class));
+    ell_assert_wrapper(msg_sym, ELL_WRAPPER(sym));
+    ell_assert_wrapper(clo, ELL_WRAPPER(clo));
+    ell_util_dict_put(&(ell_class_current_wrapper(class))->methods, msg_sym, clo);
 }
 
 struct ell_obj *
 ell_find_method_in_class(struct ell_obj *class, struct ell_obj *msg_sym)
 {
-    dnode_t *node = dict_lookup(&(ell_class_current_brand(class))->methods, msg_sym);
+    dnode_t *node = dict_lookup(&(ell_class_current_wrapper(class))->methods, msg_sym);
     if (node) {
         return (struct ell_obj *) dnode_get(node);
     } else {
@@ -301,7 +301,7 @@ ell_find_method_in_superclasses(struct ell_obj *class, struct ell_obj *msg_sym)
 struct ell_obj *
 ell_find_method(struct ell_obj *rcv, struct ell_obj *msg_sym)
 {
-    struct ell_obj *clo = ell_find_method_in_class(ell_brand_class(rcv->brand), msg_sym);
+    struct ell_obj *clo = ell_find_method_in_class(ell_wrapper_class(rcv->wrapper), msg_sym);
     if (!clo) {
         printf("method not found: %s\n", ell_str_chars(ell_sym_name(msg_sym)));
         exit(EXIT_FAILURE);        
@@ -421,7 +421,7 @@ ell_make_strn(char *chars, size_t len)
     copy[len] = '\0';
     struct ell_str_data *data = (struct ell_str_data *) ell_alloc(sizeof(*data));
     data->chars = copy;
-    return ell_make_obj(ELL_BRAND(str), data);
+    return ell_make_obj(ELL_WRAPPER(str), data);
 }
 
 struct ell_obj *
@@ -433,14 +433,14 @@ ell_make_str(char *chars)
 char *
 ell_str_chars(struct ell_obj *str)
 {
-    ell_assert_brand(str, ELL_BRAND(str));
+    ell_assert_wrapper(str, ELL_WRAPPER(str));
     return ((struct ell_str_data *) str->data)->chars;
 }
 
 size_t
 ell_str_len(struct ell_obj *str)
 {
-    ell_assert_brand(str, ELL_BRAND(str));
+    ell_assert_wrapper(str, ELL_WRAPPER(str));
     return strlen(ell_str_chars(str));
 }
 
@@ -471,10 +471,10 @@ ell_str_poplast(struct ell_obj *str)
 static struct ell_obj *
 ell_make_sym(struct ell_obj *str)
 {
-    ell_assert_brand(str, ELL_BRAND(str));
+    ell_assert_wrapper(str, ELL_WRAPPER(str));
     struct ell_sym_data *data = (struct ell_sym_data *) ell_alloc(sizeof(*data));
     data->name = str;
-    return ell_make_obj(ELL_BRAND(sym), data);
+    return ell_make_obj(ELL_WRAPPER(sym), data);
 }
 
 struct ell_obj *
@@ -496,15 +496,15 @@ ell_intern(struct ell_obj *str)
 struct ell_obj *
 ell_sym_name(struct ell_obj *sym)
 {
-    ell_assert_brand(sym, ELL_BRAND(sym));
+    ell_assert_wrapper(sym, ELL_WRAPPER(sym));
     return ((struct ell_sym_data *) sym->data)->name;
 }
 
 int
 ell_sym_cmp(struct ell_obj *sym_a, struct ell_obj *sym_b)
 {
-    ell_assert_brand(sym_a, ELL_BRAND(sym));
-    ell_assert_brand(sym_b, ELL_BRAND(sym));
+    ell_assert_wrapper(sym_a, ELL_WRAPPER(sym));
+    ell_assert_wrapper(sym_b, ELL_WRAPPER(sym));
     return sym_a - sym_b;
 }
 
@@ -513,11 +513,11 @@ ell_sym_cmp(struct ell_obj *sym_a, struct ell_obj *sym_b)
 struct ell_obj *
 ell_make_stx_sym_cx(struct ell_obj *sym, struct ell_cx *cx)
 {
-    ell_assert_brand(sym, ELL_BRAND(sym));
+    ell_assert_wrapper(sym, ELL_WRAPPER(sym));
     struct ell_stx_sym_data *data = (struct ell_stx_sym_data *) ell_alloc(sizeof(*data));
     data->sym = sym;
     data->cx = cx;
-    return ell_make_obj(ELL_BRAND(stx_sym), data);    
+    return ell_make_obj(ELL_WRAPPER(stx_sym), data);
 }
 
 struct ell_obj *
@@ -529,10 +529,10 @@ ell_make_stx_sym(struct ell_obj *sym)
 struct ell_obj *
 ell_make_stx_str(struct ell_obj *str)
 {
-    ell_assert_brand(str, ELL_BRAND(str));
+    ell_assert_wrapper(str, ELL_WRAPPER(str));
     struct ell_stx_str_data *data = (struct ell_stx_str_data *) ell_alloc(sizeof(*data));
     data->str = str;
-    return ell_make_obj(ELL_BRAND(stx_str), data);
+    return ell_make_obj(ELL_WRAPPER(stx_str), data);
 }
 
 struct ell_obj *
@@ -540,34 +540,34 @@ ell_make_stx_lst()
 {
     struct ell_stx_lst_data *data = (struct ell_stx_lst_data *) ell_alloc(sizeof(*data));
     list_init(&data->elts, LISTCOUNT_T_MAX);
-    return ell_make_obj(ELL_BRAND(stx_lst), data);
+    return ell_make_obj(ELL_WRAPPER(stx_lst), data);
 }
 
 struct ell_obj *
 ell_stx_sym_sym(struct ell_obj *stx_sym)
 {
-    ell_assert_brand(stx_sym, ELL_BRAND(stx_sym));
+    ell_assert_wrapper(stx_sym, ELL_WRAPPER(stx_sym));
     return ((struct ell_stx_sym_data *) stx_sym->data)->sym;
 }
 
 struct ell_cx *
 ell_stx_sym_cx(struct ell_obj *stx_sym)
 {
-    ell_assert_brand(stx_sym, ELL_BRAND(stx_sym));
+    ell_assert_wrapper(stx_sym, ELL_WRAPPER(stx_sym));
     return ((struct ell_stx_sym_data *) stx_sym->data)->cx;    
 }
 
 struct ell_obj *
 ell_stx_str_str(struct ell_obj *stx_str)
 {
-    ell_assert_brand(stx_str, ELL_BRAND(stx_str));
+    ell_assert_wrapper(stx_str, ELL_WRAPPER(stx_str));
     return ((struct ell_stx_str_data *) stx_str->data)->str;
 }
 
 list_t *
 ell_stx_lst_elts(struct ell_obj *stx_lst)
 {
-    ell_assert_brand(stx_lst, ELL_BRAND(stx_lst));
+    ell_assert_wrapper(stx_lst, ELL_WRAPPER(stx_lst));
     return &((struct ell_stx_lst_data *) stx_lst->data)->elts;
 }
 
@@ -612,14 +612,14 @@ ell_cx_cmp(struct ell_cx *cxa, struct ell_cx *cxb)
 void
 ell_assert_stx_lst_len(struct ell_obj *stx_lst, listcount_t len)
 {
-    ell_assert_brand(stx_lst, ELL_BRAND(stx_lst));
+    ell_assert_wrapper(stx_lst, ELL_WRAPPER(stx_lst));
     ell_util_assert_list_len(ell_stx_lst_elts(stx_lst), len);
 }
 
 void
 ell_assert_stx_lst_len_min(struct ell_obj *stx_lst, listcount_t len)
 {
-    ell_assert_brand(stx_lst, ELL_BRAND(stx_lst));
+    ell_assert_wrapper(stx_lst, ELL_WRAPPER(stx_lst));
     ell_util_assert_list_len_min(ell_stx_lst_elts(stx_lst), len);
 }
 
@@ -645,27 +645,27 @@ ell_make_range_from_list(list_t *elts)
     struct ell_list_range_data *data = (struct ell_list_range_data *) ell_alloc(sizeof(*data));
     data->elts = elts;
     data->cur = list_first(elts);
-    return ell_make_obj(ELL_BRAND(list_range), data);
+    return ell_make_obj(ELL_WRAPPER(list_range), data);
 }
 
 list_t *
 ell_list_range_elts(struct ell_obj *range)
 {
-    ell_assert_brand(range, ELL_BRAND(list_range));
+    ell_assert_wrapper(range, ELL_WRAPPER(list_range));
     return ((struct ell_list_range_data *) range->data)->elts;
 }
 
 lnode_t *
 ell_list_range_cur(struct ell_obj *range)
 {
-    ell_assert_brand(range, ELL_BRAND(list_range));
+    ell_assert_wrapper(range, ELL_WRAPPER(list_range));
     return ((struct ell_list_range_data *) range->data)->cur;
 }
 
 void
 ell_list_range_set_cur(struct ell_obj *range, lnode_t *new_cur)
 {
-    ell_assert_brand(range, ELL_BRAND(list_range));
+    ell_assert_wrapper(range, ELL_WRAPPER(list_range));
     ((struct ell_list_range_data *) range->data)->cur = new_cur;
 }
 
@@ -700,13 +700,13 @@ ell_make_lst()
 {
     struct ell_lst_data *data = (struct ell_lst_data *) ell_alloc(sizeof(*data));
     list_init(&data->elts, LISTCOUNT_T_MAX);
-    return ell_make_obj(ELL_BRAND(lst), data);
+    return ell_make_obj(ELL_WRAPPER(lst), data);
 }
 
 list_t *
 ell_lst_elts(struct ell_obj *lst)
 {
-    ell_assert_brand(lst, ELL_BRAND(lst));
+    ell_assert_wrapper(lst, ELL_WRAPPER(lst));
     return &((struct ell_lst_data *) lst->data)->elts;
 }
 
@@ -1023,8 +1023,8 @@ ell_apply_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj
     ell_check_npos(2, npos);
     struct ell_obj *fun = args[0];
     struct ell_obj *lst = args[1];
-    ell_assert_brand(fun, ELL_BRAND(clo));
-    ell_assert_brand(lst, ELL_BRAND(lst));
+    ell_assert_wrapper(fun, ELL_WRAPPER(clo));
+    ell_assert_wrapper(lst, ELL_WRAPPER(lst));
     list_t *elts = ell_lst_elts(lst);
     listcount_t len = list_count(elts);
     struct ell_obj *the_args[len];
@@ -1045,7 +1045,7 @@ ell_send_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj 
     ell_check_npos(2, npos);
     struct ell_obj *rcv = args[0];
     struct ell_obj *msg = args[1];
-    ell_assert_brand(msg, ELL_BRAND(sym));
+    ell_assert_wrapper(msg, ELL_WRAPPER(sym));
     /* Klever: */
     args++;
     args[0] = rcv;
@@ -1075,7 +1075,7 @@ ell_syntax_list_rest_code(struct ell_obj *clo, unsigned npos, unsigned nkey, str
 {
     ell_check_npos(1, npos);
     struct ell_obj *stx_lst = args[0];
-    ell_assert_brand(stx_lst, ELL_BRAND(stx_lst));
+    ell_assert_wrapper(stx_lst, ELL_WRAPPER(stx_lst));
     struct ell_obj *res = ell_make_stx_lst();
     list_t *elts = ell_stx_lst_elts(stx_lst);
     for (lnode_t *n = list_next(elts, list_first(elts)); n; n = list_next(elts, n)) {
@@ -1114,8 +1114,8 @@ ell_apply_syntax_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, st
     ell_check_npos(2, npos);
     struct ell_obj *fun = args[0];
     struct ell_obj *stx_lst = args[1];
-    ell_assert_brand(fun, ELL_BRAND(clo));
-    ell_assert_brand(stx_lst, ELL_BRAND(stx_lst));
+    ell_assert_wrapper(fun, ELL_WRAPPER(clo));
+    ell_assert_wrapper(stx_lst, ELL_WRAPPER(stx_lst));
     list_t *elts = ell_stx_lst_elts(stx_lst);
     listcount_t len = list_count(elts);
     struct ell_obj *the_args[len];
@@ -1140,8 +1140,8 @@ ell_datum_syntax_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct 
     ell_check_npos(2, npos);
     struct ell_obj *stx = args[0];
     struct ell_obj *sym = args[1];
-    ell_assert_brand(stx, ELL_BRAND(stx_sym));
-    ell_assert_brand(sym, ELL_BRAND(sym));
+    ell_assert_wrapper(stx, ELL_WRAPPER(stx_sym));
+    ell_assert_wrapper(sym, ELL_WRAPPER(sym));
     return ell_make_stx_sym_cx(sym, ell_stx_sym_cx(stx));
 }
 
@@ -1169,7 +1169,7 @@ ell_map_list_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_
     ell_check_npos(2, npos);
     struct ell_obj *res = ell_make_lst();
     struct ell_obj *fun = args[0];
-    ell_assert_brand(fun, ELL_BRAND(clo));
+    ell_assert_wrapper(fun, ELL_WRAPPER(clo));
     struct ell_obj *lst = args[1];
     struct ell_obj *range = ELL_SEND(lst, all);
     while (!ell_is_true(ELL_SEND(range, emptyp))) {
@@ -1234,7 +1234,7 @@ struct ell_obj *
 ell_make_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
 {
     ell_check_npos(npos, 1);
-    return ell_make_obj(ell_class_current_brand(args[0]),
+    return ell_make_obj(ell_class_current_wrapper(args[0]),
                         ell_util_make_dict((dict_comp_t) &ell_sym_cmp));
 }
 
@@ -1279,8 +1279,8 @@ struct ell_obj *
 ell_handler_push_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
 {
     ell_check_npos(npos, 2);
-    ell_assert_brand(args[0], ELL_BRAND(clo));
-    ell_assert_brand(args[1], ELL_BRAND(clo));
+    ell_assert_wrapper(args[0], ELL_WRAPPER(clo));
+    ell_assert_wrapper(args[1], ELL_WRAPPER(clo));
     return ell_handler_push(args[0], args[1]);
 }
 
@@ -1325,18 +1325,18 @@ struct ell_obj *__ell_g_LunspecifiedG_1_;
 __attribute__((constructor(200))) static void
 ell_init()
 {
-    // Boostrap class class.  Because 'ell_make_class' sets the new
-    // class's brand to 'ELL_BRAND(class)', which can't be defined
-    // without a class, we need to fix up the the class brand and
-    // class class's brand afterwards.
-    ELL_BRAND(class) = NULL;
+    /* Boostrap class class.  Because 'ell_make_class' sets the new
+       class's wrapper to 'ELL_WRAPPER(class)', which can't be defined
+       without a class, we need to fix up class class's wrapper
+       afterwards. */
+    ELL_WRAPPER(class) = NULL;
     ELL_CLASS(class) = ell_make_class();
-    ELL_BRAND(class) = ell_class_current_brand(ELL_CLASS(class));
-    ELL_CLASS(class)->brand = ELL_BRAND(class);
+    ELL_WRAPPER(class) = ell_class_current_wrapper(ELL_CLASS(class));
+    ELL_CLASS(class)->wrapper = ELL_WRAPPER(class);
 
-#define ELL_DEFBUILTIN(name)                                    \
-    ELL_CLASS(name) = ell_make_class();                         \
-    ELL_BRAND(name) = ell_class_current_brand(ELL_CLASS(name));
+#define ELL_DEFBUILTIN(name)                                            \
+    ELL_CLASS(name) = ell_make_class();                                 \
+    ELL_WRAPPER(name) = ell_class_current_wrapper(ELL_CLASS(name));
 #include "built-ins.h"
 #undef ELL_DEFBUILTIN
 
@@ -1359,15 +1359,15 @@ ell_init()
 #include "syms.h"
 #undef ELL_DEFSYM
 
-    __ell_g_Ot_1_ = ell_make_obj(ELL_BRAND(boolean), NULL);
+    __ell_g_Ot_1_ = ell_make_obj(ELL_WRAPPER(boolean), NULL);
     ell_t = __ell_g_Ot_1_;
-    __ell_g_Of_1_ = ell_make_obj(ELL_BRAND(boolean), NULL);
+    __ell_g_Of_1_ = ell_make_obj(ELL_WRAPPER(boolean), NULL);
     ell_f = __ell_g_Of_1_;
 
-    __ell_g_unspecified_1_ = ell_make_obj(ELL_BRAND(unspecified), NULL);
+    __ell_g_unspecified_1_ = ell_make_obj(ELL_WRAPPER(unspecified), NULL);
     ell_unspecified = __ell_g_unspecified_1_;
 
-    ell_unbound = ell_make_obj(ELL_BRAND(unbound), NULL);
+    ell_unbound = ell_make_obj(ELL_WRAPPER(unbound), NULL);
 
     __ell_g_blockFf_2_ = ell_make_clo(&ell_blockFf_code, NULL);
     __ell_g_unwindDprotectFf_2_ = ell_make_clo(&ell_unwind_protectFf_code, NULL);
