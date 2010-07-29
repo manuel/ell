@@ -130,7 +130,7 @@ ell_make_class()
     struct ell_class_data *data = (struct ell_class_data *) ell_alloc(sizeof(*data));
     data->superclasses = ell_util_make_list();
     struct ell_obj *class = ell_make_obj(ELL_WRAPPER(class), data);
-    data->current_wrapper = ell_make_wrapper(class);
+    data->wrapper = ell_make_wrapper(class);
     return class;
 }
 
@@ -162,10 +162,10 @@ ell_class_superclasses(struct ell_obj *class)
 }
 
 struct ell_wrapper *
-ell_class_current_wrapper(struct ell_obj *class)
+ell_class_wrapper(struct ell_obj *class)
 {
     ell_assert_wrapper(class, ELL_WRAPPER(class));
-    return ((struct ell_class_data *) class->data)->current_wrapper;
+    return ((struct ell_class_data *) class->data)->wrapper;
 }
 
 void
@@ -264,13 +264,13 @@ ell_put_method(struct ell_obj *class, struct ell_obj *msg_sym, struct ell_obj *c
     ell_assert_wrapper(class, ELL_WRAPPER(class));
     ell_assert_wrapper(msg_sym, ELL_WRAPPER(sym));
     ell_assert_wrapper(clo, ELL_WRAPPER(clo));
-    ell_util_dict_put(&(ell_class_current_wrapper(class))->methods, msg_sym, clo);
+    ell_util_dict_put(&(ell_class_wrapper(class))->methods, msg_sym, clo);
 }
 
 struct ell_obj *
 ell_find_method_in_class(struct ell_obj *class, struct ell_obj *msg_sym)
 {
-    dnode_t *node = dict_lookup(&(ell_class_current_wrapper(class))->methods, msg_sym);
+    dnode_t *node = dict_lookup(&(ell_class_wrapper(class))->methods, msg_sym);
     if (node) {
         return (struct ell_obj *) dnode_get(node);
     } else {
@@ -1234,7 +1234,7 @@ struct ell_obj *
 ell_make_code(struct ell_obj *clo, unsigned npos, unsigned nkey, struct ell_obj **args)
 {
     ell_check_npos(npos, 1);
-    return ell_make_obj(ell_class_current_wrapper(args[0]),
+    return ell_make_obj(ell_class_wrapper(args[0]),
                         ell_util_make_dict((dict_comp_t) &ell_sym_cmp));
 }
 
@@ -1331,12 +1331,12 @@ ell_init()
        afterwards. */
     ELL_WRAPPER(class) = NULL;
     ELL_CLASS(class) = ell_make_class();
-    ELL_WRAPPER(class) = ell_class_current_wrapper(ELL_CLASS(class));
+    ELL_WRAPPER(class) = ell_class_wrapper(ELL_CLASS(class));
     ELL_CLASS(class)->wrapper = ELL_WRAPPER(class);
 
 #define ELL_DEFBUILTIN(name)                                            \
     ELL_CLASS(name) = ell_make_class();                                 \
-    ELL_WRAPPER(name) = ell_class_current_wrapper(ELL_CLASS(name));
+    ELL_WRAPPER(name) = ell_class_wrapper(ELL_CLASS(name));
 #include "built-ins.h"
 #undef ELL_DEFBUILTIN
 

@@ -35,7 +35,7 @@ struct ell_obj {
 
 struct ell_class_data {
     list_t *superclasses;
-    struct ell_wrapper *current_wrapper;
+    struct ell_wrapper *wrapper;
 };
 
 struct ell_obj *
@@ -51,7 +51,7 @@ ell_wrapper_class(struct ell_wrapper *wrapper);
 list_t *
 ell_class_superclasses(struct ell_obj *class);
 struct ell_wrapper *
-ell_class_current_wrapper(struct ell_obj *class);
+ell_class_wrapper(struct ell_obj *class);
 void
 ell_assert_wrapper(struct ell_obj *obj, struct ell_wrapper *wrapper);
 struct ell_obj *
