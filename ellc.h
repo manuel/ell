@@ -10,73 +10,101 @@ struct ellc_ast;
 struct ellc_params;
 struct ellc_args;
 
-// Normal Form
+/**** Normal Form ****/
 
+/* After macroexpansion, the S-expression input gets converted to AST
+   objects in this form.  Further passes destructively modify or
+   augment this information. */
+
+/* Variable reference. */
 struct ellc_ast_ref {
     struct ellc_id *id;
 };
 
+/* Variable update. */
 struct ellc_ast_set {
     struct ellc_id *id;
     struct ellc_ast *val;
 };
 
+/* Global variable definition or update. */
 struct ellc_ast_def {
     struct ellc_id *id;
     struct ellc_ast *val;
 };
 
+/* Conditional. */
 struct ellc_ast_cond {
     struct ellc_ast *test;
     struct ellc_ast *consequent;
     struct ellc_ast *alternative;
 };
 
+/* Sequential. */
 struct ellc_ast_seq {
     list_t *exprs; // ast
 };
 
+/* Function application. */
 struct ellc_ast_app {
     struct ellc_ast *op;
     struct ellc_args *args;
 };
 
+/* Lambda. */
 struct ellc_ast_lam {
     struct ellc_params *params;
     struct ellc_ast *body;
-    dict_t *env; // id -> ref
+    /* Free variables, populated during closure conversion. 
+       (id -> ref) */
+    dict_t *env;
+    /* Sequence number of lambda in compilation unit, for linking the
+       closure to its generated C function.  Corresponds to offset of
+       lambda in compiler state's list of lambdas. */
     unsigned code_id;
 };
 
-struct ellc_ast_defp { // "boundp"
+/* Checks whether identifier names a defined global variable.
+   Unlike Common Lisp's BOUNDP, does not evaluate its argument. */
+struct ellc_ast_defp {
     struct ellc_id *id;
 };
 
+/* Infinite loop. */
 struct ellc_ast_loop {
     struct ellc_ast *body;
 };
 
+/* Literal symbol, produced by QUOTE. */
 struct ellc_ast_lit_sym {
     struct ell_obj *sym;
 };
 
+/* Literal string. */
 struct ellc_ast_lit_str {
     struct ell_obj *str;
 };
 
+/* Literal syntax object, produced by QUASISYNTAX. */
 struct ellc_ast_lit_stx {
     struct ell_obj *stx;
 };
 
 /* Context node for maintenance of SRFI 72's improved hygiene
-   condition.  This sets the '__ell_cur_cx' ('ellrt.h') variable for
+   condition.  This binds the '__ell_cur_cx' ('ellrt.h') variable for
    the body of code. It is introduced for every quasisyntax that is
    not considered enclosed in another quasisyntax. */
 struct ellc_ast_cx {
     struct ellc_ast *body;
 };
 
-// Explicit Form
+/**** Explicit Form ****/
+
+/* During closure conversion, the normal form AST gets destructively
+   refined to distinguish between references and updates to global
+   variables, arguments of the current function, and closed-over
+   (free) variables.  Every reference or update gets transformed to
+   one of the following AST nodes: */
 
 struct ellc_ast_glo_ref {
     struct ellc_id *id;
@@ -105,7 +133,7 @@ struct ellc_ast_env_set {
     struct ellc_ast *val;
 };
 
-// AST Representation
+/**** AST Representation ****/
 
 enum ellc_ast_type {
     ELLC_AST_REF  = 1, // -> glo_ref | arg_ref | env_ref
@@ -117,6 +145,7 @@ enum ellc_ast_type {
     ELLC_AST_LAM  = 7,
     ELLC_AST_DEFP = 8,
     ELLC_AST_LOOP = 9,
+    ELLC_AST_CX   = 10,
 
     ELLC_AST_GLO_REF = 101,
     ELLC_AST_GLO_SET = 102,
@@ -128,8 +157,6 @@ enum ellc_ast_type {
     ELLC_AST_LIT_SYM = 201,
     ELLC_AST_LIT_STR = 202,
     ELLC_AST_LIT_STX = 203,
-
-    ELLC_AST_CX      = 301,
 };
 
 struct ellc_ast {
@@ -144,6 +171,7 @@ struct ellc_ast {
         struct ellc_ast_lam lam;
         struct ellc_ast_defp defp;
         struct ellc_ast_loop loop;
+        struct ellc_ast_cx cx;
 
         struct ellc_ast_glo_ref glo_ref;
         struct ellc_ast_glo_set glo_set;
@@ -155,8 +183,6 @@ struct ellc_ast {
         struct ellc_ast_lit_sym lit_sym;
         struct ellc_ast_lit_str lit_str;
         struct ellc_ast_lit_stx lit_stx;
-
-        struct ellc_ast_cx      cx;
     };
 };
 
@@ -177,12 +203,15 @@ enum ellc_ns {
     ELLC_NS_FUN = 2,
 };
 
+/* Variable identifier.  Contains a symbol for the name, a namespace
+   (variable or function), and a hygiene context. */
 struct ellc_id {
     struct ell_obj *sym;
     enum ellc_ns ns;
     struct ell_cx *cx;
 };
 
+/* Parameters of a function. */
 struct ellc_params {
     list_t *req; // param
     list_t *opt; // param
@@ -191,6 +220,12 @@ struct ellc_params {
     struct ellc_param *all_keys; // maybe NULL
 };
 
+/* A single parameter.  Optional and keyword parameters may have an
+   initialization form that's used when the parameter is not supplied.
+   During closure conversion, it is determined whether the parameter
+   is potentially updated (mutable), and whether it is referenced or
+   updated in subordinate lambdas (closed).  Parameters that are both
+   mutable and closed are put into heap allocated boxes. */
 struct ellc_param {
     struct ellc_id *id;
     struct ellc_ast *init; // maybe NULL
@@ -198,21 +233,27 @@ struct ellc_param {
     bool closed;
 };
 
+/* The arguments to a function call. */
 struct ellc_args {
     list_t pos; // ast
     dict_t key; // sym -> ast
 };
 
+/* Lexical contour, helper object used during closure conversion to
+   mirror the runtime lexical environment of lambdas. */
 struct ellc_contour {
     struct ellc_ast_lam *lam;
     struct ellc_contour *up; // maybe NULL
 };
 
-// Compiler State
+/**** Compiler State ****/
 
+/* Table of macros. */
 static dict_t ellc_mac_tab; // sym -> clo
+/* Table of normalization functions. */
 static dict_t ellc_norm_tab; // sym -> norm_fun
 
+/* Compiler state, maintained during the compilation of a unit. */
 struct ellc_st {
     /* Keeps track of all global variables defined in the compilation
        unit.  Populated during normalization. */
@@ -236,7 +277,7 @@ struct ellc_st {
     FILE *f;
 };
 
-// API
+/**** API ****/
 
 int
 ellc_compile_file(char *infile, char *faslfile, char *cfaslfile);
