@@ -64,7 +64,7 @@ struct ellc_ast_app {
 struct ellc_ast_lam {
     struct ellc_params *params;
     struct ellc_ast *body;
-    dict_t *env; // id -> ast_ref
+    dict_t *env;
     unsigned code_id;
 };
 
