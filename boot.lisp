@@ -80,6 +80,9 @@
          (unless ,test (return-from exit void))
          ,@body)))
 
+(defmacro until (test &rest body)
+  #`(while (not ,test) ,@body))
+
 (defmacro let (bindings &rest body)
   #`(funcall (lambda (,@(kernel:map-list (lambda (binding) (kernel:send binding 'first)) bindings))
                ,@body)
