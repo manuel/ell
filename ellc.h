@@ -51,16 +51,17 @@ struct ellc_ast_app {
     struct ellc_args *args;
 };
 
-/* Lambda. */
+/* Abstraction.
+   .env: Free variables, populated during closure conversion.
+   Initially consists of ast_refs, which then get converted to
+   argument or environment references.
+   .code_id: Sequence number of lambda in compilation unit, for linking
+   the closure to its generated C function.  Corresponds to offset of
+   lambda in compiler state's list of lambdas. */
 struct ellc_ast_lam {
     struct ellc_params *params;
     struct ellc_ast *body;
-    /* Free variables, populated during closure conversion. 
-       (id -> ref) */
-    dict_t *env;
-    /* Sequence number of lambda in compilation unit, for linking the
-       closure to its generated C function.  Corresponds to offset of
-       lambda in compiler state's list of lambdas. */
+    dict_t *env; // id -> ast_ref
     unsigned code_id;
 };
 

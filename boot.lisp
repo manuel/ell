@@ -1,23 +1,26 @@
-(ell-mdef defmacro
-  (ell-lam (defmacro-form)
-    #`(ell-mdef ,(send defmacro-form 'second)
-        (ell-lam (macro-call-form)
-          (apply-syntax-list
-            (ell-lam ,(send defmacro-form 'third)
-              ,(send defmacro-form 'fourth))
-            (syntax-list-rest macro-call-form))))))
+(kernel:define-syntax defmacro
+  (kernel:lambda (defmacro-form)
+    #`(kernel:define-syntax ,(kernel:nth defmacro-form 1)
+        (kernel:lambda (macro-call-form)
+          (kernel:apply
+            (kernel:lambda ,(kernel:nth defmacro-form 2)
+              ,(kernel:subrange defmacro-form 3))
+            (kernel:subrange macro-call-form 1)))
+        ,(kernel:nth defmacro-form 1))))
 
 (defmacro defsyntax (name expander)
-  #`(ell-mdef ,name ,expander))
+  #`(progn
+      (kernel:define-syntax ,name ,expander)
+      ,name))
 
 (defmacro progn (&rest exprs)
-  #`(ell-seq ,@exprs))
+  #`(kernel:begin ,@exprs))
 
 (defmacro lambda (sig &rest body)
-  #`(ell-lam ,sig (progn ,@body)))
+  #`(kernel:lambda ,sig (progn ,@body)))
 
-(defmacro if (test then &optional (else #'unspecified))
-  #`(ell-cond ,test ,then ,else))
+(defmacro if (test then &optional (else #'void))
+  #`(kernel:if ,test ,then ,else))
 
 (defmacro when (test &rest body)
   #`(if ,test (progn ,@body)))
@@ -29,66 +32,76 @@
   #`(when (not ,test) ,@body))
 
 (defmacro definedp (name)
-  #`(ell-defp ,name))
+  #`(kernel:definedp ,name))
 
 (defmacro fdefinedp (name)
-  #`(ell-fdefp ,name))
+  #`(kernel:fdefinedp ,name))
 
 (defmacro defparameter (name value)
-  #`(ell-def ,name ,value))
+  #`(kernel:define ,name ,value))
 
-(defmacro defvar (name &optional (value #'unspecified))
+(defmacro defvar (name value)
   #`(defparameter ,name (if (definedp ,name) ,name ,value)))
 
 (defmacro defun/f (name function)
-  #`(ell-fdef ,name ,function))
+  #`(kernel:fdefine ,name ,function))
 
 (defmacro defun (name sig &rest body)
   #`(defun/f ,name (lambda ,sig ,@body)))
 
 (defmacro funcall (fun &rest args)
-  #`(ell-app ,fun ,@args))
+  #`(kernel:funcall ,fun ,@args))
 
 (defmacro function (name)
-  #`(ell-fref ,name))
+  #`(kernel:function ,name))
 
 (defmacro setq (name value)
-  #`(ell-set ,name ,value))
+  #`(kernel:set ,name ,value))
 
 (defmacro fsetq (name value)
-  #`(ell-fset ,name ,value))
+  #`(kernel:fset ,name ,value))
 
 (defmacro block (label &rest body)
-  #`(block/f (lambda (,label) ,@body)))
+  #`(kernel:block/f (lambda (,label) ,@body)))
 
 (defmacro return-from (label &optional (value #'unspecified))
   #`(funcall ,label ,value))
 
 (defmacro unwind-protect (protected &rest cleanups)
-  #`(unwind-protect/f (lambda () ,protected)
-                      (lambda () ,@cleanups)))
+  #`(kernel:unwind-protect/f (lambda () ,protected)
+                             (lambda () ,@cleanups)))
 
 (defmacro loop (&rest exprs)
-  #`(ell-loop (progn ,@exprs)))
+  #`(kernel:loop (progn ,@exprs)))
 
 (defmacro while (test &rest body)
   #`(block exit
       (loop
-         (unless ,test (return-from exit unspecified))
+         (unless ,test (return-from exit void))
          ,@body)))
 
 (defmacro let (bindings &rest body)
-  #`(funcall (lambda (,@(map-list (lambda (binding) (send binding 'first)) bindings))
+  #`(funcall (lambda (,@(kernel:map-list (lambda (binding) (kernel:send binding 'first)) bindings))
                ,@body)
-             ,@(map-list (lambda (binding) (send binding 'second)) bindings)))
+             ,@(kernel:map-list (lambda (binding) (kernel:send binding 'second)) bindings)))
+
+(defmacro prog1 (expr &rest exprs)
+  #`(let ((tmp ,expr))
+      ,@exprs
+      tmp))
+
+(defmacro prog2 (expr &rest exprs)
+  #`(progn
+      ,expr1
+      (prog1 ,@exprs)))
 
 (defmacro defclass (name &optional (superclasses #'()) &rest slot-specs)
   #`(progn
-      (defvar ,name (make-class))
-      ,@(map-list (lambda (superclass)
-                    #`(add-superclass ,name ,superclass))
-                  superclasses)
-      unspecified))
+      (defvar ,name (kernel:make-class))
+      ,@(kernel:map-list (lambda (superclass)
+                           #`(kernel:add-superclass ,name ,superclass))
+                         superclasses)
+      ,name))
 
 (defmacro defgeneric (name &optional params)
   #`(defun ,name (&rest args)
@@ -101,6 +114,7 @@
       (put-method ,(send (send params 'first) 'second) 
                   ',name
                   (lambda ,params ,@body))
-      unspecified))
+      ,name))
 
 (defgeneric print-object (object))
+
