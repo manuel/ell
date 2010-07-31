@@ -52,12 +52,15 @@ struct ellc_ast_app {
 };
 
 /* Abstraction.
+
    .env: Free variables, populated during closure conversion.
    Initially consists of ast_refs, which then get converted to
    argument or environment references.
-   .code_id: Sequence number of lambda in compilation unit, for linking
-   the closure to its generated C function.  Corresponds to offset of
-   lambda in compiler state's list of lambdas. */
+
+   .code_id: Sequence number of lambda in compilation unit, for
+   linking the closure to its generated C function.  Corresponds to
+   offset of lambda in compiler state's list of lambdas from the
+   current compilation unit. */
 struct ellc_ast_lam {
     struct ellc_params *params;
     struct ellc_ast *body;
@@ -88,11 +91,11 @@ struct ellc_ast_lit_str {
 
 /* Literal syntax object, produced by QUASISYNTAX. */
 struct ellc_ast_lit_stx {
-    struct ell_obj *stx;
+    struct ell_obj *stx; // ast?
 };
 
 /* Context node for maintenance of SRFI 72's improved hygiene
-   condition.  This binds the '__ell_cur_cx' ('ellrt.h') variable for
+   condition.  This binds the `__ell_cur_cx' (`ellrt.h') variable for
    the body of code. It is introduced for every quasisyntax that is
    not considered enclosed in another quasisyntax. */
 struct ellc_ast_cx {
@@ -103,9 +106,9 @@ struct ellc_ast_cx {
 
 /* During closure conversion, the normal form AST gets destructively
    refined to distinguish between references and updates to global
-   variables, arguments of the current function, and closed-over
-   (free) variables.  Every reference or update gets transformed to
-   one of the following AST nodes: */
+   variables, arguments of the current function, or closed-over
+   environment variables of superordinate functions.  Every reference
+   or update gets transformed to one of the following AST nodes: */
 
 struct ellc_ast_glo_ref {
     struct ellc_id *id;
@@ -187,11 +190,12 @@ struct ellc_ast {
     };
 };
 
-/* A note on namespaces, i.e. Lisp-N.  Ell is a Lisp-2 on the surface,
-   but internally, all the compiler cares about is identifiers
-   ('ellc_id').  Identifiers carry a namespace number ('ellc_ns'),
-   which means that in the future we'll be able to add an unbounded
-   number of additional namespaces.  Just kidding.
+/* A note on namespaces, i.e. Lisp-N.  The language is a Lisp-2 on the
+   surface, but internally, all the compiler cares about is
+   identifiers (`struct ellc_id').  Identifiers carry a namespace
+   number (`enum ellc_ns'), which means that in the future we'll be
+   able to add an unbounded number of additional namespaces.  Just
+   kidding.
 
    Note that (syntax) symbols themselves do *not* carry a namespace.
    That's because the namespace of a symbol is determined by its
@@ -240,19 +244,26 @@ struct ellc_args {
     dict_t key; // sym -> ast
 };
 
+/**** Compiler State ****/
+
+/* Table of macros.  To have macro definitions available across REPL
+   inputs, this table is maintained in the compiler process across
+   compilation units.  In the ordinary, file compilation use case of
+   the compiler, this makes no difference as the compiler process is
+   torn down after every unit.  In interactive REPL mode however, this
+   design is crucial: the REPL process spawns a new process for the
+   compiler.  Every user input is sent interactively to the compiler
+   process, and the resulting shared object is again loaded in the
+   REPL process.  But! - macro expanders are not evaluated in the REPL
+   process, they only live in the compiler process. */
+static dict_t ellc_mac_tab; // sym -> clo
+
 /* Lexical contour, helper object used during closure conversion to
    mirror the runtime lexical environment of lambdas. */
 struct ellc_contour {
     struct ellc_ast_lam *lam;
     struct ellc_contour *up; // maybe NULL
 };
-
-/**** Compiler State ****/
-
-/* Table of macros. */
-static dict_t ellc_mac_tab; // sym -> clo
-/* Table of normalization functions. */
-static dict_t ellc_norm_tab; // sym -> norm_fun
 
 /* Compiler state, maintained during the compilation of a unit. */
 struct ellc_st {
@@ -271,8 +282,7 @@ struct ellc_st {
     /* Keeps track of all lambdas created in the compilation unit.
        Populated during closure conversion. */
     list_t *lambdas; // lam
-    /* Whether we are inside a quasisyntax, for improved hygiene
-       condition.  Not fully clear whether this is correct. */
+    /* Whether we are inside a quasisyntax, for hygiene condition. */
     bool in_quasisyntax;
     /* The output file for C code during emission. */
     FILE *f;

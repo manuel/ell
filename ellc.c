@@ -8,6 +8,7 @@
 //   _|    _|  _|    _|  _|    _|      _|    _|  _|    _|       //
 //   _|    _|    _|_|_|  _|    _|      _|_|_|    _|      _|_|   //
 //                                                              //
+//                  ``Witness the Fitness''                     //
 //                                                              //
 //////////////////////////////////////////////////////////////////
 
@@ -131,6 +132,9 @@ ellc_contour_lookup(struct ellc_contour *c, struct ellc_id *id, struct ellc_para
 }
 
 /**** Normalization: Syntax Objects -> AST ****/
+
+/* Table of normalization functions. */
+static dict_t ellc_norm_tab; // sym -> norm_fun
 
 static struct ellc_ast *
 ellc_norm_stx(struct ellc_st *st, struct ell_obj *stx);
