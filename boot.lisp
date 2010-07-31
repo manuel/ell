@@ -77,6 +77,9 @@
          (unless ,test (return-from exit unspecified))
          ,@body)))
 
+(defmacro until (test &rest body)
+  #`(while (not ,test) ,@body))
+
 (defmacro let (bindings &rest body)
   #`(funcall (lambda (,@(map-list (lambda (binding) (send binding 'first)) bindings))
                ,@body)
