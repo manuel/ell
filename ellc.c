@@ -8,7 +8,6 @@
 //   _|    _|  _|    _|  _|    _|      _|    _|  _|    _|       //
 //   _|    _|    _|_|_|  _|    _|      _|_|_|    _|      _|_|   //
 //                                                              //
-//                  ``Witness the Fitness''                     //
 //                                                              //
 //////////////////////////////////////////////////////////////////
 
@@ -1227,19 +1226,33 @@ ellc_emit_app(struct ellc_st *st, struct ellc_ast *ast)
     dictcount_t nkey = dict_count(&app->args->key);
     fprintf(st->f, "({");
     if (npos || nkey) {
-        fprintf(st->f, "struct ell_obj *__ell_args[] = {");
+        // evaluate arguments
+        unsigned ipos = 0;
         for (lnode_t *n = list_first(&app->args->pos); n; n = list_next(&app->args->pos, n)) {
             struct ellc_ast *arg_ast = (struct ellc_ast *) lnode_get(n);
+            fprintf(st->f, "struct ell_obj *__ell_pos_arg_%u = ", ipos);
             ellc_emit_ast(st, arg_ast);
-            fprintf(st->f, ", ");
+            fprintf(st->f, "; ");
+            ipos++;
         }
+        unsigned kpos;
         for (dnode_t *n = dict_first(&app->args->key); n; n = dict_next(&app->args->key, n)) {
-            struct ell_obj *arg_key_sym = (struct ell_obj *) dnode_getkey(n);
             struct ellc_ast *arg_ast = (struct ellc_ast *) dnode_get(n);
-            fprintf(st->f, "ell_intern(ell_make_str(\"%s\"))", ell_str_chars(ell_sym_name(arg_key_sym)));
-            fprintf(st->f, ", ");
+            fprintf(st->f, "struct ell_obj *__ell_key_arg_%u = ", kpos);
             ellc_emit_ast(st, arg_ast);
-            fprintf(st->f, ", ");
+            fprintf(st->f, "; ");
+        }
+        // fill arguments array
+        fprintf(st->f, "struct ell_obj *__ell_args[] = {");
+        ipos = 0;
+        for (lnode_t *n = list_first(&app->args->pos); n; n = list_next(&app->args->pos, n)) {
+            fprintf(st->f, "__ell_pos_arg_%u, ", ipos);
+            ipos++;
+        }
+        kpos = 0;
+        for (dnode_t *n = dict_first(&app->args->key); n; n = dict_next(&app->args->key, n)) {
+            fprintf(st->f, "__ell_key_arg_%u, ", kpos);
+            kpos++;
         }
         fprintf(st->f, "}; ");
     }
