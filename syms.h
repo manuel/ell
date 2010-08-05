@@ -2,10 +2,6 @@
 
 /* (ell-fref function-name) -> function ;; lookup in function namespace */
 ELL_DEFSYM(core_fref, "ell-fref")
-/* (ell-ref-qualified package symbol)
-   (ell-fref-qualified package symbol) */
-ELL_DEFSYM(core_ref_qualified,  "ell-ref-qualified")
-ELL_DEFSYM(core_fref_qualified,  "ell-fref-qualified")
 /* (ell-def name value) ;; define global variable */
 ELL_DEFSYM(core_def,  "ell-def")
 /* (ell-fdef name value) ;; define global function */
@@ -26,16 +22,10 @@ ELL_DEFSYM(core_seq,  "ell-seq")
 ELL_DEFSYM(core_lam,  "ell-lam")
 /* (ell-app op &rest args) -> result ;; apply function to arguments */
 ELL_DEFSYM(core_app,  "ell-app")
+/* (ell-loop expr) ;; infinite loop */
+ELL_DEFSYM(core_loop, "ell-loop")
 /* (ell-mdef name expander) ;; define macro expander function, that takes and returns syntax */
 ELL_DEFSYM(core_mdef, "ell-mdef")
-/* ;; make package's runtime (compile-time) contents available at runtime (compile-time)
-   (ell-require package-name) */
-ELL_DEFSYM(core_req, "ell-require")
-ELL_DEFSYM(core_require_f, "ell-require/f")
-/* ;; make package's runtime contents available at compile-time
-   (ell-require-for-syntax package-name) */
-ELL_DEFSYM(core_req_for_stx, "ell-require-for-syntax")
-ELL_DEFSYM(core_loop, "ell-loop")
 
 /* Data and syntax quotation: */
 ELL_DEFSYM(core_quote, "quote")
@@ -61,6 +51,9 @@ ELL_DEFSYM(core_syntax_list, "syntax-list")
 ELL_DEFSYM(core_append_syntax_lists, "append-syntax-lists")
 ELL_DEFSYM(core_apply_syntax_list, "apply-syntax-list")
 ELL_DEFSYM(default_handle, "default-handle")
+
+/* Note that there are additional built-in functions defined in
+   `ellrt,c' that are not listed here, which is a documentation bug. */
 
 /**** Defined symbols: ****/
 

@@ -179,7 +179,7 @@ struct ell_unwind_protect {
 
 struct ell_block {
     struct ell_unwind_protect *parent;
-    struct ell_obj            *val;
+    volatile struct ell_obj   *val;
     jmp_buf                   dest;
 };
 

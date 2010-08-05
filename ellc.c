@@ -689,37 +689,6 @@ ellc_norm_mdef(struct ellc_st *st, struct ell_obj *mdef_stx)
     return NULL; // runtime noop
 }
 
-/* (Dependencies) */
-
-static struct ellc_ast *
-ellc_norm_req(struct ellc_st *st, struct ell_obj *stx_lst)
-{
-    ell_assert_stx_lst_len(stx_lst, 2);
-    struct ell_obj *package_sym = ell_stx_sym_sym(ELL_SEND(stx_lst, second));
-    // at compile-time, load required package's compile-time contents
-    ellc_load_compile_time_contents(st, package_sym);
-    // at runtime, load required package's runtime contents;
-    // create application of `require/f' with quoted package name.
-    struct ellc_ast *op_ast = ellc_make_ref(st, ell_make_stx_sym(ELL_SYM(core_require_f)), ELLC_NS_FUN);
-    struct ell_obj *quote_stx_lst = ell_make_stx_lst();
-    ELL_SEND(quote_stx_lst, add, ell_make_stx_sym(ELL_SYM(core_quote)));
-    ELL_SEND(quote_stx_lst, add, ell_make_stx_sym(package_sym));
-    list_t *arg_stx_list = ell_util_make_list();
-    ell_util_list_add(arg_stx_list, quote_stx_lst);
-    return ellc_make_app(st, op_ast, arg_stx_list);
-}
-
-static struct ellc_ast *
-ellc_norm_req_for_stx(struct ellc_st *st, struct ell_obj *stx_lst)
-{
-    ell_assert_stx_lst_len(stx_lst, 2);
-    struct ell_obj *package_sym = ell_stx_sym_sym(ELL_SEND(stx_lst, second));
-    // at compile-time, load required package's runtime contents
-    ellc_load_runtime_contents(st, package_sym);
-    // at runtime, do nothing
-    return NULL;
-}
-
 /* (Putting it All Together) */
 
 __attribute__((constructor(300))) static void
@@ -743,8 +712,6 @@ ellc_init()
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_quasisyntax), &ellc_norm_quasisyntax);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_syntax), &ellc_norm_quasisyntax);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_mdef), &ellc_norm_mdef);
-    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_req), &ellc_norm_req);
-    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_req_for_stx), &ellc_norm_req_for_stx);
     // Compiler state
     dict_init(&ellc_mac_tab, DICTCOUNT_T_MAX, (dict_comp_t) &ell_sym_cmp);
 }

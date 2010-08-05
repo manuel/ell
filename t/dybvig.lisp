@@ -6,7 +6,7 @@
   (unless #f
     (send "win" 'print-object)))
 
-(defmacro sc:or (e1 e2)
+(defmacro sc.or (e1 e2)
   #`(let ((t ,e1))
       (if t t ,e2)))
 

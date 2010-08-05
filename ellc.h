@@ -102,7 +102,6 @@ struct ellc_ast_cx {
     struct ellc_ast *body;
 };
 
-
 /**** Explicit Form ****/
 
 /* During closure conversion, the normal form AST gets destructively
@@ -137,7 +136,6 @@ struct ellc_ast_env_set {
     struct ellc_param *param;
     struct ellc_ast *val;
 };
-
 
 /**** AST Representation ****/
 
@@ -245,7 +243,6 @@ struct ellc_args {
     dict_t key; // sym -> ast
 };
 
-
 /**** Compiler State ****/
 
 /* Compiler state, as opposed to compilation state, is maintained
@@ -265,7 +262,6 @@ struct ellc_args {
    expanders are not evaluated in the REPL process, they only live in
    the compiler process. */
 static dict_t ellc_mac_tab; // sym -> clo
-
 
 /**** Compilation State ****/
 
@@ -301,7 +297,6 @@ struct ellc_st {
     /* The output file for C code during emission. */
     FILE *f;
 };
-
 
 /**** API ****/
 
