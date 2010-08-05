@@ -102,6 +102,7 @@ struct ellc_ast_cx {
     struct ellc_ast *body;
 };
 
+
 /**** Explicit Form ****/
 
 /* During closure conversion, the normal form AST gets destructively
@@ -136,6 +137,7 @@ struct ellc_ast_env_set {
     struct ellc_param *param;
     struct ellc_ast *val;
 };
+
 
 /**** AST Representation ****/
 
@@ -208,12 +210,11 @@ enum ellc_ns {
     ELLC_NS_FUN = 2,
 };
 
-/* Variable identifier.  Contains a symbol for the name, a namespace
-   (variable or function), and a hygiene context. */
+/* Variable identifier. */
 struct ellc_id {
-    struct ell_obj *sym;
-    enum ellc_ns ns;
-    struct ell_cx *cx;
+    struct ell_obj *sym;     // name symbol
+    enum ellc_ns ns;         // namespace
+    struct ell_cx *cx;       // hygiene context
 };
 
 /* Parameters of a function. */
@@ -244,19 +245,32 @@ struct ellc_args {
     dict_t key; // sym -> ast
 };
 
+
 /**** Compiler State ****/
 
-/* Table of macros.  To have macro definitions available across REPL
-   inputs, this table is maintained in the compiler process across
-   compilation units.  In the ordinary, file compilation use case of
-   the compiler, this makes no difference as the compiler process is
-   torn down after every unit.  In interactive REPL mode however, this
-   design is crucial: the REPL process spawns a new process for the
-   compiler.  Every user input is sent interactively to the compiler
-   process, and the resulting shared object is again loaded in the
-   REPL process.  But! - macro expanders are not evaluated in the REPL
-   process, they only live in the compiler process. */
+/* Compiler state, as opposed to compilation state, is maintained
+   across unit compilations.  Compiler state comprises the following
+   variables: */
+
+/* Table of macros.  Maps macro symbols to expander functions, that
+   take a syntax object, and return a syntax object.  To have macro
+   definitions available across REPL uses, this table is maintained in
+   the compiler process across compilation units.  In the ordinary,
+   file compilation use case of the compiler, this makes no difference
+   as the compiler process is torn down after every unit.  In
+   interactive REPL mode however, this design is crucial: the REPL
+   process spawns a new process for the compiler.  Every user input is
+   sent interactively to the compiler process, and the resulting
+   shared object is again loaded in the REPL process.  But!  - macro
+   expanders are not evaluated in the REPL process, they only live in
+   the compiler process. */
 static dict_t ellc_mac_tab; // sym -> clo
+
+
+/**** Compilation State ****/
+
+/* Compilation state, as opposed to compiler state, is reset between
+   unit compilations. */
 
 /* Lexical contour, helper object used during closure conversion to
    mirror the runtime lexical environment of lambdas. */
@@ -265,7 +279,7 @@ struct ellc_contour {
     struct ellc_contour *up; // maybe NULL
 };
 
-/* Compiler state, maintained during the compilation of a unit. */
+/* Compilation state, maintained during the compilation of a unit. */
 struct ellc_st {
     /* Keeps track of all global variables defined in the compilation
        unit.  Populated during normalization. */
@@ -287,6 +301,7 @@ struct ellc_st {
     /* The output file for C code during emission. */
     FILE *f;
 };
+
 
 /**** API ****/
 

@@ -10,7 +10,7 @@ int yyparse();
 
 struct ell_parser_stack {
     struct ell_parser_stack *down;
-    struct ell_obj *stx_lst;
+    void *parser_data;
 };
 
 static struct ell_parser_stack *ell_parser_stack_top;
@@ -21,44 +21,26 @@ ell_parse()
     ell_parser_stack_top = 
         (struct ell_parser_stack *) ell_alloc(sizeof(*ell_parser_stack_top));
     ell_parser_stack_top->down = NULL;
-    ell_parser_stack_top->stx_lst = ell_make_stx_lst();
+    ell_parser_stack_top->parser_data = ell_make_stx_lst();
     if(!yyparse()) {
         printf("parsing error\n");
         exit(EXIT_FAILURE);
     }
-    return ell_parser_stack_top->stx_lst;
+    return ell_parser_stack_top->parser_data;
 }
 
 void
 ell_parser_add_sym(char *chars)
 {
     struct ell_obj *stx_sym = ell_make_stx_sym(ell_intern(ell_make_str(chars)));
-    ELL_SEND(ell_parser_stack_top->stx_lst, add, stx_sym);
+    ELL_SEND(ell_parser_stack_top->parser_data, add, stx_sym);
 }
 
 void
 ell_parser_add_str(char *chars)
 {
     struct ell_obj *stx_str = ell_make_stx_str(ell_make_str(chars));
-    ELL_SEND(ell_parser_stack_top->stx_lst, add, stx_str);
-}
-
-void
-ell_parser_push()
-{
-    struct ell_parser_stack *new = 
-        (struct ell_parser_stack *) ell_alloc(sizeof(*new));
-    struct ell_obj *new_stx_lst = ell_make_stx_lst();
-    new->down = ell_parser_stack_top;
-    new->stx_lst = new_stx_lst;
-    ELL_SEND(ell_parser_stack_top->stx_lst, add, new_stx_lst);
-    ell_parser_stack_top = new;
-}
-
-void
-ell_parser_pop()
-{
-    ell_parser_stack_top = ell_parser_stack_top->down;
+    ELL_SEND(ell_parser_stack_top->parser_data, add, stx_str);
 }
 
 void
@@ -67,11 +49,25 @@ ell_parser_push_special(struct ell_obj *sym)
     struct ell_parser_stack *new = 
         (struct ell_parser_stack *) ell_alloc(sizeof(*new));
     struct ell_obj *new_stx_lst = ell_make_stx_lst();
-    ELL_SEND(new_stx_lst, add, ell_make_stx_sym(sym));
+    if (sym) {
+        ELL_SEND(new_stx_lst, add, ell_make_stx_sym(sym));
+    }
     new->down = ell_parser_stack_top;
-    new->stx_lst = new_stx_lst;
-    ELL_SEND(ell_parser_stack_top->stx_lst, add, new_stx_lst);
+    new->parser_data = new_stx_lst;
+    ELL_SEND(ell_parser_stack_top->parser_data, add, new_stx_lst);
     ell_parser_stack_top = new;
+}
+
+void
+ell_parser_push()
+{
+    ell_parser_push_special(NULL);
+}
+
+void
+ell_parser_pop()
+{
+    ell_parser_stack_top = ell_parser_stack_top->down;
 }
 
 void
@@ -480,17 +476,15 @@ ell_make_sym(struct ell_obj *str)
 struct ell_obj *
 ell_intern(struct ell_obj *str)
 {
-    char *chars = ell_str_chars(str);
-    dnode_t *node = dict_lookup(&ell_sym_tab, chars);
-    if (node == NULL) {
-        struct ell_obj *sym = ell_make_sym(str);
-        node = (dnode_t *) ell_alloc(sizeof(*node));
-        dnode_init(node, sym);
-        dict_insert(&ell_sym_tab, node, chars);
-        return sym;
+    char *name_chars = ell_str_chars(str);
+    dnode_t *n = dict_lookup(&ell_sym_tab, name_chars);
+    if (n) {
+        return (struct ell_obj *) dnode_get(n);
     } else {
-        return (struct ell_obj *) dnode_get(node);
-    }    
+        struct ell_obj *sym = ell_make_sym(str);
+        ell_util_dict_put(&ell_sym_tab, name_chars, sym);
+        return sym;
+    }
 }
 
 struct ell_obj *
@@ -983,7 +977,7 @@ ell_util_make_dict(dict_comp_t comp)
     return dict;
 }
 
-void
+void *
 ell_util_dict_put(dict_t *dict, void *key, void *val)
 {
     dnode_t *node = dict_lookup(dict, key);
@@ -994,6 +988,7 @@ ell_util_dict_put(dict_t *dict, void *key, void *val)
         dnode_init(node, val);
         dict_insert(dict, node, key);
     }
+    return val;
 }
 
 void

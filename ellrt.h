@@ -224,10 +224,10 @@ ell_str_poplast(struct ell_obj *str);
 
 /**** Symbols ****/
 
-struct dict_t ell_sym_tab;
+struct dict_t ell_sym_tab; // char* -> sym
 
 struct ell_sym_data {
-    struct ell_obj *name;
+    struct ell_obj *name; // str
 };
 
 #define ELL_SYM(name) __ell_sym_##name
@@ -368,7 +368,7 @@ void
 ell_util_assert_list_len_min(list_t *list, listcount_t len);
 dict_t *
 ell_util_make_dict(dict_comp_t comp);
-void
+void *
 ell_util_dict_put(dict_t *dict, void *key, void *val);
 void
 ell_util_set_add(list_t *set, void *elt, dict_comp_t compare);

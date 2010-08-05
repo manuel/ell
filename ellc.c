@@ -161,7 +161,8 @@ static struct ellc_ast *
 ellc_norm_fref(struct ellc_st *st, struct ell_obj *stx_lst)
 {
     ell_assert_stx_lst_len(stx_lst, 2);
-    return ellc_make_ref(st, ELL_SEND(stx_lst, second), ELLC_NS_FUN);
+    struct ell_obj *stx_sym = ELL_SEND(stx_lst, second);
+    return ellc_make_ref(st, stx_sym, ELLC_NS_FUN);
 }
 
 static struct ellc_ast *
@@ -314,11 +315,11 @@ ellc_dissect_args(struct ellc_st *st, list_t *args_stx)
 }
 
 static struct ellc_ast *
-ellc_make_app(struct ellc_st *st, struct ellc_ast *op, list_t *arg_stx_lst)
+ellc_make_app(struct ellc_st *st, struct ellc_ast *op, list_t *arg_stx_list)
 {
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_APP);
     ast->app.op = op;
-    ast->app.args = ellc_dissect_args(st, arg_stx_lst);
+    ast->app.args = ellc_dissect_args(st, arg_stx_list);
     return ast;
 }
 
@@ -330,6 +331,9 @@ ellc_norm_app(struct ellc_st *st, struct ell_obj *stx_lst)
                          ell_util_sublist(ell_stx_lst_elts(stx_lst), 2));
 }
 
+/* Takes a syntax list containing operator symbol and arguments and
+   normalizes it to an application AST, with a reference to the
+   operator function. */
 static struct ellc_ast *
 ellc_norm_ordinary_app(struct ellc_st *st, struct ell_obj *stx_lst)
 {
@@ -445,12 +449,18 @@ ellc_norm_lam(struct ellc_st *st, struct ell_obj *stx_lst)
 }
 
 static struct ellc_ast *
+ellc_quote(struct ellc_st *st, struct ell_obj *stx_sym)
+{
+    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_LIT_SYM);
+    ast->lit_sym.sym = stx_sym;
+    return ast;
+}
+
+static struct ellc_ast *
 ellc_norm_quote(struct ellc_st *st, struct ell_obj *stx_lst)
 {
     ell_assert_stx_lst_len(stx_lst, 2);
-    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_LIT_SYM);
-    ast->lit_sym.sym = ell_stx_sym_sym(ELL_SEND(stx_lst, second));
-    return ast;
+    return ellc_quote(st, ell_stx_sym_sym(ELL_SEND(stx_lst, second)));
 }
 
 static struct ellc_ast *
@@ -676,8 +686,37 @@ ellc_norm_mdef(struct ellc_st *st, struct ell_obj *mdef_stx)
     struct ell_obj *stx_lst = ell_make_stx_lst();
     ELL_SEND(stx_lst, add, expander_stx);
     ell_util_dict_put(&ellc_mac_tab, ell_stx_sym_sym(name_stx), ellc_eval(stx_lst));
-    // Note that a macro definition is the only expression that has no
-    // runtime effect.  This case is handled specially by 'ellc_norm'.
+    return NULL; // runtime noop
+}
+
+/* (Dependencies) */
+
+static struct ellc_ast *
+ellc_norm_req(struct ellc_st *st, struct ell_obj *stx_lst)
+{
+    ell_assert_stx_lst_len(stx_lst, 2);
+    struct ell_obj *package_sym = ell_stx_sym_sym(ELL_SEND(stx_lst, second));
+    // at compile-time, load required package's compile-time contents
+    ellc_load_compile_time_contents(st, package_sym);
+    // at runtime, load required package's runtime contents;
+    // create application of `require/f' with quoted package name.
+    struct ellc_ast *op_ast = ellc_make_ref(st, ell_make_stx_sym(ELL_SYM(core_require_f)), ELLC_NS_FUN);
+    struct ell_obj *quote_stx_lst = ell_make_stx_lst();
+    ELL_SEND(quote_stx_lst, add, ell_make_stx_sym(ELL_SYM(core_quote)));
+    ELL_SEND(quote_stx_lst, add, ell_make_stx_sym(package_sym));
+    list_t *arg_stx_list = ell_util_make_list();
+    ell_util_list_add(arg_stx_list, quote_stx_lst);
+    return ellc_make_app(st, op_ast, arg_stx_list);
+}
+
+static struct ellc_ast *
+ellc_norm_req_for_stx(struct ellc_st *st, struct ell_obj *stx_lst)
+{
+    ell_assert_stx_lst_len(stx_lst, 2);
+    struct ell_obj *package_sym = ell_stx_sym_sym(ELL_SEND(stx_lst, second));
+    // at compile-time, load required package's runtime contents
+    ellc_load_runtime_contents(st, package_sym);
+    // at runtime, do nothing
     return NULL;
 }
 
@@ -686,7 +725,7 @@ ellc_norm_mdef(struct ellc_st *st, struct ell_obj *mdef_stx)
 __attribute__((constructor(300))) static void
 ellc_init()
 {
-    dict_init(&ellc_mac_tab, DICTCOUNT_T_MAX, (dict_comp_t) &ell_sym_cmp);
+    // Constant table of normalization functions
     dict_init(&ellc_norm_tab, DICTCOUNT_T_MAX, (dict_comp_t) &ell_sym_cmp);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_fref), &ellc_norm_fref);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_def), &ellc_norm_def);
@@ -704,6 +743,10 @@ ellc_init()
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_quasisyntax), &ellc_norm_quasisyntax);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_syntax), &ellc_norm_quasisyntax);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_mdef), &ellc_norm_mdef);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_req), &ellc_norm_req);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_req_for_stx), &ellc_norm_req_for_stx);
+    // Compiler state
+    dict_init(&ellc_mac_tab, DICTCOUNT_T_MAX, (dict_comp_t) &ell_sym_cmp);
 }
 
 static struct ellc_ast *
@@ -748,6 +791,12 @@ ellc_norm_lit_str(struct ellc_st *st, struct ell_obj *stx)
     return ast;
 }
 
+/* Main normalization function.  Takes syntax object as input, and
+   returns AST.  Special handling for classic Lisp evaluation rules:
+   symbols evaluate to the variables they name; lists evaluate to
+   function calls, special forms (taken from `ellc_norm_tab'), or
+   macro calls (taken from `ellc_mac_tab'); literals evaluate to
+   themselves. */
 static struct ellc_ast *
 ellc_norm_stx(struct ellc_st *st, struct ell_obj *stx)
 {
@@ -789,7 +838,7 @@ ellc_norm(struct ellc_st *st, struct ell_obj *stx_lst)
     for (lnode_t *n = list_first(deferred); n; n = list_next(deferred, n)) {
         struct ell_obj *stx = (struct ell_obj *) lnode_get(n);
         struct ellc_ast *res = ellc_norm_stx(st, stx);
-        if (res) // check for mdef... could be done better?
+        if (res) // no-ops return NULL
             ellc_ast_seq_add(ast_seq, res);
     }
     return ast_seq;
@@ -1016,7 +1065,6 @@ ellc_mangle_char(char c)
     // Needs to be kept in sync with sym-char in 'grammar.leg'.
     switch (c) {
     case '&': return 'A';
-    case ':': return 'S';
     case '_': return 'U';
     case '-': return 'D';
     case '#': return 'O';
