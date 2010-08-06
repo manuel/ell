@@ -1329,11 +1329,11 @@ ell_init()
     ELL_WRAPPER(class) = ell_class_wrapper(ELL_CLASS(class));
     ELL_CLASS(class)->wrapper = ELL_WRAPPER(class);
 
-#define ELL_DEFBUILTIN(name)                                            \
+#define ELL_DEFCLASS(name)                                              \
     ELL_CLASS(name) = ell_make_class();                                 \
     ELL_WRAPPER(name) = ell_class_wrapper(ELL_CLASS(name));
-#include "built-ins.h"
-#undef ELL_DEFBUILTIN
+#include "defclass.h"
+#undef ELL_DEFCLASS
 
     __ell_g_LbooleanG_1_ = ELL_CLASS(boolean);
     __ell_g_LclassG_1_ = ELL_CLASS(class);
@@ -1351,7 +1351,7 @@ ell_init()
 
 #define ELL_DEFSYM(name, lisp_name) \
     if (!ELL_SYM(name)) ELL_SYM(name) = ell_intern(ell_make_str(lisp_name));
-#include "syms.h"
+#include "defsym.h"
 #undef ELL_DEFSYM
 
     __ell_g_Ot_1_ = ell_make_obj(ELL_WRAPPER(boolean), NULL);

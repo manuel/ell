@@ -1,3 +1,6 @@
+/* This x-header is included from multiple places with different
+   definitions of `ELL_DEFSYM'. */
+
 /**** Special forms understood by the compiler: ****/
 
 /* (ell-fref function-name) -> function ;; lookup in function namespace */

@@ -80,11 +80,11 @@ ell_is_subclass(struct ell_obj *class, struct ell_obj *superclass);
 struct ell_obj *ELL_CLASS(class);
 struct ell_wrapper *ELL_WRAPPER(class);
 
-#define ELL_DEFBUILTIN(name)                    \
+#define ELL_DEFCLASS(name)                      \
     struct ell_obj *ELL_CLASS(name);            \
     struct ell_wrapper *ELL_WRAPPER(name);
-#include "built-ins.h"
-#undef ELL_DEFBUILTIN
+#include "defclass.h"
+#undef ELL_DEFCLASS
 
 /**** Closures ****/
 
@@ -174,13 +174,13 @@ ell_send(struct ell_obj *rcv, struct ell_obj *msg_sym,
 
 struct ell_unwind_protect {
     struct ell_unwind_protect *parent;
-    struct ell_obj            *cleanup;
+    struct ell_obj *cleanup;
 };
 
 struct ell_block {
     struct ell_unwind_protect *parent;
-    volatile struct ell_obj   *val;
-    jmp_buf                   dest;
+    struct ell_obj *volatile val;
+    jmp_buf dest;
 };
 
 struct ell_unwind_protect *ell_current_unwind_protect;
@@ -233,7 +233,7 @@ struct ell_sym_data {
 #define ELL_SYM(name) __ell_sym_##name
 
 #define ELL_DEFSYM(name, lisp_name) __attribute__((weak)) struct ell_obj *ELL_SYM(name);
-#include "syms.h"
+#include "defsym.h"
 #undef ELL_DEFSYM
 
 struct ell_obj *
