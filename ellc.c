@@ -1531,6 +1531,7 @@ ellc_emit_statements(struct ellc_st *st)
          n = list_next(st->c_statements, n)) {
         struct ellc_ast *ast = (struct ellc_ast *) lnode_get(n);
         ellc_emit_ast(st, ast);
+        fprintf(st->f, "\n");
     }
 }
 
@@ -1676,6 +1677,7 @@ ellc_emit(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
     fprintf(st->f, "#include \"ellrt.h\"\n");
     ellc_emit_globals_declarations(st);
     ellc_emit_codes(st);
+    fprintf(st->f, "// STATEMENTS\n");
     ellc_emit_statements(st);
     fprintf(st->f, "// INIT\n");
     fprintf(st->f, "__attribute__((constructor(500))) static void ell_init() {\n");

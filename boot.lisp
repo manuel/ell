@@ -122,3 +122,5 @@
 (defgeneric print-object (object))
 (defun print (object) (print-object object))
 
+(defmacro c (&rest snippets)
+  #`(c-expression ,snippets))
