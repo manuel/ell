@@ -737,8 +737,9 @@ ellc_norm_c_snip(struct ellc_st *st, struct ell_obj *stx_lst)
 struct ell_obj *__ell_g_compilerDputDexpander_2_;
 
 struct ell_obj *
-ellc_compiler_put_expander_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-                               struct ell_obj **args)
+ellc_compiler_put_expander_code(struct ell_obj *clo, ell_arg_ct npos,
+                                ell_arg_ct nkey, struct ell_obj **args,
+                                struct ell_obj *dongle)
 {
     ell_check_npos(npos, 2);
     struct ell_obj *symbol = args[0];
@@ -1658,7 +1659,7 @@ ellc_emit_codes(struct ellc_st *st)
         // code
         fprintf(st->f, "static struct ell_obj *");
         fprintf(st->f, "__ell_code_%u(struct ell_obj *__ell_clo, ell_arg_ct __ell_npos, "
-               "ell_arg_ct __ell_nkey, struct ell_obj **__ell_args) {\n", code_id);
+               "ell_arg_ct __ell_nkey, struct ell_obj **__ell_args, struct ell_obj *__ell_dongle) {\n", code_id);
         ellc_emit_params(st, lam);
         fprintf(st->f, "\tstruct __ell_env_%u *__ell_env = (struct __ell_env_%u *)"
                "((struct ell_clo_data *) __ell_clo->data)->env;\n", code_id, code_id);

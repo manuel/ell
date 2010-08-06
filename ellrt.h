@@ -100,7 +100,10 @@ struct ell_wrapper *ELL_WRAPPER(class);
 typedef unsigned int ell_arg_ct;
 
 typedef struct ell_obj *
-ell_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args);
+ell_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
+         struct ell_obj **args, struct ell_obj *dongle);
+
+struct ell_obj *ell_dongle;
 
 /* A closure consists of a code pointer and an environment pointer.
    Usually, the environment contains the free variables of the
@@ -163,7 +166,8 @@ ell_send(struct ell_obj *rcv, struct ell_obj *msg_sym,
                                                                         \
     struct ell_obj *                                                    \
     ELL_METHOD_CODE(class, msg)(struct ell_obj *clo, ell_arg_ct npos,   \
-                                ell_arg_ct nkey, struct ell_obj **args) \
+                                ell_arg_ct nkey, struct ell_obj **args, \
+                                struct ell_obj *dongle)                 \
     {                                                                   \
         ell_check_npos(formal_npos, npos);
 
