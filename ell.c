@@ -21,6 +21,7 @@
 static void
 ell_repl(struct ellcm *cm)
 {
+    printf("Welcome to ell!\nExit with (exit).\n");
     for(;;) {
         char *line = readline("> ");
         struct ell_obj *result = ellcm_eval(cm, line);
