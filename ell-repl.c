@@ -1,7 +1,7 @@
 /***** Executable and Linkable Lisp REPL *****/
 
 /*
-  ell-repl [-x compile-time.fasl]* [-l file]* [-e expression]*
+  ell-repl [-x compile-time.fasl]* [-l file]* [-e expression]* [-q]
   
   Compiles and loads Lisp source files, and provides a read-eval-print loop.
 
@@ -10,6 +10,7 @@
   -l file---A Lisp source file to compile and load, or a FASL to load.
   -x compile-time.fasl---A file to load at compile-time.
   -e expression--A Lisp expression to evaluate.
+  -q---Whether to quit after processing instead of entering the REPL.
 */
 
 #include <getopt.h>
@@ -38,10 +39,11 @@ int
 main(int argc, char *argv[])
 {
     struct ellcm *cm = ellcm_init();
+    bool quit = false;
     opterr = 0;
     int c;
     char *faslfile, *cfaslfile;
-    while ((c = getopt (argc, argv, "x:l:e:")) != -1) {
+    while ((c = getopt (argc, argv, "x:l:e:q")) != -1) {
         switch (c) {
         case 'x':
             ellcm_compiletime_load_file(cm, optarg);
@@ -52,8 +54,12 @@ main(int argc, char *argv[])
         case 'e':
             ellcm_eval(cm, optarg);
             break;
+        case 'q':
+            quit = true;
+            break;
         }
     }
-    ell_repl(cm);
+    if (!quit)
+        ell_repl(cm);
     return 0;
 }
