@@ -22,7 +22,7 @@ ell_parser_push_unsyntax_splicing();
 %}
 
 unit       = exprs eof
-exprs      = spc? (expr spc?)+
+exprs      = spc? (expr spc?)*
 expr       = quote | syntax | quasisyntax | unsyntax | unsyntax-splicing | str | num | sym | lst | doc
 
 str        = "\"" < [^"]* > "\""   { ell_parser_add_str(yytext); }
