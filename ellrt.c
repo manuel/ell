@@ -479,6 +479,14 @@ ell_make_num(char *chars)
     return ell_make_obj(ELL_WRAPPER(num_int), data);
 }
 
+struct ell_obj *
+ell_make_num_from_int(int i)
+{
+    struct ell_num_int_data *data = (struct ell_num_int_data *) ell_alloc(sizeof(*data));
+    data->int_value = i;
+    return ell_make_obj(ELL_WRAPPER(num_int), data);
+}
+
 int
 ell_num_int(struct ell_obj *num)
 {
@@ -1362,6 +1370,21 @@ ell_less_than_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey, struct
     return ell_truth(ell_num_int(num1) < ell_num_int(num2));
 }
 
+/* (+ num1 num2) -> num */
+
+struct ell_obj *__ell_g_P_2_;
+
+struct ell_obj *
+ell_plus_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args)
+{
+    ell_check_npos(2, npos);
+    struct ell_obj *num1 = args[0];
+    struct ell_obj *num2 = args[1];
+    ell_assert_wrapper(num1, ELL_WRAPPER(num_int));
+    ell_assert_wrapper(num2, ELL_WRAPPER(num_int));
+    return ell_make_num_from_int(ell_num_int(num1) + ell_num_int(num2));
+}
+
 /**** Export built-in classes to Lisp ****/
 
 struct ell_obj *__ell_g_LbooleanG_1_;
@@ -1453,6 +1476,7 @@ ell_init()
     __ell_g_signal_2_ = ell_make_clo(&ell_signal_code, NULL);
 
     __ell_g_L_2_ = ell_make_clo(&ell_less_than_code, NULL);
+    __ell_g_P_2_ = ell_make_clo(&ell_plus_code, NULL);
     
     __ell_g_exit_2_ = ell_make_clo(&ell_exit_code, NULL);
 }

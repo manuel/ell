@@ -29,7 +29,7 @@ str        = "\"" < [^"]* > "\""   { ell_parser_add_str(yytext); }
 num        = < "-"? [0-9]+ >       { ell_parser_add_num(yytext); }
 
 # Needs to be kept in sync with ellc_mangle_char in 'ellc.c'.
-sym-char   = [a-z0-9&_#/] | "-" | "<" | ">" | "*"
+sym-char   = [a-z0-9&_#/] | "-" | "<" | ">" | "*" | "+"
 sym        = < sym-char+ >         { ell_parser_add_sym(yytext); }
 
 lst        = OPEN exprs CLOSE
