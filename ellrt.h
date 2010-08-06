@@ -233,6 +233,8 @@ struct ell_num_int_data {
 
 struct ell_obj *
 ell_make_num(char *chars);
+struct ell_obj *
+ell_make_num_from_int(int i);
 int
 ell_num_int(struct ell_obj *num);
 
