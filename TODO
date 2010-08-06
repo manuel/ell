@@ -1,5 +1,6 @@
 -*-org-*-
 * Bugs
+** C statements and expressions
 ** Create built-in-class as metaclass for built-in classes
 Prohibit subclassing of built-in classes and slot accesses to
 instances of classes whose metaclass is built-in-class.
@@ -18,7 +19,10 @@ IOW, are macro names symbols or (hygiene-contextual) identifiers?
 * Language Enhancements
 ** Provide boundp that evaluates argument
 Via dlsym(3).
+** Backtrace
+How to handle C functions on stack?
 * Code Enhancements
 ** Keep track of all used symbols in unit and intern them only once at load-time
 Also for keyword arguments.
 ** Allocate string data using GC_alloc_atomic
+** Make gcc options of generated code configurable (e.g. -pg)
