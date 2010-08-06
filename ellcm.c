@@ -12,12 +12,14 @@ ellcm_server_process(int sd, struct ellcm_tx *tx)
 {
     struct ellcm_rx rx;
     if (tx->type == ELLCM_COMPILE) {
-        printf("; compiler: compiling %s\n", tx->data.compile.infile);
+        printf("; compiler: compiling %s ", tx->data.compile.infile);
+        fflush(stdout);
         rx.status = ellc_compile_file(tx->data.compile.infile,
                                       tx->data.compile.faslfile,
                                       tx->data.compile.cfaslfile);
     } else if (tx->type == ELLCM_LOAD) {
-        printf("; compiler: loading %s\n", tx->data.load.file);
+        printf("; compiler: loading %s ", tx->data.load.file);
+        fflush(stdout);
         dlerror();
         if (!dlopen(tx->data.load.file, RTLD_NOW | RTLD_GLOBAL)) {
             printf("%s\n", dlerror());
@@ -26,6 +28,7 @@ ellcm_server_process(int sd, struct ellcm_tx *tx)
         rx.status = 0;
     }
     if (rx.status == 0) {
+        printf("(done)\n");
         strcpy(rx.msg, "OK");
     } else {
         strcpy(rx.msg, "ERROR");        
@@ -200,7 +203,7 @@ ellcm_is_fasl_file(struct ellcm *cm, char *file)
 void
 ellcm_load_file(struct ellcm *cm, char *infile)
 {
-    printf("; loading %s\n", infile);
+    fflush(stdout);
     if (ellcm_is_source_file(cm, infile)) {
         char *faslfile = ell_alloc(L_tmpnam);
         char *cfaslfile = ell_alloc(L_tmpnam);
