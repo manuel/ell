@@ -85,6 +85,15 @@
                ,@body)
              ,@(map-list (lambda (binding) (send binding 'second)) bindings)))
 
+(defmacro do (vars test &rest body)
+  #`(let ,(map-list (lambda (var) (syntax-list (send var 'first)
+                                               (send var 'second)))
+                    vars)
+      (while ,test
+        (progn ,@body)
+        (progn ,@(map-list (lambda (var) #`(setq ,(send var 'first) ,(send var 'third)))
+                           vars)))))
+
 (defmacro defclass (name &optional (superclasses #'()) &rest slot-specs)
   #`(progn
       (defvar ,name (make-class))
