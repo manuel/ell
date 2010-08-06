@@ -115,10 +115,15 @@ struct ell_obj *ell_dongle;
 struct ell_clo_data {
     ell_code *code;
     void *env;
+    struct ell_obj *name; // sym
 };
 
 struct ell_obj *
 ell_make_clo(ell_code *code, void *env);
+struct ell_obj *
+ell_make_named_clo(ell_code *code, void *env, struct ell_obj *name_sym);
+struct ell_obj *
+ell_clo_name(struct ell_obj *clo);
 struct ell_obj *
 ell_call_unchecked(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args);
 struct ell_obj *

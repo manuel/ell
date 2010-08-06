@@ -42,8 +42,9 @@ ELL_DEFSYM(core_c_statement, "c-statement")
 ELL_DEFSYM(core_c_expression, "c-expression")
 ELL_DEFSYM(core_c_snip, "c-snip")
 
-/**** Built-in functions: ****/
+/**** Built-in symbols: ****/
 
+ELL_DEFSYM(anonymous, "anonymous")
 ELL_DEFSYM(add, "add")
 ELL_DEFSYM(first, "first")
 ELL_DEFSYM(second, "second")

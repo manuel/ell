@@ -208,11 +208,26 @@ ell_is_instance(struct ell_obj *obj, struct ell_obj *class)
 struct ell_obj *
 ell_make_clo(ell_code *code, void *env)
 {
+    return ell_make_named_clo(code, env, ELL_SYM(anonymous));
+}
+
+struct ell_obj *
+ell_make_named_clo(ell_code *code, void *env, struct ell_obj *name_sym)
+{
+    ell_assert_wrapper(name_sym, ELL_WRAPPER(sym));
     struct ell_clo_data *data =
         (struct ell_clo_data *) ell_alloc(sizeof(*data));
     data->code = code;
     data->env = env;
-    return ell_make_obj(ELL_WRAPPER(clo), data);
+    data->name = name_sym;
+    return ell_make_obj(ELL_WRAPPER(clo), data);    
+}
+
+struct ell_obj *
+ell_clo_name(struct ell_obj *clo)
+{
+    ell_assert_wrapper(clo, ELL_WRAPPER(clo));
+    return ((struct ell_clo_data *) clo->data)->name;
 }
 
 struct ell_obj *
@@ -799,7 +814,7 @@ ELL_END
 
 ELL_DEFMETHOD(clo, print_object, 1)
 ELL_PARAM(self, 0)
-printf("%s", "#<function>");
+printf("#<function %s>", ell_str_chars(ell_sym_name(ell_clo_name(self))));
 return ell_unspecified;
 ELL_END
 
@@ -1370,7 +1385,13 @@ ell_stacktrace_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
     char **names = backtrace_symbols(buffer, ct);
     int i = 0;
 
+    int skip_frames = 3; // own frame, ell_call_unchecked, ell_call
     struct ell_obj **frame = __builtin_frame_address(0);
+    for (int j = 0; i < skip_frames; j++) {
+        frame = (struct ell_obj **) *(frame);
+        i++;
+    }
+
     while (frame) {
         struct ell_obj *the_dongle = *(frame + 6);
         if (the_dongle == ell_dongle) {
@@ -1378,15 +1399,18 @@ ell_stacktrace_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
             ell_arg_ct the_npos = (ell_arg_ct) *(frame + 3);
             ell_arg_ct the_nkey = (ell_arg_ct) *(frame + 4);
             struct ell_obj **args = (struct ell_obj **) *(frame + 5);
-            printf("* LISP function %p %s\n", the_clo, names[i]);
-            printf("\t%u pos args, %u key args\n", the_npos, the_nkey);
+            printf("* LISP %s\n", names[i]);
+            printf("  (%s%s",
+                   ell_str_chars(ell_sym_name(ell_clo_name(the_clo))),
+                   the_npos ? " " : "");
             for (int i = 0; i < the_npos; i++) {
-                printf("\t\tpos[%u] = ", i);
                 ELL_SEND(args[i], print_object);
-                printf("\n");
+                if ((i + 1) < the_npos)
+                    printf(" ");
             }
+            printf(")\n");
         } else {
-            printf("* C function %p %s\n", buffer[i], names[i]);
+            printf("* C %s\n", names[i]);
         }
         frame = (struct ell_obj **) *(frame);
         i++;

@@ -64,6 +64,7 @@ struct ellc_ast_app {
 struct ellc_ast_lam {
     struct ellc_params *params;
     struct ellc_ast *body;
+    struct ell_obj *name; // sym
     dict_t *env;
     unsigned code_id;
 };

@@ -418,7 +418,7 @@ ellc_dissect_params(struct ellc_st *st, list_t *params_stx, dict_t *deferred_ini
 static struct ellc_ast *
 ellc_norm_lam(struct ellc_st *st, struct ell_obj *stx_lst)
 {
-    ell_assert_stx_lst_len(stx_lst, 3);
+    ell_assert_stx_lst_len(stx_lst, 4);
     struct ell_obj *params_stx = ELL_SEND(stx_lst, second);
     ell_assert_wrapper(params_stx, ELL_WRAPPER(stx_lst));
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_LAM);
@@ -442,6 +442,7 @@ ellc_norm_lam(struct ellc_st *st, struct ell_obj *stx_lst)
 
     ast->lam.body = ellc_norm_stx(st, ELL_SEND(stx_lst, third));
     ast->lam.env = ell_util_make_dict((dict_comp_t) &ellc_id_cmp); // unused during norm.
+    ast->lam.name = ell_stx_sym_sym(ELL_SEND(stx_lst, fourth));
     st->bottom_contour = c->up;
     return ast;
 }
@@ -1394,10 +1395,16 @@ ellc_emit_lam(struct ellc_st *st, struct ellc_ast *ast)
     }
     // create closure
     if (dict_count(lam->env) > 0) {
-        fprintf(st->f, "ell_make_clo(&__ell_code_%u, __lam_env);", lam->code_id);
+        fprintf(st->f, "ell_make_named_clo(&__ell_code_%u, __lam_env, ",
+                lam->code_id);
     } else {
-        fprintf(st->f, "ell_make_clo(&__ell_code_%u, NULL);", lam->code_id);
+        fprintf(st->f, "ell_make_named_clo(&__ell_code_%u, NULL, ",
+                lam->code_id);
     }
+    fprintf(st->f, "ell_intern(ell_make_str(\"%s\"))",
+            ell_str_chars(ell_sym_name(lam->name)));
+    fprintf(st->f, ");");
+
     fprintf(st->f, "})");
 
     st->in_quasisyntax = in_quasisyntax_tmp;

@@ -4,8 +4,8 @@
         (ell-lam (macro-call-form)
           (apply-syntax-list
             (ell-lam ,(send defmacro-form 'third)
-              ,(send defmacro-form 'fourth))
-            (syntax-list-rest macro-call-form))))))
+              ,(send defmacro-form 'fourth) anonymous)
+            (syntax-list-rest macro-call-form)) anonymous)) anonymous))
 
 (defmacro defsyntax (name expander)
   #`(ell-mdef ,name ,expander))
@@ -14,7 +14,7 @@
   #`(ell-seq ,@exprs))
 
 (defmacro lambda (sig &rest body)
-  #`(ell-lam ,sig (progn ,@body)))
+  #`(ell-lam ,sig (progn ,@body) anonymous))
 
 (defmacro if (test then &optional (else #'unspecified))
   #`(ell-cond ,test ,then ,else))
@@ -44,7 +44,7 @@
   #`(progn (ell-fdef ,name ,function) ',name))
 
 (defmacro defun (name sig &rest body)
-  #`(defun/f ,name (lambda ,sig ,@body)))
+  #`(defun/f ,name (ell-lam ,sig ,@body ,name)))
 
 (defmacro funcall (fun &rest args)
   #`(ell-app ,fun ,@args))
