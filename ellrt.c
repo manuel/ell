@@ -843,7 +843,7 @@ ell_stx_lst_print_process(list_t *list, lnode_t *node, void *unused)
 
 ELL_DEFMETHOD(stx_lst, print_object, 1)
 ELL_PARAM(stx_lst, 0)
-printf("(");
+printf("#'(");
 list_process(ell_stx_lst_elts(stx_lst), NULL, &ell_stx_lst_print_process);
 printf(")");
 return ell_unspecified;
@@ -857,7 +857,7 @@ ELL_END
 
 ELL_DEFMETHOD(stx_str, print_object, 1)
 ELL_PARAM(stx_str, 0)
-printf("%s", ell_str_chars(ell_stx_str_str(stx_str)));
+printf("\"%s\"", ell_str_chars(ell_stx_str_str(stx_str)));
 return ell_unspecified;
 ELL_END
 
