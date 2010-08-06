@@ -1347,6 +1347,21 @@ ell_exit_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey, struct ell_
     return NULL;
 }
 
+/* (< num1 num2) -> boolean */
+
+struct ell_obj *__ell_g_L_2_;
+
+struct ell_obj *
+ell_less_than_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args)
+{
+    ell_check_npos(2, npos);
+    struct ell_obj *num1 = args[0];
+    struct ell_obj *num2 = args[1];
+    ell_assert_wrapper(num1, ELL_WRAPPER(num_int));
+    ell_assert_wrapper(num2, ELL_WRAPPER(num_int));
+    return ell_truth(ell_num_int(num1) < ell_num_int(num2));
+}
+
 /**** Export built-in classes to Lisp ****/
 
 struct ell_obj *__ell_g_LbooleanG_1_;
@@ -1355,6 +1370,7 @@ struct ell_obj *__ell_g_LfunctionG_1_;
 struct ell_obj *__ell_g_LlinkedDlistG_1_;
 struct ell_obj *__ell_g_LlistDrangeG_1_;
 struct ell_obj *__ell_g_LstringG_1_;
+struct ell_obj *__ell_g_LintegerG_1_;
 struct ell_obj *__ell_g_LsymbolG_1_;
 struct ell_obj *__ell_g_LsyntaxDlistG_1_;
 struct ell_obj *__ell_g_LsyntaxDstringG_1_;
@@ -1387,6 +1403,7 @@ ell_init()
     __ell_g_LlinkedDlistG_1_ = ELL_CLASS(lst);
     __ell_g_LlistDrangeG_1_ = ELL_CLASS(list_range);
     __ell_g_LstringG_1_ = ELL_CLASS(str);
+    __ell_g_LintegerG_1_ = ELL_CLASS(num_int);
     __ell_g_LsymbolG_1_ = ELL_CLASS(sym);
     __ell_g_LsyntaxDlistG_1_ = ELL_CLASS(stx_lst);
     __ell_g_LsyntaxDstringG_1_ = ELL_CLASS(stx_str);
@@ -1435,5 +1452,7 @@ ell_init()
     __ell_g_handlerDpush_2_ = ell_make_clo(&ell_handler_push_code, NULL);
     __ell_g_signal_2_ = ell_make_clo(&ell_signal_code, NULL);
 
+    __ell_g_L_2_ = ell_make_clo(&ell_less_than_code, NULL);
+    
     __ell_g_exit_2_ = ell_make_clo(&ell_exit_code, NULL);
 }
