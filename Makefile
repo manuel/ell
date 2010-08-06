@@ -20,4 +20,4 @@ ell-compile: $(OBJECTS) ell-compile.o
 
 .PHONY: clean
 clean:
-	@rm -f *.o *.fasl ell-repl ell-compile
+	@rm -f *.o *.fasl gmon.out ell-repl ell-compile
