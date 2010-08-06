@@ -7,6 +7,9 @@ OBJECTS = ellrt.o ellc.o ellcm.o dict.o list.o
 fasls: $(OBJECTS) boot.lisp all
 	./ell-compile -c boot.lisp
 
+grammar:
+	leg -o grammar.c grammar.leg
+
 all: ell-repl ell-compile
 
 ell-repl: $(OBJECTS) ell-repl.o

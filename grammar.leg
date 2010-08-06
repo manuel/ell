@@ -10,20 +10,14 @@ ell_parser_push();
 void
 ell_parser_pop();
 void
-ell_parser_push_quote();
-void
-ell_parser_push_syntax();
-void
-ell_parser_push_quasisyntax();
-void
-ell_parser_push_unsyntax();
-void
-ell_parser_push_unsyntax_splicing();
+ell_parser_push_special(struct ell_obj *sym);
 %}
 
 unit       = exprs eof
 exprs      = spc? (expr spc?)*
-expr       = quote | syntax | quasisyntax | unsyntax | unsyntax-splicing | str | num | sym | lst | doc
+expr =
+  quote | syntax | quasisyntax | unsyntax | unsyntax-splicing | str |
+  num | sym | lst | doc
 
 str        = "\"" < [^"]* > "\""   { ell_parser_add_str(yytext); }
 num        = < "-"? [0-9]+ >       { ell_parser_add_num(yytext); }
@@ -37,17 +31,28 @@ lst        = OPEN exprs CLOSE
 OPEN       = "("                   { ell_parser_push(); }
 CLOSE      = ")"                   { ell_parser_pop(); }
 
-quote             = "\'"  { ell_parser_push_quote(); }             expr { ell_parser_pop(); }
-syntax            = "#'"  { ell_parser_push_syntax(); }            expr { ell_parser_pop(); }
-quasisyntax       = "#`"  { ell_parser_push_quasisyntax(); }       expr { ell_parser_pop(); }
-unsyntax          = ","   { ell_parser_push_unsyntax(); }          expr { ell_parser_pop(); }
-unsyntax-splicing = ",@"  { ell_parser_push_unsyntax_splicing(); } expr { ell_parser_pop(); }
+quote = 
+  "\'" { ell_parser_push_special(ELL_SYM(core_quote)); } 
+  expr  { ell_parser_pop(); }
+syntax =
+  "#'" { ell_parser_push_special(ELL_SYM(core_syntax)); } 
+  expr  { ell_parser_pop(); }
+quasisyntax = "#`"
+  { ell_parser_push_special(ELL_SYM(core_quasisyntax)); } 
+  expr { ell_parser_pop(); }
+unsyntax = ","
+  { ell_parser_push_special(ELL_SYM(core_unsyntax)); }
+  expr  { ell_parser_pop(); }
+unsyntax-splicing = 
+  ",@" { ell_parser_push_special(ELL_SYM(core_unsyntax_splicing)); }
+  expr  { ell_parser_pop(); }
 
-doc        = "$" { ell_parser_push(); }
-             sym? ("[" exprs "]")? ("{" contents* "}")? 
-             { ell_parser_pop(); }
-contents   = < [^$}]+ > { ell_parser_add_str(yytext); }
-           | doc
+doc = 
+  "$" { ell_parser_push(); }
+  sym? ("[" exprs "]")? ("{" contents* "}")? { ell_parser_pop(); }
+contents = 
+    < [^$}]+ > { ell_parser_add_str(yytext); }
+  | doc
 
 spc-char   = [ \t] | eol
 spc        = spc-char+

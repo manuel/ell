@@ -16,15 +16,7 @@ ell_parser_push();
 void
 ell_parser_pop();
 void
-ell_parser_push_quote();
-void
-ell_parser_push_syntax();
-void
-ell_parser_push_quasisyntax();
-void
-ell_parser_push_unsyntax();
-void
-ell_parser_push_unsyntax_splicing();
+ell_parser_push_special(struct ell_obj *sym);
 
 #ifndef YY_VARIABLE
 #define YY_VARIABLE(T)	static T
@@ -281,7 +273,7 @@ YY_ACTION(void) yy_2_unsyntax_splicing(char *yytext, int yyleng)
 YY_ACTION(void) yy_1_unsyntax_splicing(char *yytext, int yyleng)
 {
   yyprintf((stderr, "do yy_1_unsyntax_splicing\n"));
-   ell_parser_push_unsyntax_splicing(); ;
+   ell_parser_push_special(ELL_SYM(core_unsyntax_splicing)); ;
 }
 YY_ACTION(void) yy_2_unsyntax(char *yytext, int yyleng)
 {
@@ -291,7 +283,7 @@ YY_ACTION(void) yy_2_unsyntax(char *yytext, int yyleng)
 YY_ACTION(void) yy_1_unsyntax(char *yytext, int yyleng)
 {
   yyprintf((stderr, "do yy_1_unsyntax\n"));
-   ell_parser_push_unsyntax(); ;
+   ell_parser_push_special(ELL_SYM(core_unsyntax)); ;
 }
 YY_ACTION(void) yy_2_quasisyntax(char *yytext, int yyleng)
 {
@@ -301,7 +293,7 @@ YY_ACTION(void) yy_2_quasisyntax(char *yytext, int yyleng)
 YY_ACTION(void) yy_1_quasisyntax(char *yytext, int yyleng)
 {
   yyprintf((stderr, "do yy_1_quasisyntax\n"));
-   ell_parser_push_quasisyntax(); ;
+   ell_parser_push_special(ELL_SYM(core_quasisyntax)); ;
 }
 YY_ACTION(void) yy_2_syntax(char *yytext, int yyleng)
 {
@@ -311,7 +303,7 @@ YY_ACTION(void) yy_2_syntax(char *yytext, int yyleng)
 YY_ACTION(void) yy_1_syntax(char *yytext, int yyleng)
 {
   yyprintf((stderr, "do yy_1_syntax\n"));
-   ell_parser_push_syntax(); ;
+   ell_parser_push_special(ELL_SYM(core_syntax)); ;
 }
 YY_ACTION(void) yy_2_quote(char *yytext, int yyleng)
 {
@@ -321,7 +313,7 @@ YY_ACTION(void) yy_2_quote(char *yytext, int yyleng)
 YY_ACTION(void) yy_1_quote(char *yytext, int yyleng)
 {
   yyprintf((stderr, "do yy_1_quote\n"));
-   ell_parser_push_quote(); ;
+   ell_parser_push_special(ELL_SYM(core_quote)); ;
 }
 YY_ACTION(void) yy_1_CLOSE(char *yytext, int yyleng)
 {
