@@ -1,0 +1,5 @@
+To build:
+> make
+
+Then start REPL with:
+> ./ell

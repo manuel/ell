@@ -1,7 +1,7 @@
 /***** Executable and Linkable Lisp REPL *****/
 
 /*
-  ell [-x compile-time.fasl]* [-l file]*
+  ell-repl [-x compile-time.fasl]* [-l file]*
   
   Compiles and loads Lisp source files, and provides a read-eval-print loop.
 
@@ -21,7 +21,7 @@
 static void
 ell_repl(struct ellcm *cm)
 {
-    printf("Welcome to ell!\nExit with (exit).\n");
+    printf("Welcome to ell!\nExit with (exit) or ^C.\n");
     for(;;) {
         char *line = readline("> ");
         struct ell_obj *result = ellcm_eval(cm, line);

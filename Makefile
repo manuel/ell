@@ -4,14 +4,17 @@ LDFLAGS=-rdynamic -lgc -ldl -lreadline -luuid -pg
 
 OBJECTS = ellrt.o ellc.o ellcm.o dict.o list.o
 
-all: ell ell-compile
+fasls: $(OBJECTS) boot.lisp all
+	./ell-compile -c boot.lisp
 
-ell: $(OBJECTS) ell.o
-	$(LD) $(LDFLAGS) $(OBJECTS) ell.o -o ell
+all: ell-repl ell-compile
+
+ell-repl: $(OBJECTS) ell-repl.o
+	$(LD) $(LDFLAGS) $(OBJECTS) ell-repl.o -o ell-repl
 
 ell-compile: $(OBJECTS) ell-compile.o
 	$(LD) $(LDFLAGS) $(OBJECTS) ell-compile.o -o ell-compile
 
 .PHONY: clean
 clean:
-	@rm -f *.o *.fasl ell ell-compile
+	@rm -f *.o *.fasl ell-repl ell-compile

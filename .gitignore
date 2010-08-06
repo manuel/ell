@@ -1,6 +1,6 @@
 *~
 *.o
 *.fasl
-ell
+ell-repl
 ell-compile
 .work
