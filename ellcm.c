@@ -128,13 +128,48 @@ ellcm_eval(struct ellcm *cm, char *s)
     return ell_result;
 }
 
+const char ellcm_lisp_suffix[] = ".lisp";
+const size_t ellcm_lisp_suffix_len = sizeof(ellcm_lisp_suffix) - 1;
+const char ellcm_fasl_suffix[] = ".fasl";
+const size_t ellcm_fasl_suffix_len = sizeof(ellcm_fasl_suffix) - 1;
+
+bool
+ellcm_is_source_file(struct ellcm *cm, char *file)
+{
+    size_t len = strlen(file);
+    if (len < ellcm_lisp_suffix_len) return false;
+    return 0 == strncmp(file + len - ellcm_lisp_suffix_len,
+                        ellcm_lisp_suffix,
+                        ellcm_lisp_suffix_len);
+}
+
+bool
+ellcm_is_fasl_file(struct ellcm *cm, char *file)
+{
+    size_t len = strlen(file);
+    if (len < ellcm_fasl_suffix_len) return false;
+    return 0 == strncmp(file + len - ellcm_fasl_suffix_len,
+                        ellcm_fasl_suffix,
+                        ellcm_fasl_suffix_len);
+}
+
 void
 ellcm_load_file(struct ellcm *cm, char *infile)
 {
-    char *faslfile = ell_alloc(L_tmpnam);
-    char *cfaslfile = ell_alloc(L_tmpnam);
-    tmpnam(faslfile);
-    tmpnam(cfaslfile);
-    ellcm_compile_file(cm, infile, faslfile, cfaslfile);
-    dlopen(faslfile, RTLD_NOW | RTLD_GLOBAL);
+    if (ellcm_is_source_file(cm, infile)) {
+        char *faslfile = ell_alloc(L_tmpnam);
+        char *cfaslfile = ell_alloc(L_tmpnam);
+        tmpnam(faslfile);
+        tmpnam(cfaslfile);
+        ellcm_compile_file(cm, infile, faslfile, cfaslfile);
+        dlopen(faslfile, RTLD_NOW | RTLD_GLOBAL);
+    } else if (ellcm_is_fasl_file(cm, infile)) {
+        dlerror();
+        if (!dlopen(infile, RTLD_NOW | RTLD_GLOBAL)) {
+            printf("%s\n", dlerror());
+            ell_fail("can't load file %s\n", infile);
+        }
+    } else {
+        ell_fail("can't load file %s\n", infile);
+    }
 }
