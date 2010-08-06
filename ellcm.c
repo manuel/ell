@@ -12,13 +12,11 @@ ellcm_server_process(int sd, struct ellcm_tx *tx)
 {
     struct ellcm_rx rx;
     if (tx->type == ELLCM_COMPILE) {
-        printf("; compiler: compiling %s ", tx->data.compile.infile);
         fflush(stdout);
         rx.status = ellc_compile_file(tx->data.compile.infile,
                                       tx->data.compile.faslfile,
                                       tx->data.compile.cfaslfile);
     } else if (tx->type == ELLCM_LOAD) {
-        printf("; compiler: loading %s ", tx->data.load.file);
         fflush(stdout);
         dlerror();
         if (!dlopen(tx->data.load.file, RTLD_NOW | RTLD_GLOBAL)) {
@@ -28,7 +26,6 @@ ellcm_server_process(int sd, struct ellcm_tx *tx)
         rx.status = 0;
     }
     if (rx.status == 0) {
-        printf("(done)\n");
         strcpy(rx.msg, "OK");
     } else {
         strcpy(rx.msg, "ERROR");        
