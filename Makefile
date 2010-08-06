@@ -4,6 +4,8 @@ LDFLAGS=-rdynamic -lgc -ldl -lreadline -luuid -pg
 
 OBJECTS = ellrt.o ellc.o ellcm.o dict.o list.o
 
+all: ell ell-compile
+
 ell: $(OBJECTS) ell.o
 	$(LD) $(LDFLAGS) $(OBJECTS) ell.o -o ell
 

@@ -1,9 +1,14 @@
-/***** File Compilation Tool *****/
+/***** Executable and Linkable Lisp File Compilation Tool *****/
 
 /*
   ell-compile [-x compile-time.fasl]* [-c file.lisp]*
-
+  
   Produces FASL and CFASL files for input files.
+
+  Arguments:
+
+  -c file.lisp---A file to compile.
+  -x compile-time.fasl---A file to load at compile-time.
 */
 
 #define _GNU_SOURCE

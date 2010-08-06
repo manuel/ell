@@ -1,4 +1,15 @@
-/***** Executable and Linkable Lisp *****/
+/***** Executable and Linkable Lisp REPL *****/
+
+/*
+  ell [-x compile-time.fasl]* [-l file]*
+  
+  Compiles and loads Lisp source files, and provides a read-eval-print loop.
+
+  Arguments:
+
+  -l file---A Lisp source file to compile and load, or a FASL to load.
+  -x compile-time.fasl---A file to load at compile-time.
+*/
 
 #include <getopt.h>
 #include <stdio.h>
