@@ -421,6 +421,6 @@ void
 ell_print_backtrace();
 
 #define ell_fail(...) \
-    ({ printf(__VA_ARGS__); printf("\n"); ell_print_backtrace(); exit(EXIT_FAILURE); })
+    ({ printf(__VA_ARGS__); ell_print_backtrace(); exit(EXIT_FAILURE); })
 
 #endif
