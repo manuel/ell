@@ -758,6 +758,14 @@ ellc_norm_lit_str(struct ellc_st *st, struct ell_obj *stx)
     return ast;
 }
 
+static struct ellc_ast *
+ellc_norm_lit_num(struct ellc_st *st, struct ell_obj *stx)
+{
+    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_LIT_NUM);
+    ast->lit_num.num = ell_stx_num_num(stx);
+    return ast;
+}
+
 /* Main normalization function.  Takes syntax object as input, and
    returns AST.  Special handling for classic Lisp evaluation rules:
    symbols evaluate to the variables they name; lists evaluate to
@@ -773,6 +781,8 @@ ellc_norm_stx(struct ellc_st *st, struct ell_obj *stx)
         return ellc_norm_lst(st, stx);
     } else if (stx->wrapper == ELL_WRAPPER(stx_str)) {
         return ellc_norm_lit_str(st, stx);
+    } else if (stx->wrapper == ELL_WRAPPER(stx_num)) {
+        return ellc_norm_lit_num(st, stx);
     } else {
         printf("syntax normalization failure\n");
         exit(EXIT_FAILURE);
@@ -1002,6 +1012,7 @@ ellc_conv_ast(struct ellc_st *st, struct ellc_ast *ast)
     case ELLC_AST_LOOP: ellc_conv_loop(st, ast); break;
     case ELLC_AST_LIT_SYM: break;
     case ELLC_AST_LIT_STR: break;
+    case ELLC_AST_LIT_NUM: break;
     case ELLC_AST_LIT_STX: break;
     case ELLC_AST_CX: ellc_conv_cx(st, ast); break;
     default:
@@ -1340,13 +1351,25 @@ ellc_emit_loop(struct ellc_st *st, struct ellc_ast *ast)
 static void
 ellc_emit_lit_sym(struct ellc_st *st, struct ellc_ast *ast)
 {
-    fprintf(st->f, "ell_intern(ell_make_str(\"%s\"))", ell_str_chars(ell_sym_name(ast->lit_sym.sym)));
+    // kludge
+    fprintf(st->f, "ell_intern(ell_make_str(\"%s\"))",
+            ell_str_chars(ell_sym_name(ast->lit_sym.sym)));
 }
 
 static void
 ellc_emit_lit_str(struct ellc_st *st, struct ellc_ast *ast)
 {
-    fprintf(st->f, "ell_make_str(\"%s\")", ell_str_chars(ast->lit_str.str));
+    // kludge
+    fprintf(st->f, "ell_make_str(\"%s\")",
+            ell_str_chars(ast->lit_str.str));
+}
+
+static void
+ellc_emit_lit_num(struct ellc_st *st, struct ellc_ast *ast)
+{
+    // kludge
+    fprintf(st->f, "ell_make_num(\"%d\")",
+            ell_num_int(ast->lit_num.num));
 }
 
 static void
@@ -1403,6 +1426,7 @@ ellc_emit_ast(struct ellc_st *st, struct ellc_ast *ast)
     case ELLC_AST_LOOP: ellc_emit_loop(st, ast); break;
     case ELLC_AST_LIT_SYM: ellc_emit_lit_sym(st, ast); break;
     case ELLC_AST_LIT_STR: ellc_emit_lit_str(st, ast); break;
+    case ELLC_AST_LIT_NUM: ellc_emit_lit_num(st, ast); break;
     case ELLC_AST_LIT_STX: ellc_emit_lit_stx(st, ast); break;
     case ELLC_AST_CX: ellc_emit_cx(st, ast); break;
     default:

@@ -89,6 +89,11 @@ struct ellc_ast_lit_str {
     struct ell_obj *str;
 };
 
+/* Literal number. */
+struct ellc_ast_lit_num {
+    struct ell_obj *num;
+};
+
 /* Literal syntax object, produced by QUASISYNTAX. */
 struct ellc_ast_lit_stx {
     struct ell_obj *stx; // ast?
@@ -161,6 +166,7 @@ enum ellc_ast_type {
     ELLC_AST_LIT_SYM = 201,
     ELLC_AST_LIT_STR = 202,
     ELLC_AST_LIT_STX = 203,
+    ELLC_AST_LIT_NUM = 204,
 };
 
 struct ellc_ast {
@@ -186,6 +192,7 @@ struct ellc_ast {
 
         struct ellc_ast_lit_sym lit_sym;
         struct ellc_ast_lit_str lit_str;
+        struct ellc_ast_lit_num lit_num;
         struct ellc_ast_lit_stx lit_stx;
     };
 };

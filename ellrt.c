@@ -44,6 +44,13 @@ ell_parser_add_str(char *chars)
 }
 
 void
+ell_parser_add_num(char *chars)
+{
+    struct ell_obj *stx_num = ell_make_stx_num(ell_make_num(chars));
+    ELL_SEND(ell_parser_stack_top->parser_data, add, stx_num);
+}
+
+void
 ell_parser_push_special(struct ell_obj *sym)
 {
     struct ell_parser_stack *new = 
@@ -462,6 +469,23 @@ ell_str_poplast(struct ell_obj *str)
         return ell_make_strn(chars, len - 1);
 }
 
+/**** Numbers ****/
+
+struct ell_obj *
+ell_make_num(char *chars)
+{
+    struct ell_num_int_data *data = (struct ell_num_int_data *) ell_alloc(sizeof(*data));
+    data->int_value = atoi(chars);
+    return ell_make_obj(ELL_WRAPPER(num_int), data);
+}
+
+int
+ell_num_int(struct ell_obj *num)
+{
+    ell_assert_wrapper(num, ELL_WRAPPER(num_int));
+    return ((struct ell_num_int_data *) num->data)->int_value;
+}
+
 /**** Symbols ****/
 
 static struct ell_obj *
@@ -530,6 +554,15 @@ ell_make_stx_str(struct ell_obj *str)
 }
 
 struct ell_obj *
+ell_make_stx_num(struct ell_obj *num)
+{
+    ell_assert_wrapper(num, ELL_WRAPPER(num_int)); // kludge: check for typep
+    struct ell_stx_num_data *data = (struct ell_stx_num_data *) ell_alloc(sizeof(*data));
+    data->num = num;
+    return ell_make_obj(ELL_WRAPPER(stx_num), data);
+}
+
+struct ell_obj *
 ell_make_stx_lst()
 {
     struct ell_stx_lst_data *data = (struct ell_stx_lst_data *) ell_alloc(sizeof(*data));
@@ -556,6 +589,13 @@ ell_stx_str_str(struct ell_obj *stx_str)
 {
     ell_assert_wrapper(stx_str, ELL_WRAPPER(stx_str));
     return ((struct ell_stx_str_data *) stx_str->data)->str;
+}
+
+struct ell_obj *
+ell_stx_num_num(struct ell_obj *stx_num)
+{
+    ell_assert_wrapper(stx_num, ELL_WRAPPER(stx_num));
+    return ((struct ell_stx_num_data *) stx_num->data)->num;
 }
 
 list_t *
@@ -761,6 +801,12 @@ ELL_END
 ELL_DEFMETHOD(str, print_object, 1)
 ELL_PARAM(str, 0)
 printf("\"%s\"", ell_str_chars(str));
+return ell_unspecified;
+ELL_END
+
+ELL_DEFMETHOD(num_int, print_object, 1)
+ELL_PARAM(num, 0)
+printf("%d", ell_num_int(num));
 return ell_unspecified;
 ELL_END
 

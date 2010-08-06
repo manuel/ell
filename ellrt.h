@@ -222,6 +222,17 @@ ell_str_char_at(struct ell_obj *str, size_t i);
 struct ell_obj *
 ell_str_poplast(struct ell_obj *str);
 
+/**** Numbers ****/
+
+struct ell_num_int_data {
+    int int_value;
+};
+
+struct ell_obj *
+ell_make_num(char *chars);
+int
+ell_num_int(struct ell_obj *num);
+
 /**** Symbols ****/
 
 struct dict_t ell_sym_tab; // char* -> sym
@@ -303,6 +314,10 @@ struct ell_stx_str_data {
     struct ell_obj *str;
 };
 
+struct ell_stx_num_data {
+    struct ell_obj *num;
+};
+
 struct ell_stx_lst_data {
     list_t elts;
 };
@@ -314,6 +329,8 @@ ell_make_stx_sym_cx(struct ell_obj *sym, struct ell_cx *cx);
 struct ell_obj *
 ell_make_stx_str(struct ell_obj *str);
 struct ell_obj *
+ell_make_stx_num(struct ell_obj *num);
+struct ell_obj *
 ell_make_stx_lst();
 struct ell_obj *
 ell_stx_sym_sym(struct ell_obj *stx_sym);
@@ -321,6 +338,8 @@ struct ell_cx *
 ell_stx_sym_cx(struct ell_obj *stx_sym);
 struct ell_obj *
 ell_stx_str_str(struct ell_obj *stx_str);
+struct ell_obj *
+ell_stx_num_num(struct ell_obj *stx_num);
 list_t *
 ell_stx_lst_elts(struct ell_obj *stx_lst);
 listcount_t

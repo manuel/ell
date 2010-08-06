@@ -4,6 +4,8 @@ ell_parser_add_sym(char *chars);
 void
 ell_parser_add_str(char *chars);
 void
+ell_parser_add_num(char *chars);
+void
 ell_parser_push();
 void
 ell_parser_pop();
@@ -21,9 +23,10 @@ ell_parser_push_unsyntax_splicing();
 
 unit       = exprs eof
 exprs      = spc? (expr spc?)+
-expr       = quote | syntax | quasisyntax | unsyntax | unsyntax-splicing | str | sym | lst
+expr       = quote | syntax | quasisyntax | unsyntax | unsyntax-splicing | str | num | sym | lst
 
 str        = "\"" < [^"]* > "\""   { ell_parser_add_str(yytext); }
+num        = < "-"? [0-9]+ >       { ell_parser_add_num(yytext); }
 
 # Needs to be kept in sync with ellc_mangle_char in 'ellc.c'.
 sym-char   = [a-z0-9&_#/] | "-" | "<" | ">" | "*"
