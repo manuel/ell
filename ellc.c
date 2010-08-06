@@ -696,14 +696,15 @@ ellc_make_snips(struct ellc_st *st, struct ell_obj *stx_lst)
         struct ell_obj *stx = ELL_SEND(range, front);
         if (stx->wrapper == ELL_WRAPPER(stx_str)) {
             struct ell_obj *snip_stx = ell_make_stx_lst();
-            ELL_SEND(snip_stx, add, ELL_SYM(core_c_snip));
+            ELL_SEND(snip_stx, add, ell_make_stx_sym(ELL_SYM(core_c_snip)));
+            ELL_SEND(snip_stx, add, stx);
             ELL_SEND(seq_stx, add, snip_stx);
         } else {
             ELL_SEND(seq_stx, add, stx);
         }
         ELL_SEND(range, pop_front);
     }
-    return ellc_norm_stx(st, seq_stx);
+    return ellc_norm_seq(st, seq_stx);
 }
 
 static struct ellc_ast *
@@ -776,7 +777,8 @@ ellc_init()
                       &ellc_norm_c_snip);
     // Compiler state
     dict_init(&ellc_mac_tab, DICTCOUNT_T_MAX, (dict_comp_t) &ell_sym_cmp);
-    __ell_g_compilerDputDexpander_2_ = ell_make_clo(&ellc_compiler_put_expander_code, NULL);
+    __ell_g_compilerDputDexpander_2_ =
+        ell_make_clo(&ellc_compiler_put_expander_code, NULL);
 }
 
 static struct ellc_ast *
