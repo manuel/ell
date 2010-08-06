@@ -836,7 +836,7 @@ ELL_END
 
 ELL_DEFMETHOD(stx_lst, print_object, 1)
 ELL_PARAM(stx_lst, 0)
-printf("#'(");
+printf("(");
 struct ell_obj *range = ELL_SEND(stx_lst, all);
 while(!ell_is_true(ELL_SEND(range, emptyp))) {
     struct ell_obj *stx = ELL_SEND(range, front);
