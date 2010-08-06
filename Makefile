@@ -1,6 +1,6 @@
-CFLAGS=-std=c99 -g -pg
+CFLAGS=-std=c99 -g
 LD=gcc
-LDFLAGS=-rdynamic -lgc -ldl -lreadline -luuid -pg
+LDFLAGS=-rdynamic -lgc -ldl -lreadline -luuid
 
 OBJECTS = ellrt.o ellc.o ellcm.o dict.o list.o
 
