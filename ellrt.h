@@ -39,6 +39,7 @@ struct ell_obj {
 };
 
 struct ell_class_data {
+    struct ell_obj *name;
     list_t *superclasses;
     struct ell_wrapper *wrapper;
 };
@@ -62,7 +63,7 @@ void
 ell_assert_wrapper(struct ell_obj *obj, struct ell_wrapper *wrapper);
 
 struct ell_obj *
-ell_make_class();
+ell_make_class(struct ell_obj *name);
 void
 ell_add_superclass(struct ell_obj *class, struct ell_obj *superclass);
 list_t *
@@ -71,6 +72,8 @@ struct ell_wrapper *
 ell_class_wrapper(struct ell_obj *class);
 bool
 ell_is_subclass(struct ell_obj *class, struct ell_obj *superclass);
+struct ell_obj *
+ell_class_name(struct ell_obj *class);
 
 #define ELL_CLASS(name) __ell_class_##name
 #define ELL_WRAPPER(name) __ell_wrapper_##name
@@ -80,7 +83,7 @@ ell_is_subclass(struct ell_obj *class, struct ell_obj *superclass);
 struct ell_obj *ELL_CLASS(class);
 struct ell_wrapper *ELL_WRAPPER(class);
 
-#define ELL_DEFCLASS(name)                      \
+#define ELL_DEFCLASS(name, lisp_name)           \
     struct ell_obj *ELL_CLASS(name);            \
     struct ell_wrapper *ELL_WRAPPER(name);
 #include "defclass.h"

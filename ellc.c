@@ -684,6 +684,51 @@ ellc_norm_mdef(struct ellc_st *st, struct ell_obj *mdef_stx)
     return NULL; // runtime noop
 }
 
+/* (Inline C) */
+
+static struct ellc_ast *
+ellc_make_snips(struct ellc_st *st, struct ell_obj *stx_lst)
+{
+    struct ell_obj *seq_stx = ell_make_stx_lst();
+    ELL_SEND(seq_stx, add, ELL_SYM(core_seq));
+    struct ell_obj *range = ELL_SEND(stx_lst, all);
+    while(!(ell_is_true(ELL_SEND(range, emptyp)))) {
+        struct ell_obj *stx = ELL_SEND(range, front);
+        if (stx->wrapper == ELL_WRAPPER(stx_str)) {
+            struct ell_obj *snip_stx = ell_make_stx_lst();
+            ELL_SEND(snip_stx, add, ELL_SYM(core_c_snip));
+            ELL_SEND(seq_stx, add, snip_stx);
+        } else {
+            ELL_SEND(seq_stx, add, stx);
+        }
+        ELL_SEND(range, pop_front);
+    }
+    return ellc_norm_stx(st, seq_stx);
+}
+
+static struct ellc_ast *
+ellc_norm_c_statement(struct ellc_st *st, struct ell_obj *stx_lst)
+{
+    ell_util_list_add(st->c_statements,
+                      ellc_make_snips(st, ELL_SEND(stx_lst, second)));
+    return NULL; // runtime noop
+}
+
+static struct ellc_ast *
+ellc_norm_c_expression(struct ellc_st *st, struct ell_obj *stx_lst)
+{
+    return ellc_make_snips(st, ELL_SEND(stx_lst, second));
+}
+
+static struct ellc_ast *
+ellc_norm_c_snip(struct ellc_st *st, struct ell_obj *stx_lst)
+{
+    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_SNIP);
+    ast->snip.chars =
+        ell_str_chars(ell_stx_str_str(ELL_SEND(stx_lst, second)));
+    return ast;
+}
+
 /* (Putting it All Together) */
 
 __attribute__((constructor(300))) static void
@@ -707,6 +752,12 @@ ellc_init()
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_quasisyntax), &ellc_norm_quasisyntax);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_syntax), &ellc_norm_quasisyntax);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_mdef), &ellc_norm_mdef);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_c_statement),
+                      &ellc_norm_c_statement);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_c_expression),
+                      &ellc_norm_c_expression);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_c_snip),
+                      &ellc_norm_c_snip);
     // Compiler state
     dict_init(&ellc_mac_tab, DICTCOUNT_T_MAX, (dict_comp_t) &ell_sym_cmp);
 }
@@ -1004,11 +1055,12 @@ ellc_conv_ast(struct ellc_st *st, struct ellc_ast *ast)
     case ELLC_AST_APP: ellc_conv_app(st, ast); break;
     case ELLC_AST_LAM: ellc_conv_lam(st, ast); break;
     case ELLC_AST_LOOP: ellc_conv_loop(st, ast); break;
+    case ELLC_AST_CX: ellc_conv_cx(st, ast); break;
+    case ELLC_AST_SNIP: break;
     case ELLC_AST_LIT_SYM: break;
     case ELLC_AST_LIT_STR: break;
     case ELLC_AST_LIT_NUM: break;
     case ELLC_AST_LIT_STX: break;
-    case ELLC_AST_CX: ellc_conv_cx(st, ast); break;
     default:
         ell_fail("conversion error: %d\n", ast->type);
     }
@@ -1295,7 +1347,7 @@ ellc_emit_lam(struct ellc_st *st, struct ellc_ast *ast)
     st->in_quasisyntax = 0;
 
     struct ellc_ast_lam *lam = &ast->lam;
-    fprintf(st->f, "({");
+    fprintf(st->f, "({ ");
     // populate env
     if (dict_count(lam->env) > 0) {
         fprintf(st->f, "struct __ell_env_%u *__lam_env = ell_alloc(sizeof(struct __ell_env_%u));",
@@ -1398,6 +1450,12 @@ ellc_emit_cx(struct ellc_st *st, struct ellc_ast *ast)
 }
 
 static void
+ellc_emit_snip(struct ellc_st *st, struct ellc_ast *ast)
+{
+    fprintf(st->f, "%s", ast->snip.chars);
+}
+
+static void
 ellc_emit_ast(struct ellc_st *st, struct ellc_ast *ast)
 {
     switch(ast->type) {
@@ -1414,11 +1472,12 @@ ellc_emit_ast(struct ellc_st *st, struct ellc_ast *ast)
     case ELLC_AST_APP: ellc_emit_app(st, ast); break;
     case ELLC_AST_LAM: ellc_emit_lam(st, ast); break;
     case ELLC_AST_LOOP: ellc_emit_loop(st, ast); break;
+    case ELLC_AST_CX: ellc_emit_cx(st, ast); break;
+    case ELLC_AST_SNIP: ellc_emit_snip(st, ast); break;
     case ELLC_AST_LIT_SYM: ellc_emit_lit_sym(st, ast); break;
     case ELLC_AST_LIT_STR: ellc_emit_lit_str(st, ast); break;
     case ELLC_AST_LIT_NUM: ellc_emit_lit_num(st, ast); break;
     case ELLC_AST_LIT_STX: ellc_emit_lit_stx(st, ast); break;
-    case ELLC_AST_CX: ellc_emit_cx(st, ast); break;
     default:
         ell_fail("emission error\n");
     }
@@ -1444,6 +1503,16 @@ ellc_emit_globals_initializations(struct ellc_st *st)
         fprintf(st->f, "if (%s == NULL) %s = ell_unbound;\n", mid, mid);
     }
     fprintf(st->f, "\n");
+}
+
+static void
+ellc_emit_statements(struct ellc_st *st)
+{
+    for (lnode_t *n = list_first(st->c_statements); n; 
+         n = list_next(st->c_statements, n)) {
+        struct ellc_ast *ast = (struct ellc_ast *) lnode_get(n);
+        ellc_emit_ast(st, ast);
+    }
 }
 
 static void
@@ -1588,6 +1657,7 @@ ellc_emit(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
     fprintf(st->f, "#include \"ellrt.h\"\n");
     ellc_emit_globals_declarations(st);
     ellc_emit_codes(st);
+    ellc_emit_statements(st);
     fprintf(st->f, "// INIT\n");
     fprintf(st->f, "__attribute__((constructor(500))) static void ell_init() {\n");
     ellc_emit_globals_initializations(st);
@@ -1606,6 +1676,7 @@ ellc_make_st(FILE *f)
 {
     struct ellc_st *st = (struct ellc_st *) ell_alloc(sizeof(*st));
     st->f = f;
+    st->c_statements = ell_util_make_list();
     st->defined_globals = ell_util_make_list();
     st->defined_macros = ell_util_make_dict((dict_comp_t) &ell_sym_cmp);
     st->globals = ell_util_make_list();

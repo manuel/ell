@@ -107,6 +107,11 @@ struct ellc_ast_cx {
     struct ellc_ast *body;
 };
 
+/* Inline C snippet */
+struct ellc_ast_snip {
+    char *chars;
+};
+
 /**** Explicit Form ****/
 
 /* During closure conversion, the normal form AST gets destructively
@@ -155,6 +160,7 @@ enum ellc_ast_type {
     ELLC_AST_DEFP = 8,
     ELLC_AST_LOOP = 9,
     ELLC_AST_CX   = 10,
+    ELLC_AST_SNIP = 11,
 
     ELLC_AST_GLO_REF = 101,
     ELLC_AST_GLO_SET = 102,
@@ -182,6 +188,7 @@ struct ellc_ast {
         struct ellc_ast_defp defp;
         struct ellc_ast_loop loop;
         struct ellc_ast_cx cx;
+        struct ellc_ast_snip snip;
 
         struct ellc_ast_glo_ref glo_ref;
         struct ellc_ast_glo_set glo_set;
@@ -284,6 +291,7 @@ struct ellc_contour {
 
 /* Compilation state, maintained during the compilation of a unit. */
 struct ellc_st {
+    list_t *c_statements; // snip
     /* Keeps track of all global variables defined in the compilation
        unit.  Populated during normalization. */
     list_t *defined_globals; // id

@@ -37,6 +37,11 @@ ELL_DEFSYM(core_quasisyntax, "quasisyntax")
 ELL_DEFSYM(core_unsyntax, "unsyntax")
 ELL_DEFSYM(core_unsyntax_splicing, "unsyntax-splicing")
 
+/* Inline C: */
+ELL_DEFSYM(core_c_statement, "c-statement")
+ELL_DEFSYM(core_c_expression, "c-expression")
+ELL_DEFSYM(core_c_snip, "c-snip")
+
 /**** Built-in functions: ****/
 
 ELL_DEFSYM(add, "add")

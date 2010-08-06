@@ -129,11 +129,13 @@ ell_make_wrapper(struct ell_obj *class)
 }
 
 struct ell_obj *
-ell_make_class()
+ell_make_class(struct ell_obj *name)
 {
-    struct ell_class_data *data = (struct ell_class_data *) ell_alloc(sizeof(*data));
-    data->superclasses = ell_util_make_list();
+    struct ell_class_data *data =
+        (struct ell_class_data *) ell_alloc(sizeof(*data));
     struct ell_obj *class = ell_make_obj(ELL_WRAPPER(class), data);
+    data->name = name;
+    data->superclasses = ell_util_make_list();
     data->wrapper = ell_make_wrapper(class);
     return class;
 }
@@ -158,6 +160,13 @@ ell_wrapper_class(struct ell_wrapper *wrapper)
     return wrapper->class;
 }
 
+struct ell_obj *
+ell_class_name(struct ell_obj *class)
+{
+    ell_assert_wrapper(class, ELL_WRAPPER(class));
+    return ((struct ell_class_data *) class->data)->name;
+}
+
 list_t *
 ell_class_superclasses(struct ell_obj *class)
 {
@@ -176,7 +185,9 @@ void
 ell_assert_wrapper(struct ell_obj *obj, struct ell_wrapper *wrapper)
 {
     if (obj->wrapper != wrapper) {
-        ell_fail("wrapper assertion failed\n");
+        ell_fail("expected %s got %s\n", 
+                 ell_str_chars(ell_class_name(ell_wrapper_class(wrapper))),
+                 ell_str_chars(ell_class_name(ell_obj_class(obj))));
     }
 }
 
@@ -1238,7 +1249,7 @@ struct ell_obj *
 ell_make_class_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args)
 {
     ell_check_npos(npos, 0);
-    return ell_make_class();
+    return ell_make_class(ell_unspecified);
 }
 
 /* (add-superclass class superclass) -> unspecified */
@@ -1411,12 +1422,12 @@ ell_init()
        without a class, we need to fix up class class's wrapper
        afterwards. */
     ELL_WRAPPER(class) = NULL;
-    ELL_CLASS(class) = ell_make_class();
+    ELL_CLASS(class) = ell_make_class(ell_make_str("<class>"));
     ELL_WRAPPER(class) = ell_class_wrapper(ELL_CLASS(class));
     ELL_CLASS(class)->wrapper = ELL_WRAPPER(class);
 
-#define ELL_DEFCLASS(name)                                              \
-    ELL_CLASS(name) = ell_make_class();                                 \
+#define ELL_DEFCLASS(name, lisp_name)                                   \
+    ELL_CLASS(name) = ell_make_class(ell_make_str(lisp_name));          \
     ELL_WRAPPER(name) = ell_class_wrapper(ELL_CLASS(name));
 #include "defclass.h"
 #undef ELL_DEFCLASS
