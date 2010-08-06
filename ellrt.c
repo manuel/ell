@@ -1,5 +1,7 @@
 /***** Executable and Linkable Lisp Runtime *****/
 
+#define _GNU_SOURCE
+#include <dlfcn.h>
 #include <execinfo.h> // backtrace
 
 #include "ellrt.h"
@@ -1362,8 +1364,13 @@ struct ell_obj *
 ell_stacktrace_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
                     struct ell_obj **args, struct ell_obj *dongle)
 {
+    int size = 100;
+    void *buffer[size];
+    int ct = backtrace(buffer, size);
+    char **names = backtrace_symbols(buffer, ct);
+    int i = 0;
+
     struct ell_obj **frame = __builtin_frame_address(0);
-    frame = *(frame); // skip own frame
     while (frame) {
         struct ell_obj *the_dongle = *(frame + 6);
         if (the_dongle == ell_dongle) {
@@ -1371,7 +1378,7 @@ ell_stacktrace_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
             ell_arg_ct the_npos = (ell_arg_ct) *(frame + 3);
             ell_arg_ct the_nkey = (ell_arg_ct) *(frame + 4);
             struct ell_obj **args = (struct ell_obj **) *(frame + 5);
-            printf("* LISP function %p\n", the_clo);
+            printf("* LISP function %p %s\n", the_clo, names[i]);
             printf("\t%u pos args, %u key args\n", the_npos, the_nkey);
             for (int i = 0; i < the_npos; i++) {
                 printf("\t\tpos[%u] = ", i);
@@ -1379,9 +1386,10 @@ ell_stacktrace_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
                 printf("\n");
             }
         } else {
-            printf("* (C function)\n");
+            printf("* C function %p %s\n", buffer[i], names[i]);
         }
-        frame = *(frame);
+        frame = (struct ell_obj **) *(frame);
+        i++;
     }
     return ell_unspecified;
 }
