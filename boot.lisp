@@ -35,13 +35,13 @@
   #`(ell-fdefp ,name))
 
 (defmacro defparameter (name value)
-  #`(ell-def ,name ,value))
+  #`(progn (ell-def ,name ,value) ',name))
 
 (defmacro defvar (name &optional (value #'unspecified))
   #`(defparameter ,name (if (definedp ,name) ,name ,value)))
 
 (defmacro defun/f (name function)
-  #`(ell-fdef ,name ,function))
+  #`(progn (ell-fdef ,name ,function) ',name))
 
 (defmacro defun (name sig &rest body)
   #`(defun/f ,name (lambda ,sig ,@body)))
@@ -91,7 +91,7 @@
       ,@(map-list (lambda (superclass)
                     #`(add-superclass ,name ,superclass))
                   superclasses)
-      unspecified))
+      ',name))
 
 (defmacro defgeneric (name &optional params)
   #`(defun ,name (&rest args)
@@ -104,6 +104,7 @@
       (put-method ,(send (send params 'first) 'second) 
                   ',name
                   (lambda ,params ,@body))
-      unspecified))
+      ',name))
 
 (defgeneric print-object (object))
+(defun print (object) (print-object object))
