@@ -10,9 +10,17 @@
 #define ELLCM_MSG_LEN 256
 
 struct ellcm_tx {
-    char infile[ELLCM_PATH_LEN];
-    char faslfile[ELLCM_PATH_LEN];
-    char cfaslfile[ELLCM_PATH_LEN];
+    enum { ELLCM_COMPILE, ELLCM_LOAD } type;
+    union {
+        struct {
+            char infile[ELLCM_PATH_LEN];
+            char faslfile[ELLCM_PATH_LEN];
+            char cfaslfile[ELLCM_PATH_LEN];
+        } compile;
+        struct {
+            char file[ELLCM_PATH_LEN];
+        } load;
+    } data;
 };
 
 struct ellcm_rx {
@@ -36,7 +44,16 @@ ellcm_compile_file(struct ellcm *cm, char *infile, char *faslfile, char *cfaslfi
 struct ell_obj *
 ellcm_eval(struct ellcm *cm, char *s);
 
+int
+ellcm_compiletime_load_file(struct ellcm *cm, char *file);
+
 void
 ellcm_load_file(struct ellcm *cm, char *infile);
+
+bool
+ellcm_is_source_file(struct ellcm *cm, char *file);
+
+bool
+ellcm_is_fasl_file(struct ellcm *cm, char *file);
 
 #endif

@@ -1,6 +1,6 @@
-CFLAGS=-std=c99 -g
+CFLAGS=-std=c99 -g -pg
 LD=gcc
-LDFLAGS=-rdynamic -lgc -ldl -lreadline -luuid
+LDFLAGS=-rdynamic -lgc -ldl -lreadline -luuid -pg
 
 OBJECTS = ellrt.o ellc.o ellcm.o dict.o list.o
 
@@ -12,4 +12,4 @@ ell-compile: $(OBJECTS) ell-compile.o
 
 .PHONY: clean
 clean:
-	@rm -f *.o ell ell-compile
+	@rm -f *.o *.fasl ell ell-compile

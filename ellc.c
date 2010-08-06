@@ -731,6 +731,22 @@ ellc_norm_c_snip(struct ellc_st *st, struct ell_obj *stx_lst)
 
 /* (Putting it All Together) */
 
+/* (compiler-put-expander symbol function) -> unspecified */
+
+struct ell_obj *__ell_g_compilerDputDexpander_2_;
+
+struct ell_obj *
+ellc_compiler_put_expander_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
+                               struct ell_obj **args)
+{
+    ell_check_npos(npos, 2);
+    struct ell_obj *symbol = args[0];
+    struct ell_obj *function = args[1];
+    ell_assert_wrapper(symbol, ELL_WRAPPER(sym));
+    ell_assert_wrapper(function, ELL_WRAPPER(clo));
+    ell_util_dict_put(&ellc_mac_tab, symbol, function);
+}
+
 __attribute__((constructor(300))) static void
 ellc_init()
 {
@@ -760,6 +776,7 @@ ellc_init()
                       &ellc_norm_c_snip);
     // Compiler state
     dict_init(&ellc_mac_tab, DICTCOUNT_T_MAX, (dict_comp_t) &ell_sym_cmp);
+    __ell_g_compilerDputDexpander_2_ = ell_make_clo(&ellc_compiler_put_expander_code, NULL);
 }
 
 static struct ellc_ast *
@@ -1718,7 +1735,7 @@ ellc_compile(struct ell_obj *stx_lst, struct ellc_st **st_out)
     }
     
     char cmdline[256];
-    sprintf(cmdline, "gcc -pipe -std=c99 -shared -g -fPIC -I. -o %s -x c %s", onam, cnam);
+    sprintf(cmdline, "gcc -pipe -std=c99 -shared -g -pg -fPIC -I. -o %s -x c %s", onam, cnam);
 
     if (system(cmdline) == -1) {
         ell_fail("error compiling file\n");
@@ -1758,8 +1775,13 @@ ellc_compile_file(char *infile, char *faslfile, char *cfaslfile)
         struct ell_obj *name_sym = (struct ell_obj *) dnode_getkey(n);
         struct ell_obj *expander_stx = (struct ell_obj *) dnode_get(n);
         struct ell_obj *macro_stx = ell_make_stx_lst();
-        ELL_SEND(macro_stx, add, ell_make_stx_sym(ell_intern(ell_make_str("compiler-put-expander"))));
-        ELL_SEND(macro_stx, add, ell_make_stx_sym(name_sym));
+        struct ell_obj *quote_stx = ell_make_stx_lst();
+        ELL_SEND(quote_stx, add, ell_make_stx_sym(ELL_SYM(core_quote)));
+        ELL_SEND(quote_stx, add, ell_make_stx_sym(name_sym));
+
+        ELL_SEND(macro_stx, add,
+                 ell_make_stx_sym(ell_intern(ell_make_str("compiler-put-expander"))));
+        ELL_SEND(macro_stx, add, quote_stx);
         ELL_SEND(macro_stx, add, expander_stx);
         ELL_SEND(macros_stx_lst, add, macro_stx);
     }
@@ -1771,3 +1793,4 @@ ellc_compile_file(char *infile, char *faslfile, char *cfaslfile)
 
     return 0;
 }
+

@@ -11,7 +11,20 @@ void
 ellcm_server_process(int sd, struct ellcm_tx *tx)
 {
     struct ellcm_rx rx;
-    rx.status = ellc_compile_file(tx->infile, tx->faslfile, tx->cfaslfile);
+    if (tx->type == ELLCM_COMPILE) {
+        printf("; compiler: compiling %s\n", tx->data.compile.infile);
+        rx.status = ellc_compile_file(tx->data.compile.infile,
+                                      tx->data.compile.faslfile,
+                                      tx->data.compile.cfaslfile);
+    } else if (tx->type == ELLCM_LOAD) {
+        printf("; compiler: loading %s\n", tx->data.load.file);
+        dlerror();
+        if (!dlopen(tx->data.load.file, RTLD_NOW | RTLD_GLOBAL)) {
+            printf("%s\n", dlerror());
+            ell_fail("can't load file %s\n", tx->data.load.file);
+        }
+        rx.status = 0;
+    }
     if (rx.status == 0) {
         strcpy(rx.msg, "OK");
     } else {
@@ -77,9 +90,40 @@ int
 ellcm_compile_file(struct ellcm *cm, char *infile, char *faslfile, char *cfaslfile)
 {
     struct ellcm_tx tx;
-    strcpy(tx.infile, infile);
-    strcpy(tx.faslfile, faslfile);
-    strcpy(tx.cfaslfile, cfaslfile);
+    tx.type = ELLCM_COMPILE;
+    strcpy(tx.data.compile.infile, infile);
+    strcpy(tx.data.compile.faslfile, faslfile);
+    strcpy(tx.data.compile.cfaslfile, cfaslfile);
+    char *buf = (char *) &tx;
+    ssize_t bytes;
+    size_t total = 0;
+    while(total < sizeof(tx)) {
+        bytes = write(cm->sd, buf, sizeof(tx) - total);
+        if (bytes == -1) {
+            ell_fail("write error\n");
+        }
+        total += bytes;
+        buf += bytes;
+    }
+    struct ellcm_rx rx;
+    total = 0;
+    while(total < sizeof(rx)) {
+        bytes = read(cm->sd, buf, sizeof(rx) - total);
+        if (bytes == -1) {
+            ell_fail("read error\n");
+        }
+        total += bytes;
+        buf += bytes;
+    }
+    return rx.status;
+}
+
+int
+ellcm_compiletime_load_file(struct ellcm *cm, char *file)
+{
+    struct ellcm_tx tx;
+    tx.type = ELLCM_LOAD;
+    strcpy(tx.data.load.file, file);
     char *buf = (char *) &tx;
     ssize_t bytes;
     size_t total = 0;
@@ -156,6 +200,7 @@ ellcm_is_fasl_file(struct ellcm *cm, char *file)
 void
 ellcm_load_file(struct ellcm *cm, char *infile)
 {
+    printf("; loading %s\n", infile);
     if (ellcm_is_source_file(cm, infile)) {
         char *faslfile = ell_alloc(L_tmpnam);
         char *cfaslfile = ell_alloc(L_tmpnam);

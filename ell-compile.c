@@ -1,7 +1,7 @@
 /***** File Compilation Tool *****/
 
 /*
-  ell-compile [file.lisp]*
+  ell-compile [-x compile-time.fasl]* [-c file.lisp]*
 
   Produces FASL and CFASL files for input files.
 */
@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <readline/readline.h>
 #include <unistd.h>
+#include <dlfcn.h>
 
 #include "ellcm.h"
 
@@ -17,16 +18,28 @@ int
 main(int argc, char *argv[])
 {
     struct ellcm *cm = ellcm_init();
-    for (int i = 1; i < argc; i++) {
-        char *lisp_file = argv[i];
-        char *fasl_file, *cfasl_file;
-        if (asprintf(&fasl_file, "%s.load.fasl", lisp_file) == -1)
-            ell_fail("allocate string\n");
-        if (asprintf(&cfasl_file, "%s.syntax.fasl", lisp_file) == -1)
-            ell_fail("allocate string\n");
-        ellcm_compile_file(cm, lisp_file, fasl_file, cfasl_file);
-        free(fasl_file);
-        free(cfasl_file);
+
+    opterr = 0;
+    int c;
+    char *faslfile, *cfaslfile;
+    while ((c = getopt(argc, argv, "x:c:")) != -1) {
+        switch (c) {
+        case 'x':
+            ellcm_compiletime_load_file(cm, optarg);
+            break;
+        case 'c':
+            if (asprintf(&faslfile, "%s.load.fasl", optarg) == -1)
+                ell_fail("allocate string");
+            if (asprintf(&cfaslfile, "%s.syntax.fasl", optarg) == -1)
+                ell_fail("allocate string");
+            ellcm_compile_file(cm, optarg, faslfile, cfaslfile);
+            free(faslfile);
+            free(cfaslfile);
+            break;
+        default:
+            ell_fail("usage");
+        }
     }
+
     return 0;
 }
