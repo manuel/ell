@@ -834,17 +834,17 @@ ell_util_list_add(ell_stx_lst_elts(stx_lst), elt);
 return stx_lst;
 ELL_END
 
-static void
-ell_stx_lst_print_process(list_t *list, lnode_t *node, void *unused)
-{
-    ELL_SEND((struct ell_obj *) lnode_get(node), print_object);
-    printf(" ");
-}
-
 ELL_DEFMETHOD(stx_lst, print_object, 1)
 ELL_PARAM(stx_lst, 0)
 printf("#'(");
-list_process(ell_stx_lst_elts(stx_lst), NULL, &ell_stx_lst_print_process);
+struct ell_obj *range = ELL_SEND(stx_lst, all);
+while(!ell_is_true(ELL_SEND(range, emptyp))) {
+    struct ell_obj *stx = ELL_SEND(range, front);
+    ELL_SEND(stx, print_object);
+    ELL_SEND(range, pop_front);
+    if (!ell_is_true(ELL_SEND(range, emptyp)))
+        printf(" ");
+}
 printf(")");
 return ell_unspecified;
 ELL_END
