@@ -415,4 +415,12 @@ ell_box_write(struct ell_obj **box, struct ell_obj *value);
 struct ell_obj *
 ell_lookup_key(struct ell_obj *key_sym, ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args);
 
+/**** Misc ****/
+
+void
+ell_print_backtrace();
+
+#define ell_fail(...) \
+    ({ printf(__VA_ARGS__); printf("\n"); ell_print_backtrace(); exit(EXIT_FAILURE); })
+
 #endif

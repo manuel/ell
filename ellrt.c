@@ -1,5 +1,7 @@
 /***** Executable and Linkable Lisp Runtime *****/
 
+#include <execinfo.h> // backtrace
+
 #include "ellrt.h"
 
 /**** Parsing ****/
@@ -23,8 +25,7 @@ ell_parse()
     ell_parser_stack_top->down = NULL;
     ell_parser_stack_top->parser_data = ell_make_stx_lst();
     if(!yyparse()) {
-        printf("parsing error\n");
-        exit(EXIT_FAILURE);
+        ell_fail("parsing error\n");
     }
     return ell_parser_stack_top->parser_data;
 }
@@ -175,8 +176,7 @@ void
 ell_assert_wrapper(struct ell_obj *obj, struct ell_wrapper *wrapper)
 {
     if (obj->wrapper != wrapper) {
-        printf("wrapper assertion failed\n");
-        exit(EXIT_FAILURE);
+        ell_fail("wrapper assertion failed\n");
     }
 }
 
@@ -188,8 +188,7 @@ ell_slot_value(struct ell_obj *obj, struct ell_obj *slot_sym)
     if (n) {
         return (struct ell_obj *) dnode_get(n);
     } else {
-        printf("unbound slot: %s\n", ell_str_chars(ell_sym_name(slot_sym)));
-        exit(EXIT_FAILURE);
+        ell_fail("unbound slot: %s\n", ell_str_chars(ell_sym_name(slot_sym)));
         return NULL;
     }
 }
@@ -249,8 +248,7 @@ void
 ell_check_npos(ell_arg_ct formal_npos, ell_arg_ct actual_npos)
 {
     if (formal_npos != actual_npos) {
-        printf("wrong number of arguments");
-        exit(EXIT_FAILURE);
+        ell_fail("wrong number of arguments");
     }
 }
 
@@ -291,8 +289,7 @@ ell_find_method_in_superclasses(struct ell_obj *class, struct ell_obj *msg_sym)
         struct ell_obj *clo = ell_find_method_in_class(superclass, msg_sym);
         if (clo) {
             if (found_clo != NULL) {
-                printf("ambiguous method error: %s\n", ell_str_chars(ell_sym_name(msg_sym)));
-                exit(EXIT_FAILURE);
+                ell_fail("ambiguous method error: %s\n", ell_str_chars(ell_sym_name(msg_sym)));
             } else {
                 found_clo = clo;
             }
@@ -306,8 +303,7 @@ ell_find_method(struct ell_obj *rcv, struct ell_obj *msg_sym)
 {
     struct ell_obj *clo = ell_find_method_in_class(ell_wrapper_class(rcv->wrapper), msg_sym);
     if (!clo) {
-        printf("method not found: %s\n", ell_str_chars(ell_sym_name(msg_sym)));
-        exit(EXIT_FAILURE);        
+        ell_fail("method not found: %s\n", ell_str_chars(ell_sym_name(msg_sym)));
     }
     return clo;
 }
@@ -320,8 +316,7 @@ ell_send(struct ell_obj *rcv, struct ell_obj *msg_sym,
     if (clo) {
         return ell_call_unchecked(clo, npos, nkey, args);
     } else {
-        printf("message not understood: %s\n", ell_str_chars(ell_sym_name(msg_sym)));
-        exit(EXIT_FAILURE);
+        ell_fail("message not understood: %s\n", ell_str_chars(ell_sym_name(msg_sym)));
     }
 }
 
@@ -453,8 +448,7 @@ ell_str_char_at(struct ell_obj *str, size_t i)
     if (i < ell_str_len(str)) {
         return ell_str_chars(str)[i];
     } else {
-        printf("string index out of range\n");
-        exit(EXIT_FAILURE);
+        ell_fail("string index out of range\n");
     }
 }
 
@@ -719,8 +713,7 @@ ELL_END
 ELL_DEFMETHOD(list_range, front, 1)
 ELL_PARAM(range, 0)
 if (ell_list_range_cur(range) == NULL) {
-    printf("range empty\n");
-    exit(EXIT_FAILURE);
+    ell_fail("range empty\n");
 }
 return (struct ell_obj *) lnode_get(ell_list_range_cur(range));
 ELL_END
@@ -728,8 +721,7 @@ ELL_END
 ELL_DEFMETHOD(list_range, pop_front, 1)
 ELL_PARAM(range, 0)
 if (ell_list_range_cur(range) == NULL) {
-    printf("range empty\n");
-    exit(EXIT_FAILURE);
+    ell_fail("range empty\n");
 }
 ell_list_range_set_cur(range, list_next(ell_list_range_elts(range), ell_list_range_cur(range)));
 return ell_unspecified;
@@ -899,31 +891,27 @@ ELL_END
 void
 ell_arity_error()
 {
-    printf("arity error\n");
-    exit(EXIT_FAILURE);
+    ell_fail("arity error\n");
 }
 
 struct ell_obj *
 ell_unbound_arg()
 {
-    printf("unbound argument\n");
-    exit(EXIT_FAILURE);
+    ell_fail("unbound argument\n");
     return ell_unspecified;
 }
 
 struct ell_obj *
 ell_unbound_var(char *name)
 {
-    printf("unbound variable: %s\n", name);
-    exit(EXIT_FAILURE);
+    ell_fail("unbound variable: %s\n", name);
     return ell_unspecified;
 }
 
 struct ell_obj *
 ell_unbound_fun(char *name)
 {
-    printf("unbound function: %s\n", name);
-    exit(EXIT_FAILURE);
+    ell_fail("unbound function: %s\n", name);
     return ell_unspecified;
 }
 
@@ -1009,8 +997,7 @@ void
 ell_util_assert_list_len(list_t *list, listcount_t len)
 {
     if (len != list_count(list)) {
-        printf("list length assertion failed\n");
-        exit(EXIT_FAILURE);
+        ell_fail("list length assertion failed\n");
     }
 }
 
@@ -1018,8 +1005,7 @@ void
 ell_util_assert_list_len_min(list_t *list, listcount_t len)
 {
     if (len > list_count(list)) {
-        printf("list length assertion failed\n");
-        exit(EXIT_FAILURE);
+        ell_fail("list length assertion failed\n");
     }
 }
 
@@ -1058,6 +1044,21 @@ int
 ell_ptr_cmp(void *a, void *b)
 {
     return a - b;
+}
+
+
+/**** Misc ****/
+
+__attribute__((noinline)) // always have own stack frame
+void
+ell_print_backtrace()
+{
+    void* bt[100];
+    int ct = backtrace(bt, 100);
+    char** syms = backtrace_symbols(bt, ct);
+    for(int i = 1; i < ct; i++) // skip own stack frame
+        printf("%s\n", syms[i]);
+    free(syms);
 }
 
 /**** Built-in Functions ****/

@@ -23,8 +23,7 @@ ellcm_server_process(int sd, struct ellcm_tx *tx)
     while(total < sizeof(rx)) {
         bytes = write(sd, buf, sizeof(rx) - total);
         if (bytes == -1) {
-            printf("write error\n");
-            exit(EXIT_FAILURE);
+            ell_fail("write error\n");
         }
         total += bytes;
         buf += bytes;
@@ -41,8 +40,7 @@ ellcm_server(int sd)
     for (;;) {
         bytes = read(sd, buf, sizeof(tx) - total);
         if (bytes == -1) {
-            printf("read error\n");
-            exit(EXIT_FAILURE);
+            ell_fail("read error\n");
         }
         total += bytes;
         buf += bytes;
@@ -59,13 +57,11 @@ ellcm_init()
 {
     int sv[2];
     if (socketpair(AF_LOCAL, SOCK_STREAM, 0, sv) != 0) {
-        printf("can't create socket\n");
-        exit(EXIT_FAILURE);
+        ell_fail("can't create socket\n");
     }
     pid_t pid = fork();
     if (pid < 0) {
-        printf("fork error\n");
-        exit(EXIT_FAILURE);
+        ell_fail("fork error\n");
     }
     if (pid == 0) {
         ellcm_server(sv[1]); // never returns
@@ -90,8 +86,7 @@ ellcm_compile_file(struct ellcm *cm, char *infile, char *faslfile, char *cfaslfi
     while(total < sizeof(tx)) {
         bytes = write(cm->sd, buf, sizeof(tx) - total);
         if (bytes == -1) {
-            printf("write error\n");
-            exit(EXIT_FAILURE);
+            ell_fail("write error\n");
         }
         total += bytes;
         buf += bytes;
@@ -101,8 +96,7 @@ ellcm_compile_file(struct ellcm *cm, char *infile, char *faslfile, char *cfaslfi
     while(total < sizeof(rx)) {
         bytes = read(cm->sd, buf, sizeof(rx) - total);
         if (bytes == -1) {
-            printf("read error\n");
-            exit(EXIT_FAILURE);
+            ell_fail("read error\n");
         }
         total += bytes;
         buf += bytes;

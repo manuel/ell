@@ -299,8 +299,7 @@ ellc_dissect_args(struct ellc_st *st, list_t *args_stx)
         {
             n = list_next(args_stx, n);
             if (!n) {
-                printf("missing value for keyword argument\n");
-                exit(EXIT_FAILURE);
+                ell_fail("missing value for keyword argument\n");
             }
             struct ell_obj *key_arg_sym =
                 ellc_clean_key_arg_sym(ell_stx_sym_sym(arg_stx));
@@ -402,8 +401,7 @@ ellc_dissect_params(struct ellc_st *st, list_t *params_stx, dict_t *deferred_ini
     }
 
     if ((list_count(rest) > 1) || (list_count(all_keys) > 1)) {
-        printf("more than one rest or all-keys parameter\n");
-        exit(EXIT_FAILURE);
+        ell_fail("more than one rest or all-keys parameter\n");
     }
 
     params->req = req;
@@ -483,8 +481,7 @@ ellc_build_syntax(struct ellc_st *st, struct ell_obj *stx)
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_LIT_STX);
     if (!((stx->wrapper == ELL_WRAPPER(stx_sym))
           || (stx->wrapper == ELL_WRAPPER(stx_str)))) {
-        printf("can't build syntax AST from non-syntax object\n");
-        exit(EXIT_FAILURE);
+        ell_fail("can't build syntax AST from non-syntax object\n");
     }
     ast->lit_stx.stx = stx;
     return ast;
@@ -624,8 +621,7 @@ static struct ellc_ast *
 ellc_norm_qs(struct ellc_st *st, struct ell_obj *arg_stx, unsigned depth)
 {
     if (depth < 0) {
-        printf("negative quasiquotation depth\n");
-        exit(EXIT_FAILURE);
+        ell_fail("negative quasiquotation depth\n");
     }
 
     if ((arg_stx->wrapper == ELL_WRAPPER(stx_str)) ||
@@ -634,8 +630,7 @@ ellc_norm_qs(struct ellc_st *st, struct ell_obj *arg_stx, unsigned depth)
     } else if (arg_stx->wrapper == ELL_WRAPPER(stx_lst)) {
         return ellc_norm_qs_lst(st, arg_stx, depth);
     } else {
-        printf("bad quasiquoted syntax object\n");
-        exit(EXIT_FAILURE);
+        ell_fail("bad quasiquoted syntax object\n");
     }
 }
 
@@ -784,8 +779,7 @@ ellc_norm_stx(struct ellc_st *st, struct ell_obj *stx)
     } else if (stx->wrapper == ELL_WRAPPER(stx_num)) {
         return ellc_norm_lit_num(st, stx);
     } else {
-        printf("syntax normalization failure\n");
-        exit(EXIT_FAILURE);
+        ell_fail("syntax normalization failure\n");
     }
 }
 
@@ -1016,8 +1010,7 @@ ellc_conv_ast(struct ellc_st *st, struct ellc_ast *ast)
     case ELLC_AST_LIT_STX: break;
     case ELLC_AST_CX: ellc_conv_cx(st, ast); break;
     default:
-        printf("conversion error: %d\n", ast->type);
-        exit(EXIT_FAILURE);
+        ell_fail("conversion error: %d\n", ast->type);
     }
 }
 
@@ -1025,8 +1018,7 @@ static void
 ellc_conv(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
 {
     if (st->bottom_contour != NULL) {
-        printf("contour tracking bug or error in compilation unit\n");
-        exit(EXIT_FAILURE);
+        ell_fail("contour tracking bug or error in compilation unit\n");
     }
     for (lnode_t *n = list_first(ast_seq->exprs); n; n = list_next(ast_seq->exprs, n))
         ellc_conv_ast(st, (struct ellc_ast *) lnode_get(n));
@@ -1132,8 +1124,7 @@ ellc_emit_glo_ref(struct ellc_st *st, struct ellc_ast *ast)
         fprintf(st->f, "(%s != ell_unbound ? %s : ell_unbound_fun(\"%s\"))", mid, mid, sid);
         break;
     default:
-        printf("unknown namespace\n");
-        exit(EXIT_FAILURE);
+        ell_fail("unknown namespace\n");
     }
 }
 
@@ -1324,8 +1315,7 @@ ellc_emit_lam(struct ellc_st *st, struct ellc_ast *ast)
             case ELLC_AST_ARG_REF:
                 ellc_emit_arg_ref_plain(st, ref_ast); break;
             default:
-                printf("bad closure environment reference\n");
-                exit(EXIT_FAILURE);
+                ell_fail("bad closure environment reference\n");
             }
             fprintf(st->f, "; ");
         }
@@ -1384,8 +1374,7 @@ ellc_emit_lit_stx(struct ellc_st *st, struct ellc_ast *ast)
         fprintf(st->f, "ell_make_stx_str(ell_make_str(\"%s\"))", 
                 ell_str_chars(ell_stx_str_str(stx)));
     } else {
-        printf("literal syntax error\n");
-        exit(EXIT_FAILURE);
+        ell_fail("literal syntax error\n");
     }
 }
 
@@ -1431,8 +1420,7 @@ ellc_emit_ast(struct ellc_st *st, struct ellc_ast *ast)
     case ELLC_AST_LIT_STX: ellc_emit_lit_stx(st, ast); break;
     case ELLC_AST_CX: ellc_emit_cx(st, ast); break;
     default:
-        printf("emission error\n");
-        exit(EXIT_FAILURE);
+        ell_fail("emission error\n");
     }
 }
 
@@ -1558,8 +1546,7 @@ ellc_emit_params(struct ellc_st *st, struct ellc_ast_lam *lam)
     }
 
     if (lam->params->all_keys) {
-        printf("all-keys parameters not yet supported\n");
-        exit(EXIT_FAILURE);
+        ell_fail("all-keys parameters not yet supported\n");
     }
 }
 
@@ -1637,20 +1624,17 @@ ellc_compile(struct ell_obj *stx_lst, struct ellc_st **st_out)
 
     char *cnam = ell_alloc(L_tmpnam);
     if (!tmpnam(cnam)) {
-        printf("cannot name temp file\n");
-        exit(EXIT_FAILURE);
+        ell_fail("cannot name temp file\n");
     }
 
     char *onam = ell_alloc(L_tmpnam);
     if (!tmpnam(onam)) {
-        printf("cannot name temp file\n");
-        exit(EXIT_FAILURE);
+        ell_fail("cannot name temp file\n");
     }
 
     FILE *f = fopen(cnam, "w");
     if (!f) {
-        printf("cannot open temp file\n");
-        exit(EXIT_FAILURE);
+        ell_fail("cannot open temp file\n");
     }
     
     struct ellc_st *st = ellc_make_st(f);
@@ -1659,16 +1643,14 @@ ellc_compile(struct ell_obj *stx_lst, struct ellc_st **st_out)
     ellc_emit(st, ast_seq);
     
     if (fclose(f) != 0) {
-        printf("cannot close temp file\n");
-        exit(EXIT_FAILURE);        
+        ell_fail("cannot close temp file\n");
     }
     
     char cmdline[256];
     sprintf(cmdline, "gcc -pipe -std=c99 -shared -g -fPIC -I. -o %s -x c %s", onam, cnam);
 
     if (system(cmdline) == -1) {
-        printf("error compiling file\n");
-        exit(EXIT_FAILURE);
+        ell_fail("error compiling file\n");
     }
 
     if (st_out)
@@ -1684,8 +1666,7 @@ ellc_eval(struct ell_obj *stx_lst)
     ell_result = NULL;
 
     if (!dlopen(onam, RTLD_NOW | RTLD_GLOBAL)) {
-        printf("load error: %s\n", dlerror());
-        exit(EXIT_FAILURE);
+        ell_fail("load error: %s\n", dlerror());
     }
     
     return ell_result;
