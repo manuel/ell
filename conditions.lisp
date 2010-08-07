@@ -32,7 +32,9 @@
 (defgeneric handle-condition (handler condition))
 
 (defmethod handle-condition ((h <default-handler>) condition)
-  (invoke-debugger condition))
+  (print condition)
+  (stacktrace)
+  (exit))
 
 (defmethod handle-condition ((h <user-handler>) condition)
   (if (handler-matches? h condition)
