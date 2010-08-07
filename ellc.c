@@ -1116,6 +1116,7 @@ ellc_mangle_char(char c)
     case '>': return 'G';
     case '*': return 'Z';
     case '+': return 'P';
+    case '?': return 'Q';
     default: return c;
     }
 }

@@ -1,14 +1,16 @@
 /* This x-header is included from `ellrt.c' and `ellrt.h' with
    different definitions of `ELL_DEFCLASS'. */
 
+ELL_DEFCLASS(obj, "<object>")
 ELL_DEFCLASS(num_int, "<integer>")
 ELL_DEFCLASS(sym, "<symbol>")
 ELL_DEFCLASS(str, "<string>")
 ELL_DEFCLASS(clo, "<function>")
 ELL_DEFCLASS(lst, "<linked-list>")
 ELL_DEFCLASS(boolean, "<boolean>")
-ELL_DEFCLASS(unspecified, "<void>")
-ELL_DEFCLASS(unbound, "<unbound>")
+ELL_DEFCLASS(unspecified, "<unspecified>")
+ELL_DEFCLASS(condition, "<condition>")
+ELL_DEFCLASS(unbound, "<unbound>") // Lisp never gets to see this
 
 ELL_DEFCLASS(list_range, "<linked-list-range>")
 

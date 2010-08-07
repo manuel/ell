@@ -79,6 +79,7 @@ ell_class_name(struct ell_obj *class);
 #define ELL_WRAPPER(name) __ell_wrapper_##name
 
 /* Class class, the class of which classes are instances.
+   Is a subclass of <object>.
    Is an instance of itself, although that may change. */
 struct ell_obj *ELL_CLASS(class);
 struct ell_wrapper *ELL_WRAPPER(class);
@@ -88,6 +89,26 @@ struct ell_wrapper *ELL_WRAPPER(class);
     struct ell_wrapper *ELL_WRAPPER(name);
 #include "defclass.h"
 #undef ELL_DEFCLASS
+
+/*** Built-in classes exported to Lisp ***/
+
+struct ell_obj *__ell_g_LobjectG_1_;
+struct ell_obj *__ell_g_LbooleanG_1_;
+struct ell_obj *__ell_g_LclassG_1_;
+struct ell_obj *__ell_g_LfunctionG_1_;
+struct ell_obj *__ell_g_LlinkedDlistG_1_;
+struct ell_obj *__ell_g_LlistDrangeG_1_;
+struct ell_obj *__ell_g_LstringG_1_;
+struct ell_obj *__ell_g_LintegerG_1_;
+struct ell_obj *__ell_g_LsymbolG_1_;
+struct ell_obj *__ell_g_LsyntaxDlistG_1_;
+struct ell_obj *__ell_g_LsyntaxDstringG_1_;
+struct ell_obj *__ell_g_LsyntaxDsymbolG_1_;
+struct ell_obj *__ell_g_LunspecifiedG_1_;
+struct ell_obj *__ell_g_LconditionG_1_;
+
+/* As a special case, `signal' is used from C but written in Lisp. */
+struct ell_obj *__ell_g_signal_2_;
 
 /**** Closures ****/
 
@@ -115,6 +136,7 @@ struct ell_obj *ell_dongle;
 struct ell_clo_data {
     ell_code *code;
     void *env;
+    // Reflective info:
     struct ell_obj *name; // sym
 };
 
@@ -202,18 +224,6 @@ ell_block(struct ell_obj *fun);
 
 struct ell_obj *
 ell_unwind_protect(struct ell_obj *protected, struct ell_obj *cleanup);
-
-/**** Conditions ****/
-
-struct ell_handler {
-    struct ell_handler *parent;
-    struct ell_obj *handler_fun; // condition -> result
-};
-
-struct ell_handler *ell_current_handler; // maybe NULL
-
-struct ell_obj *
-ell_handler_push(struct ell_obj *handler_fun, struct ell_obj *body_thunk);
 
 /**** Strings ****/
 
@@ -434,7 +444,7 @@ ell_lookup_key(struct ell_obj *key_sym, ell_arg_ct npos, ell_arg_ct nkey, struct
 void
 ell_print_backtrace();
 
-#define ell_fail(...) \
-    ({ printf(__VA_ARGS__); ell_print_backtrace(); exit(EXIT_FAILURE); })
+struct ell_obj *
+ell_fail(char *msg, ...);
 
 #endif

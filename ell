@@ -1,1 +1,1 @@
-./ell-repl -x ./boot.lisp.syntax.fasl -l ./boot.lisp.load.fasl
+./ell-repl -x ./boot.lisp.syntax.fasl -x ./conditions.lisp.syntax.fasl -l ./boot.lisp.load.fasl -l ./conditions.lisp.load.fasl

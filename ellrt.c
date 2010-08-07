@@ -6,6 +6,13 @@
 
 #include "ellrt.h"
 
+struct ell_obj *
+ell_fail(char *msg, ...)
+{
+    struct ell_obj *str = ell_make_str(msg);
+    return ELL_CALL(__ell_g_signal_2_, str);
+}
+
 /**** Parsing ****/
 
 #include "grammar.c"
@@ -384,33 +391,6 @@ ell_unwind_protectFf_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
 struct ell_obj *__ell_g_blockFf_2_;
 struct ell_obj *__ell_g_unwindDprotectFf_2_;
 
-/**** Conditions ****/
-
-struct ell_obj *
-ell_handler_reset_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args, struct ell_obj *dongle)
-{
-    ell_current_handler = ell_current_handler->parent;
-}
-
-struct ell_obj *
-ell_handler_push(struct ell_obj *handler_fun, struct ell_obj *body_thunk)
-{
-    struct ell_handler handler = { .parent = ell_current_handler,
-                                   .handler_fun = handler_fun };
-    ell_current_handler = &handler;
-    struct ell_obj *reset_fun = ell_make_clo(&ell_handler_reset_code, NULL);
-    return ell_unwind_protect(body_thunk, reset_fun);
-}
-
-struct ell_obj *
-ell_signal(struct ell_obj *condition)
-{
-    if (ell_current_handler)
-        return ELL_CALL(ell_current_handler->handler_fun, condition);
-    else
-        ELL_SEND(condition, default_handle);
-}
-
 /**** Strings ****/
 
 struct ell_obj *
@@ -753,17 +733,17 @@ ell_util_list_add(ell_lst_elts(lst), elt);
 return lst;
 ELL_END
 
-static void
-ell_lst_print_process(list_t *list, lnode_t *node, void *unused)
-{
-    ELL_SEND((struct ell_obj *) lnode_get(node), print_object);
-    printf(" ");
-}
-
 ELL_DEFMETHOD(lst, print_object, 1)
 ELL_PARAM(lst, 0)
 printf("(");
-list_process(ell_lst_elts(lst), NULL, &ell_lst_print_process);
+struct ell_obj *range = ELL_SEND(lst, all);
+while(!ell_is_true(ELL_SEND(range, emptyp))) {
+    struct ell_obj *elt = ELL_SEND(range, front);
+    ELL_SEND(elt, print_object);
+    ELL_SEND(range, pop_front);
+    if (!ell_is_true(ELL_SEND(range, emptyp)))
+        printf(" ");
+}
 printf(")");
 return ell_unspecified;
 ELL_END
@@ -814,7 +794,7 @@ ELL_END
 
 ELL_DEFMETHOD(clo, print_object, 1)
 ELL_PARAM(self, 0)
-printf("#<function %s>", ell_str_chars(ell_sym_name(ell_clo_name(self))));
+printf("%s", ell_str_chars(ell_sym_name(ell_clo_name(self))));
 return ell_unspecified;
 ELL_END
 
@@ -1333,42 +1313,16 @@ ell_set_slot_value_code(struct ell_obj *clo, ell_arg_ct npos,
     return ell_set_slot_value(args[0], args[1], args[2]);
 }
 
-/* (instancep object class) -> boolean */
+/* (type? object class) -> boolean */
 
-struct ell_obj *__ell_g_instancep_2_;
+struct ell_obj *__ell_g_typeQ_2_;
 
 struct ell_obj *
-ell_instancep_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-                   struct ell_obj **args, struct ell_obj *dongle)
+ell_typeQ_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
+               struct ell_obj **args, struct ell_obj *dongle)
 {
     ell_check_npos(npos, 2);
     return ell_truth(ell_is_instance(args[0], args[1]));
-}
-
-/* (handler-push handler-fun body-fun) -> result */
-
-struct ell_obj *__ell_g_handlerDpush_2_;
-
-struct ell_obj *
-ell_handler_push_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-                      struct ell_obj **args, struct ell_obj *dongle)
-{
-    ell_check_npos(npos, 2);
-    ell_assert_wrapper(args[0], ELL_WRAPPER(clo));
-    ell_assert_wrapper(args[1], ELL_WRAPPER(clo));
-    return ell_handler_push(args[0], args[1]);
-}
-
-/* (signal condition) -> result */
-
-struct ell_obj *__ell_g_signal_2_;
-
-struct ell_obj *
-ell_signal_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-                struct ell_obj **args, struct ell_obj *dongle)
-{
-    ell_check_npos(npos, 1);
-    return ell_signal(args[0]);
 }
 
 /* (stacktrace) */
@@ -1414,6 +1368,10 @@ ell_stacktrace_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
         }
         frame = (struct ell_obj **) *(frame);
         i++;
+        if (i > 15) {
+            printf("...\n");
+            break;
+        }
     }
     return ell_unspecified;
 }
@@ -1462,21 +1420,6 @@ ell_plus_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
     return ell_make_num_from_int(ell_num_int(num1) + ell_num_int(num2));
 }
 
-/**** Export built-in classes to Lisp ****/
-
-struct ell_obj *__ell_g_LbooleanG_1_;
-struct ell_obj *__ell_g_LclassG_1_;
-struct ell_obj *__ell_g_LfunctionG_1_;
-struct ell_obj *__ell_g_LlinkedDlistG_1_;
-struct ell_obj *__ell_g_LlistDrangeG_1_;
-struct ell_obj *__ell_g_LstringG_1_;
-struct ell_obj *__ell_g_LintegerG_1_;
-struct ell_obj *__ell_g_LsymbolG_1_;
-struct ell_obj *__ell_g_LsyntaxDlistG_1_;
-struct ell_obj *__ell_g_LsyntaxDstringG_1_;
-struct ell_obj *__ell_g_LsyntaxDsymbolG_1_;
-struct ell_obj *__ell_g_LunspecifiedG_1_;
-
 /**** Initialization ****/
 
 __attribute__((constructor(200))) static void
@@ -1497,6 +1440,7 @@ ell_init()
 #include "defclass.h"
 #undef ELL_DEFCLASS
 
+    __ell_g_LobjectG_1_ = ELL_CLASS(obj);
     __ell_g_LbooleanG_1_ = ELL_CLASS(boolean);
     __ell_g_LclassG_1_ = ELL_CLASS(class);
     __ell_g_LfunctionG_1_ = ELL_CLASS(clo);
@@ -1532,7 +1476,7 @@ ell_init()
     __ell_g_blockFf_2_ = ell_make_clo(&ell_blockFf_code, NULL);
     __ell_g_unwindDprotectFf_2_ = ell_make_clo(&ell_unwind_protectFf_code, NULL);
 
-    __ell_g_apply_2_ = ell_make_clo(&ell_apply_code, NULL);
+    __ell_g_apply_2_ = ell_make_named_clo(&ell_apply_code, NULL, ELL_SYM(apply));
     __ell_g_send_2_ = ell_make_clo(&ell_send_code, NULL);
     __ell_g_syntaxDlist_2_ = ell_make_clo(&ell_syntax_list_code, NULL);
     __ell_g_syntaxDlistDrest_2_ = ell_make_clo(&ell_syntax_list_rest_code, NULL);
@@ -1550,13 +1494,13 @@ ell_init()
     __ell_g_make_2_ = ell_make_clo(&ell_make_code, NULL);
     __ell_g_slotDvalue_2_ = ell_make_clo(&ell_slot_value_code, NULL);
     __ell_g_setDslotDvalue_2_ = ell_make_clo(&ell_set_slot_value_code, NULL);
-    __ell_g_instancep_2_ = ell_make_clo(&ell_instancep_code, NULL);
-    __ell_g_handlerDpush_2_ = ell_make_clo(&ell_handler_push_code, NULL);
-    __ell_g_signal_2_ = ell_make_clo(&ell_signal_code, NULL);
+    __ell_g_typeQ_2_ = ell_make_clo(&ell_typeQ_code, NULL);
 
     __ell_g_L_2_ = ell_make_clo(&ell_less_than_code, NULL);
     __ell_g_P_2_ = ell_make_clo(&ell_plus_code, NULL);
     
     __ell_g_stacktrace_2_ = ell_make_clo(&ell_stacktrace_code, NULL);
     __ell_g_exit_2_ = ell_make_clo(&ell_exit_code, NULL);
+
+    __ell_g_signal_2_ = ell_unbound;
 }

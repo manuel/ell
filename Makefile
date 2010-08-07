@@ -4,13 +4,16 @@ LDFLAGS=-rdynamic -lgc -ldl -lreadline -luuid -pg
 
 OBJECTS = ellrt.o ellc.o ellcm.o dict.o list.o
 
-fasls: $(OBJECTS) boot.lisp all
+all: $(OBJECTS) ell-repl ell-compile boot conditions
+
+boot: $(OBJECTS) boot.lisp
 	./ell-compile -c boot.lisp
+
+conditions: $(OBJECTS) conditions.lisp boot.lisp.syntax.fasl
+	./ell-compile -x ./boot.lisp.syntax.fasl -c conditions.lisp
 
 grammar:
 	leg -o grammar.c grammar.leg
-
-all: ell-repl ell-compile
 
 ell-repl: $(OBJECTS) ell-repl.o
 	$(LD) $(LDFLAGS) $(OBJECTS) ell-repl.o -o ell-repl

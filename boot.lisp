@@ -4,8 +4,8 @@
         (ell-lam (macro-call-form)
           (apply-syntax-list
             (ell-lam ,(send defmacro-form 'third)
-              ,(send defmacro-form 'fourth) anonymous)
-            (syntax-list-rest macro-call-form)) anonymous)) anonymous))
+              ,(send defmacro-form 'fourth) #<function>)
+            (syntax-list-rest macro-call-form)) #<function>)) #<function>))
 
 (defmacro defsyntax (name expander)
   #`(ell-mdef ,name ,expander))
@@ -14,7 +14,7 @@
   #`(ell-seq ,@exprs))
 
 (defmacro lambda (sig &rest body)
-  #`(ell-lam ,sig (progn ,@body) anonymous))
+  #`(ell-lam ,sig (progn ,@body) #<function>))
 
 (defmacro if (test then &optional (else #'unspecified))
   #`(ell-cond ,test ,then ,else))
@@ -101,10 +101,25 @@
 (defmacro defclass (name &optional (superclasses #'()) &rest slot-specs)
   #`(progn
       (defvar ,name (make-class))
+      (add-superclass ,name <object>)
       ,@(map-list (lambda (superclass)
                     #`(add-superclass ,name ,superclass))
                   superclasses)
       ',name))
+
+(defclass <string>)
+(defclass <symbol>)
+(defclass <number>)
+(defclass <boolean>)
+(defclass <function>)
+(defclass <unspecified>)
+(defclass <linked-list>)
+(defclass <linked-list-range>)
+(defclass <syntax-list>)
+(defclass <syntax-symbol>)
+(defclass <syntax-string>)
+(defclass <syntax-number>)
+(defclass <condition>)
 
 (defmacro defgeneric (name &optional params)
   #`(defun ,name (&rest args)
@@ -124,3 +139,9 @@
 
 (defmacro c (&rest snippets)
   #`(c-expression ,snippets))
+
+(defmacro fluid-let (name value &rest body)
+  #`(let ((tmp ,name))
+      (setq ,name ,value)
+      (unwind-protect (progn ,@body)
+        (setq ,name tmp))))

@@ -44,7 +44,8 @@ ELL_DEFSYM(core_c_snip, "c-snip")
 
 /**** Built-in symbols: ****/
 
-ELL_DEFSYM(anonymous, "anonymous")
+ELL_DEFSYM(apply, "apply")
+ELL_DEFSYM(anonymous, "#<function>")
 ELL_DEFSYM(add, "add")
 ELL_DEFSYM(first, "first")
 ELL_DEFSYM(second, "second")
