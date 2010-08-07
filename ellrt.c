@@ -3,6 +3,7 @@
 #define _GNU_SOURCE
 #include <dlfcn.h>
 #include <execinfo.h> // backtrace
+#include <readline/readline.h>
 
 #include "ellrt.h"
 
@@ -1386,6 +1387,25 @@ ell_exit_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
     return NULL;
 }
 
+/* (read-line) -> string */
+
+struct ell_obj *__ell_g_readDline_2_;
+
+struct ell_obj *
+ell_read_line_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
+                   struct ell_obj **args, struct ell_obj *dongle)
+{
+    ell_check_npos(0, npos);
+    char *s = readline("");
+    if (s == NULL) {
+        return ell_unspecified;
+    } else {
+        struct ell_obj *str = ell_make_str(s);
+        free(s);
+        return str;
+    }
+}
+
 /* (< num1 num2) -> boolean */
 
 struct ell_obj *__ell_g_L_2_;
@@ -1499,6 +1519,8 @@ ell_init()
     
     __ell_g_stacktrace_2_ = ell_make_clo(&ell_stacktrace_code, NULL);
     __ell_g_exit_2_ = ell_make_clo(&ell_exit_code, NULL);
+
+    __ell_g_readDline_2_ = ell_make_clo(&ell_read_line_code, NULL);
 
     __ell_g_signal_2_ = ell_unbound;
 }
