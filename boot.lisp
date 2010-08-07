@@ -44,7 +44,7 @@
   #`(progn (ell-fdef ,name ,function) ',name))
 
 (defmacro defun (name sig &rest body)
-  #`(defun/f ,name (ell-lam ,sig ,@body ,name)))
+  #`(defun/f ,name (ell-lam ,sig (progn ,@body) ,name)))
 
 (defmacro funcall (fun &rest args)
   #`(ell-app ,fun ,@args))

@@ -3,4 +3,5 @@
 *.fasl
 ell-repl
 ell-compile
+gmon.out
 .work
