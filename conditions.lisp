@@ -42,7 +42,7 @@
 (defun signal (condition)
   (handle-condition *current-handler* condition))
 
-(defun with-monitor (condition-class user-handler-function body-thunk)
+(defun handler-bind/f (condition-class user-handler-function body-thunk)
   (let ((the-handler-function (lambda (condition call-next-handler)
                                 (block resume
                                   (funcall user-handler-function
@@ -51,3 +51,7 @@
                                   (funcall call-next-handler)))))
     (fluid-let *current-handler* (make-user-handler condition-class the-handler-function)
       (funcall body-thunk))))
+
+(defmacro handler-bind (condition-class user-handler-function &rest body)
+  #`(handler-bind/f ,condition-class ,user-handler-function
+                    (lambda () ,@body)))

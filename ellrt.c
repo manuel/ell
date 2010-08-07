@@ -886,15 +886,13 @@ ell_unbound_arg()
 struct ell_obj *
 ell_unbound_var(char *name)
 {
-    ell_fail("unbound variable: %s\n", name);
-    return ell_unspecified;
+    return ell_fail("unbound variable: %s\n", name);
 }
 
 struct ell_obj *
 ell_unbound_fun(char *name)
 {
-    ell_fail("unbound function: %s\n", name);
-    return ell_unspecified;
+    return ell_fail("unbound function: %s\n", name);
 }
 
 struct ell_obj **
