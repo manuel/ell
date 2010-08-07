@@ -119,7 +119,6 @@
 (defclass <syntax-symbol>)
 (defclass <syntax-string>)
 (defclass <syntax-number>)
-(defclass <condition>)
 
 (defmacro defgeneric (name &optional params)
   #`(defun ,name (&rest args)
