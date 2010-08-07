@@ -8,10 +8,16 @@
 #include "ellrt.h"
 
 struct ell_obj *
+ell_stacktrace_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
+                    struct ell_obj **args, struct ell_obj *dongle);
+
+struct ell_obj *
 ell_fail(char *msg, ...)
 {
-    struct ell_obj *str = ell_make_str(msg);
-    return ELL_CALL(__ell_g_signal_2_, str);
+    printf("Unhandled Lisp condition: %s\nStack trace:\n", msg);
+    ell_stacktrace_code(NULL, 0, 0, NULL, ell_dongle);
+    exit(EXIT_FAILURE);
+    return ell_unspecified;
 }
 
 /**** Parsing ****/
@@ -104,7 +110,6 @@ ell_make_wrapper(struct ell_obj *class)
 {
     struct ell_wrapper *wrapper = (struct ell_wrapper *) ell_alloc(sizeof(*wrapper));
     wrapper->class = class;
-    dict_init(&wrapper->methods, DICTCOUNT_T_MAX, (dict_comp_t) &ell_sym_cmp);
     return wrapper;
 }
 
@@ -262,7 +267,60 @@ ell_check_npos(ell_arg_ct formal_npos, ell_arg_ct actual_npos)
     }
 }
 
-/**** Methods ****/
+/**** Generic Functions and Methods ****/
+
+struct ell_obj *
+ell_make_named_generic(struct ell_obj *name)
+{
+    ell_assert_wrapper(name, ELL_WRAPPER(sym));
+    struct ell_generic_data *data =
+        (struct ell_generic_data *) ell_alloc(sizeof(*data));
+    data->generic_name = name;
+    data->method_entries = ell_util_make_list();
+    return ell_make_obj(ELL_WRAPPER(generic), data);
+}
+
+struct ell_obj *
+ell_generic_name(struct ell_obj *generic)
+{
+    ell_assert_wrapper(generic, ELL_WRAPPER(generic));
+    return ((struct ell_generic_data *) generic->data)->generic_name;
+}
+
+list_t *
+ell_generic_method_entries(struct ell_obj *generic)
+{
+    ell_assert_wrapper(generic, ELL_WRAPPER(generic));
+    return ((struct ell_generic_data *) generic->data)->method_entries;
+}
+
+struct ell_method_entry *
+ell_make_method_entry(struct ell_obj *method, list_t *specializers)
+{
+    ell_assert_wrapper(method, ELL_WRAPPER(clo));
+    struct ell_method_entry *me = 
+        (struct ell_method_entry *) ell_alloc(sizeof(*me));
+    me->method = method;
+    me->specializers = specializers;
+    return me;
+}
+
+void
+ell_generic_add_method(struct ell_obj *generic, struct ell_obj *clo,
+                       list_t *specializers)
+{
+    list_t *mes = ell_generic_method_entries(generic);
+    for (lnode_t *n = list_first(mes); n; n = list_next(mes, n)) {
+        struct ell_method_entry *me = 
+            (struct ell_method_entry *) lnode_get(n);
+        if (ell_util_lists_equal(me->specializers, specializers,
+                                 (dict_comp_t) &ell_ptr_cmp)) {
+            me->method = clo;
+            return;
+        }
+    }
+    ell_util_list_add(mes, ell_make_method_entry(clo, specializers));
+}
 
 struct ell_obj *
 ell_find_method_in_class(struct ell_obj *class, struct ell_obj *msg_sym);
@@ -275,18 +333,13 @@ ell_put_method(struct ell_obj *class, struct ell_obj *msg_sym, struct ell_obj *c
     ell_assert_wrapper(class, ELL_WRAPPER(class));
     ell_assert_wrapper(msg_sym, ELL_WRAPPER(sym));
     ell_assert_wrapper(clo, ELL_WRAPPER(clo));
-    ell_util_dict_put(&(ell_class_wrapper(class))->methods, msg_sym, clo);
+    ell_fail("put method");
 }
 
 struct ell_obj *
 ell_find_method_in_class(struct ell_obj *class, struct ell_obj *msg_sym)
 {
-    dnode_t *node = dict_lookup(&(ell_class_wrapper(class))->methods, msg_sym);
-    if (node) {
-        return (struct ell_obj *) dnode_get(node);
-    } else {
-        return ell_find_method_in_superclasses(class, msg_sym);
-    }
+    ell_fail("find method");
 }
 
 struct ell_obj *
@@ -991,6 +1044,21 @@ ell_util_assert_list_len_min(list_t *list, listcount_t len)
     }
 }
 
+bool
+ell_util_lists_equal(list_t *l1, list_t *l2, dict_comp_t compare)
+{
+    if (list_count(l1) != list_count(l2))
+        return false;
+    lnode_t *n1, *n2;
+    for (n1 = list_first(l1), n2 = list_first(l2);
+         n1 && n2;
+         n1 = list_next(l1, n1), n2 = list_next(l2, n2)) {
+        if (compare(lnode_get(n1), lnode_get(n2)) != 0)
+            return false;
+    }
+    return true;
+}
+
 dict_t *
 ell_util_make_dict(dict_comp_t comp)
 {
@@ -1462,6 +1530,7 @@ ell_init()
     __ell_g_LbooleanG_1_ = ELL_CLASS(boolean);
     __ell_g_LclassG_1_ = ELL_CLASS(class);
     __ell_g_LfunctionG_1_ = ELL_CLASS(clo);
+    __ell_g_LgenericDfunctionG_1_ = ELL_CLASS(generic);
     __ell_g_LlinkedDlistG_1_ = ELL_CLASS(lst);
     __ell_g_LlistDrangeG_1_ = ELL_CLASS(list_range);
     __ell_g_LstringG_1_ = ELL_CLASS(str);

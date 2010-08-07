@@ -30,7 +30,6 @@ struct ell_obj;
 
 struct ell_wrapper {
     struct ell_obj *class;
-    dict_t methods;
 };
 
 struct ell_obj {
@@ -96,6 +95,7 @@ struct ell_obj *__ell_g_LobjectG_1_;
 struct ell_obj *__ell_g_LbooleanG_1_;
 struct ell_obj *__ell_g_LclassG_1_;
 struct ell_obj *__ell_g_LfunctionG_1_;
+struct ell_obj *__ell_g_LgenericDfunctionG_1_;
 struct ell_obj *__ell_g_LlinkedDlistG_1_;
 struct ell_obj *__ell_g_LlistDrangeG_1_;
 struct ell_obj *__ell_g_LstringG_1_;
@@ -160,7 +160,23 @@ ell_check_npos(ell_arg_ct formal_npos, ell_arg_ct actual_npos);
         ell_call(clo, npos, 0, __ell_args);                             \
     })
 
-/**** Methods ****/
+/**** Generic Functions and Methods ****/
+
+struct ell_method_entry {
+    struct ell_obj *method; // clo
+    list_t *specializers; // class
+};
+
+struct ell_generic_data {
+    struct ell_obj *generic_name; // sym
+    list_t *method_entries;
+};
+
+struct ell_obj *
+ell_make_named_generic(struct ell_obj *name);
+void
+ell_generic_add_method(struct ell_obj *generic, struct ell_obj *clo,
+                       list_t *specializers);
 
 void
 ell_put_method(struct ell_obj *class, struct ell_obj *msg_sym, struct ell_obj *clo);
@@ -409,6 +425,8 @@ void
 ell_util_assert_list_len(list_t *list, listcount_t len);
 void
 ell_util_assert_list_len_min(list_t *list, listcount_t len);
+bool
+ell_util_lists_equal(list_t *l1, list_t *l2, dict_comp_t compare);
 dict_t *
 ell_util_make_dict(dict_comp_t comp);
 void *
