@@ -122,6 +122,9 @@
 
 (defgeneric print-object)
 
+(defmethod print-object ((o <object>))
+  (print-object "#<object>"))
+
 (defun print (object) (print-object object))
 
 (defmacro c (&rest snippets)
