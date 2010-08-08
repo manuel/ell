@@ -575,8 +575,8 @@ ell_put_method(struct ell_obj *gf, struct ell_obj *clo, list_t *specializers)
 }
 
 void
-ell_put_method_legacy(struct ell_obj *class, struct ell_obj *gf, struct ell_obj *clo,
-                      int args_ct)
+ell_put_method_legacy(struct ell_obj *class, struct ell_obj *gf,
+                      struct ell_obj *clo, int args_ct)
 {
     list_t *specializers = ell_util_make_list();
     ell_util_list_add(specializers, class);
@@ -1769,6 +1769,11 @@ ell_plus_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
 
 /**** Initialization ****/
 
+/* The bootstrap process is complicated by two factors: (1)
+   initializing the metaclass (the class of classes) is always tricky,
+   and (2) during class initialization, we don't have symbols
+   available (because they are objects, and thus need classes). */
+
 __attribute__((constructor(200))) static void
 ell_init()
 {
@@ -1783,6 +1788,7 @@ ell_init()
     ELL_WRAPPER(class) = ell_class_wrapper(ELL_CLASS(class));
     ELL_CLASS(class)->wrapper = ELL_WRAPPER(class);
 
+    /* Define built-in classes. */
 #define ELL_DEFCLASS(name, lisp_name)                                   \
     ELL_CLASS(name) = ell_make_class_bootstrap();                       \
     ELL_WRAPPER(name) = ell_class_wrapper(ELL_CLASS(name));
@@ -1790,6 +1796,7 @@ ELL_DEFCLASS(obj, "<object>")
 #include "defclass.h"
 #undef ELL_DEFCLASS
 
+    /* Export built-in classes to Lisp. */
     __ell_g_LobjectG_1_ = ELL_CLASS(obj);
     __ell_g_LbooleanG_1_ = ELL_CLASS(boolean);
     __ell_g_LclassG_1_ = ELL_CLASS(class);
@@ -1805,11 +1812,13 @@ ELL_DEFCLASS(obj, "<object>")
     __ell_g_LsyntaxDsymbolG_1_ = ELL_CLASS(stx_sym);
     __ell_g_LunspecifiedG_1_ = ELL_CLASS(unspecified);
 
+    /* Define and intern built-in symbols. */
 #define ELL_DEFSYM(name, lisp_name) \
     if (!ELL_SYM(name)) ELL_SYM(name) = ell_intern(ell_make_str(lisp_name));
 #include "defsym.h"
 #undef ELL_DEFSYM
 
+    /* Prepare low-level constants. */
     ell_dongle = ell_make_str("dongle");
 
     __ell_g_Ot_1_ = ell_make_obj(ELL_WRAPPER(boolean), NULL);
@@ -1822,6 +1831,7 @@ ELL_DEFCLASS(obj, "<object>")
 
     ell_unbound = ell_make_obj(ELL_WRAPPER(unbound), NULL);
 
+    /* Built-in functions. */
     __ell_g_blockFf_2_ = ell_make_clo(&ell_blockFf_code, NULL);
     __ell_g_unwindDprotectFf_2_ = ell_make_clo(&ell_unwind_protectFf_code, NULL);
 
@@ -1857,15 +1867,16 @@ ELL_DEFCLASS(obj, "<object>")
 
     __ell_g_signal_2_ = ell_unbound;
 
+    /* Set names of built-in classes, now that symbols work. */
     ell_set_class_name(ELL_CLASS(class), ell_intern(ell_make_str("<class>")));
     ell_set_class_name(ELL_CLASS(obj), ell_intern(ell_make_str("<object>")));
-
 #define ELL_DEFCLASS(name, lisp_name)                                   \
     ell_set_class_name(ELL_CLASS(name), ell_intern(ell_make_str(lisp_name))); \
     ell_add_superclass(ELL_CLASS(name), ELL_CLASS(obj));
 #include "defclass.h"
 #undef ELL_DEFCLASS
 
+    /* Define built-in generics. */
 #define ELL_DEFGENERIC(name, lisp_name)                                 \
     ELL_GENERIC(name) = ell_make_generic_function(ell_intern(ell_make_str(lisp_name)));
 #include "defgeneric.h"
