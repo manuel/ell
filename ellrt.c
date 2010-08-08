@@ -552,12 +552,6 @@ ell_generic_find_method(struct ell_obj *generic, list_t *specialized_args)
     struct ell_method_entry *me =
         ell_most_specific_method_entry(generic, applicable_mes);
     if (me) {
-/*         printf("For "); */
-/*         ell_print_generic_and_specialized_args(generic, specialized_args); */
-/*         printf("Applicable methods:\n"); */
-/*         ell_print_method_entries(applicable_mes); */
-/*         printf("Most specific method:\n"); */
-/*         ell_print_method_entry(me); */
         return me->method;
     } else {
         ell_no_most_specific_method(generic, specialized_args, applicable_mes);
@@ -581,8 +575,8 @@ ell_put_method(struct ell_obj *gf, struct ell_obj *clo, list_t *specializers)
 }
 
 void
-ell_put_method_fake(struct ell_obj *class, struct ell_obj *gf, struct ell_obj *clo,
-                    int args_ct)
+ell_put_method_legacy(struct ell_obj *class, struct ell_obj *gf, struct ell_obj *clo,
+                      int args_ct)
 {
     list_t *specializers = ell_util_make_list();
     ell_util_list_add(specializers, class);
@@ -590,14 +584,6 @@ ell_put_method_fake(struct ell_obj *class, struct ell_obj *gf, struct ell_obj *c
         ell_util_list_add(specializers, ELL_CLASS(obj));
     }
     ell_put_method(gf, clo, specializers);    
-}
-
-void
-ell_put_method_legacy(struct ell_obj *class, struct ell_obj *gf, struct ell_obj *clo)
-{
-    list_t *specializers = ell_util_make_list();
-    ell_util_list_add(specializers, class);
-    ell_put_method(gf, clo, specializers);
 }
 
 /*

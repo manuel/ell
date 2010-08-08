@@ -197,7 +197,8 @@ ell_put_method(struct ell_obj *gf, struct ell_obj *clo, list_t *specializers);
 /* This basically simulates a Smalltalk-like OO system on top of the
    built-in generic functions, for bootstrap simplicity. */
 void
-ell_put_method_legacy(struct ell_obj *class, struct ell_obj *gf, struct ell_obj *clo);
+ell_put_method_legacy(struct ell_obj *class, struct ell_obj *gf,
+                      struct ell_obj *clo, int args_ct);
 struct ell_obj *
 ell_send(struct ell_obj *rcv, struct ell_obj *generic,
          ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args);
@@ -220,8 +221,8 @@ ell_send(struct ell_obj *rcv, struct ell_obj *generic,
     {                                                                   \
         struct ell_obj *clo =                                           \
             ell_make_clo(&ELL_METHOD_CODE(class, msg), NULL);           \
-        ell_put_method_fake(ELL_CLASS(class), ELL_GENERIC(msg), clo,    \
-                            formal_npos);                               \
+        ell_put_method_legacy(ELL_CLASS(class), ELL_GENERIC(msg), clo,  \
+                              formal_npos);                             \
     }                                                                   \
                                                                         \
     struct ell_obj *                                                    \
