@@ -1,1 +1,1 @@
-./ell-repl -x ./lisp-0.lisp.syntax.fasl -x ./lisp-conditions.lisp.syntax.fasl -x ./lisp-library-helpers.lisp.load.fasl -x ./lisp-library.lisp.syntax.fasl -l ./lisp-0.lisp.load.fasl -l ./lisp-conditions.lisp.load.fasl -l ./lisp-library.lisp.load.fasl
+./ell-repl -x ./lisp-0.lisp.syntax.fasl -x ./lisp-conditions.lisp.syntax.fasl -x ./lisp-library-helpers.lisp.load.fasl -x ./lisp-library.lisp.syntax.fasl -l ./lisp-0.lisp.load.fasl -l ./lisp-conditions.lisp.load.fasl -l ./lisp-library.lisp.load.fasl -l ./main.lisp

@@ -58,6 +58,12 @@
 (defmacro fsetq (name value)
   #`(ell-fset ,name ,value))
 
+(defmacro c-expression (&rest exprs)
+  #`(ell-snip ,@exprs))
+
+(defmacro c-statement (&rest exprs)
+  #`(ell-stmt ,@exprs))
+
 (defmacro block (label &rest body)
   #`(block/f (lambda (,label) ,@body)))
 

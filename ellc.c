@@ -1660,7 +1660,7 @@ ellc_emit_codes(struct ellc_st *st)
 
         code_id++;
     }
-    printf("\n");
+    fprintf(st->f, "\n");
 }
 
 static void
@@ -1692,7 +1692,7 @@ ellc_emit_stmts(struct ellc_st *st)
         }
         struct ellc_ast *body_seq = ast->stmt.body;
         ellc_direct_emit_c_sequence(st, body_seq);
-        printf("\n");
+        fprintf(st->f, "\n");
     }
 }
 
