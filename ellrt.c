@@ -359,8 +359,15 @@ ell_generic_add_method(struct ell_obj *generic, struct ell_obj *clo,
 }
 
 static bool
-ell_specializers_agree(list_t *actual_specializers,
-                       list_t *formal_specializers)
+ell_specializers_agree(struct ell_obj *actual_class, struct ell_obj *formal_class)
+{
+    return ((actual_class == formal_class) ||
+            (ell_is_subclass(actual_class, formal_class)));
+}
+
+static bool
+ell_specializer_lists_agree(list_t *actual_specializers,
+                            list_t *formal_specializers)
 {
     if (list_count(actual_specializers) != list_count(formal_specializers))
         return false;
@@ -372,8 +379,9 @@ ell_specializers_agree(list_t *actual_specializers,
          fn = list_next(formal_specializers, fn)) {
         struct ell_obj *actual_class = (struct ell_obj *) lnode_get(an);
         struct ell_obj *formal_class = (struct ell_obj *) lnode_get(fn);
-        if (!ell_is_subclass(actual_class, formal_class))
+        if (!ell_specializers_agree(actual_class, formal_class)) {
             return false;
+        }
     }
     return true;
 }
@@ -394,27 +402,46 @@ ell_find_applicable_method_entries(struct ell_obj *generic,
     for (lnode_t *n = list_first(mes); n; n = list_next(mes, n)) {
         struct ell_method_entry *me = 
             (struct ell_method_entry *) lnode_get(n);
-        if (ell_specializers_agree(actual_specializers, me->specializers))
+        if (ell_specializer_lists_agree(actual_specializers, me->specializers))
             ell_util_list_add(applicable_mes, me);
     }
     return applicable_mes;
 }
 
-static int
-ell_compare_classes(struct ell_obj *c1, struct ell_obj *c2)
+static bool
+ell_classes_comparable(struct ell_obj *class1, struct ell_obj *class2)
 {
-    if (ell_is_subclass(c1, c2)) return -1;
-    else if (ell_is_subclass(c2, c1)) return 1;
-    else return 0;
+    return ((class1 == class2)
+            || ell_is_subclass(class1, class2)
+            || ell_is_subclass(class2, class1));
+}
+
+static bool
+ell_class_smaller_than(struct ell_obj *class1, struct ell_obj *class2)
+{
+    return ell_is_subclass(class1, class2);
 }
 
 static bool
 ell_smaller_method_entry(struct ell_method_entry *me1,
                          struct ell_method_entry *me2)
 {
-    return ell_util_lists_less_than(me1->specializers,
-                                    me2->specializers,
-                                    (dict_comp_t) &ell_compare_classes);
+    list_t *l1 = me1->specializers;
+    list_t *l2 = me2->specializers;
+    if (list_count(l1) != list_count(l2))
+        return false;
+    lnode_t *n1, *n2;
+    for (n1 = list_first(l1), n2 = list_first(l2);
+         n1 && n2;
+         n1 = list_next(l1, n1), n2 = list_next(l2, n2)) {
+        struct ell_obj *class1 = (struct ell_obj *) lnode_get(n1);
+        struct ell_obj *class2 = (struct ell_obj *) lnode_get(n2);
+        if ((!ell_classes_comparable(class1, class2))
+            || (!ell_class_smaller_than(class1, class2))) {
+            return false;
+        }
+    }
+    return true;
 }
 
 static bool
@@ -423,6 +450,8 @@ ell_least_method_entry(struct ell_method_entry *me, list_t *mes)
     for (lnode_t *n = list_first(mes); n; n = list_next(mes, n)) {
         struct ell_method_entry *me2 = 
             (struct ell_method_entry *) lnode_get(n);
+        if (me == me2)
+            continue;
         if (!ell_smaller_method_entry(me, me2))
             return false;
     }
@@ -433,6 +462,10 @@ static struct ell_method_entry *
 ell_most_specific_method_entry(struct ell_obj *generic,
                                list_t *applicable_method_entries)
 {
+    if (list_count(applicable_method_entries) == 1) {
+        lnode_t *n = list_first(applicable_method_entries);
+        return (struct ell_method_entry *) lnode_get(n);
+    }
     for (lnode_t *n = list_first(applicable_method_entries); n;
          n = list_next(applicable_method_entries, n)) {
         struct ell_method_entry *me = 
@@ -443,36 +476,66 @@ ell_most_specific_method_entry(struct ell_obj *generic,
     return NULL;
 }
 
-void
-ell_no_applicable_method(struct ell_obj *generic, list_t *specialized_args)
+static void
+ell_print_generic_and_specialized_args(struct ell_obj *generic, list_t *specialized_args)
 {
-    printf("No applicable method for generic function %s called with %lu "
-           "argument(s) with the class(es): \n",
+    printf("generic %s [%p] called with %lu argument(s) with the class(es): \n",
            ell_str_chars(ell_sym_name(ell_generic_name(generic))),
+           generic,
            list_count(specialized_args));
     for (lnode_t *n = list_first(specialized_args); n; n = list_next(specialized_args, n)) {
         struct ell_obj *arg = (struct ell_obj *) lnode_get(n);
-        printf("%s (%p) ", ell_str_chars(ell_sym_name(ell_class_name(ell_obj_class(arg)))),
+        printf("%s [%p] ", ell_str_chars(ell_sym_name(ell_class_name(ell_obj_class(arg)))),
                ell_obj_class(arg));
     }
-    list_t *mes = ell_generic_method_entries(generic);
+    printf("\n");
+}
+
+static void
+ell_print_method_entry(struct ell_method_entry *me)
+{ 
+    for (lnode_t *mn = list_first(me->specializers); mn;
+         mn = list_next(me->specializers, mn)) {
+        struct ell_obj *class = (struct ell_obj *) lnode_get(mn);
+        printf("%s [%p] ", ell_str_chars(ell_sym_name(ell_class_name(class))),
+               class);
+    }
+    printf("\n");
+}
+
+static void
+ell_print_method_entries(list_t *mes)
+{
     if (list_count(mes) > 0) {
-        printf("\nThe generic function has methods for the following specializers:\n");
         for (lnode_t *n = list_first(mes); n; n = list_next(mes, n)) {
             struct ell_method_entry *me =
                 (struct ell_method_entry *) lnode_get(n);
-            for (lnode_t *mn = list_first(me->specializers); mn;
-                 mn = list_next(me->specializers, mn)) {
-                struct ell_obj *class = (struct ell_obj *) lnode_get(mn);
-                printf("%s (%p) ", ell_str_chars(ell_sym_name(ell_class_name(class))),
-                       class);
-            }
-            printf("\n");
+            ell_print_method_entry(me);
         }
     } else {
-        printf("\nThe generic function has no methods.\n");
+        printf("(no methods)\n");
     }
+}
+
+static void
+ell_no_applicable_method(struct ell_obj *generic, list_t *specialized_args)
+{
+    printf("No applicable method for ");
+    ell_print_generic_and_specialized_args(generic, specialized_args);
+    printf("Methods:\n");
+    ell_print_method_entries(ell_generic_method_entries(generic));
     ell_fail("No applicable method.\n");
+}
+
+static void
+ell_no_most_specific_method(struct ell_obj *generic, list_t *specialized_args,
+                            list_t *applicable_method_entries)
+{
+    printf("No most specific method for ");
+    ell_print_generic_and_specialized_args(generic, specialized_args);
+    printf("Applicable methods:\n");
+    ell_print_method_entries(applicable_method_entries);
+    ell_fail("No most specific method.\n");
 }
 
 struct ell_obj *
@@ -484,10 +547,11 @@ ell_generic_find_method(struct ell_obj *generic, list_t *specialized_args)
         ell_no_applicable_method(generic, specialized_args);
     struct ell_method_entry *me =
         ell_most_specific_method_entry(generic, applicable_mes);
-    if (me)
+    if (me) {
         return me->method;
-    else
-        ell_fail("no most specific method");
+    } else {
+        ell_no_most_specific_method(generic, specialized_args, applicable_mes);
+    }
 }
 
 /**** Methods ****/
@@ -943,7 +1007,7 @@ ell_lst_elts(struct ell_obj *lst)
     return &((struct ell_lst_data *) lst->data)->elts;
 }
 
-ELL_DEFMETHOD_NEW(lst, add, 2)
+ELL_DEFMETHOD(lst, add, 2)
 ELL_PARAM(lst, 0)
 ELL_PARAM(elt, 1)
 ell_util_list_add(ell_lst_elts(lst), elt);
@@ -1015,7 +1079,7 @@ printf("%s", ell_str_chars(ell_sym_name(ell_clo_name(self))));
 return ell_unspecified;
 ELL_END
 
-ELL_DEFMETHOD_NEW(stx_lst, add, 2)
+ELL_DEFMETHOD(stx_lst, add, 2)
 ELL_PARAM(stx_lst, 0)
 ELL_PARAM(elt, 1)
 ell_util_list_add(ell_stx_lst_elts(stx_lst), elt);
@@ -1728,6 +1792,7 @@ ell_init()
 #define ELL_DEFCLASS(name, lisp_name)                                   \
     ELL_CLASS(name) = ell_make_class_bootstrap();                       \
     ELL_WRAPPER(name) = ell_class_wrapper(ELL_CLASS(name));
+ELL_DEFCLASS(obj, "<object>")
 #include "defclass.h"
 #undef ELL_DEFCLASS
 
@@ -1798,14 +1863,14 @@ ell_init()
 
     __ell_g_signal_2_ = ell_unbound;
 
-
     ell_set_class_name(ELL_CLASS(class), ell_intern(ell_make_str("<class>")));
+    ell_set_class_name(ELL_CLASS(obj), ell_intern(ell_make_str("<object>")));
 
 #define ELL_DEFCLASS(name, lisp_name)                                   \
-    ell_set_class_name(ELL_CLASS(name), ell_intern(ell_make_str(lisp_name)));
+    ell_set_class_name(ELL_CLASS(name), ell_intern(ell_make_str(lisp_name))); \
+    ell_add_superclass(ELL_CLASS(name), ELL_CLASS(obj));
 #include "defclass.h"
 #undef ELL_DEFCLASS
-
 
 #define ELL_DEFGENERIC(name, lisp_name)                                 \
     ELL_GENERIC(name) = ell_make_generic_function(ell_intern(ell_make_str(lisp_name)));

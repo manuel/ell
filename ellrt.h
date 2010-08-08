@@ -86,6 +86,7 @@ struct ell_wrapper *ELL_WRAPPER(class);
 #define ELL_DEFCLASS(name, lisp_name)           \
     struct ell_obj *ELL_CLASS(name);            \
     struct ell_wrapper *ELL_WRAPPER(name);
+ELL_DEFCLASS(obj, "<object>")
 #include "defclass.h"
 #undef ELL_DEFCLASS
 
@@ -213,7 +214,7 @@ ell_send(struct ell_obj *rcv, struct ell_obj *generic,
 
 #define ELL_METHOD_CODE(class, msg) __ell_method_code_##class##_##msg
 
-#define ELL_DEFMETHOD_NEW(class, msg, formal_npos)                      \
+#define ELL_DEFMETHOD(class, msg, formal_npos)                          \
     ell_code ELL_METHOD_CODE(class, msg);                               \
                                                                         \
     __attribute__((constructor(201))) static void                       \
@@ -231,6 +232,7 @@ ell_send(struct ell_obj *rcv, struct ell_obj *generic,
                                 struct ell_obj *dongle)                 \
     {
 
+/*
 #define ELL_DEFMETHOD(class, msg, formal_npos)                          \
     ell_code ELL_METHOD_CODE(class, msg);                               \
                                                                         \
@@ -248,6 +250,7 @@ ell_send(struct ell_obj *rcv, struct ell_obj *generic,
                                 struct ell_obj *dongle)                 \
     {                                                                   \
         ell_check_npos(formal_npos, npos);
+*/
 
 #define ELL_PARAM(name, i)                      \
     struct ell_obj *name = args[i];
