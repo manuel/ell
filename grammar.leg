@@ -4,6 +4,8 @@ ell_parser_add_sym(char *chars);
 void
 ell_parser_add_str(char *chars);
 void
+ell_parser_add_inline_c(char *chars);
+void
 ell_parser_add_num(char *chars);
 void
 ell_parser_push();
@@ -15,24 +17,30 @@ ell_parser_push_special(struct ell_obj *sym);
 
 unit       = exprs eof
 exprs      = spc? (expr spc?)*
-expr =
-  quote | syntax | quasisyntax | unsyntax | unsyntax-splicing | str |
-  num | sym | lst | doc
 
-num        = < "-"? [0-9]+ >       { ell_parser_add_num(yytext); }
+expr       = quote | syntax | quasisyntax | unsyntax | unsyntax-splicing |
+             num | str | sym | lst | inline-c
+
+num        = < "-"? [0-9]+ >
+             { ell_parser_add_num(yytext); }
 
 str-esc    = "\\" [\"]
 str-char   = [^\"] | str-esc
-str        = "\"" < str-char* > "\""   { ell_parser_add_str(yytext); }
+str        = "\"" < str-char* > "\""
+             { ell_parser_add_str(yytext); }
+
+inline-c   = "$" < [^$]* > "$"
+             { ell_parser_add_inline_c(yytext); }
 
 # Needs to be kept in sync with ellc_mangle_char in 'ellc.c'.
 sym-char   = [a-z0-9&_#/] | "-" | "<" | ">" | "*" | "+" | "?"
-sym        = < sym-char+ >         { ell_parser_add_sym(yytext); }
+sym        = < sym-char+ >
+             { ell_parser_add_sym(yytext); }
 
 lst        = OPEN exprs CLOSE
            | OPEN spc? CLOSE
-OPEN       = "("                   { ell_parser_push(); }
-CLOSE      = ")"                   { ell_parser_pop(); }
+OPEN       = "(" { ell_parser_push(); }
+CLOSE      = ")" { ell_parser_pop(); }
 
 quote = 
   "\'" { ell_parser_push_special(ELL_SYM(core_quote)); } 
@@ -49,13 +57,6 @@ unsyntax = ","
 unsyntax-splicing = 
   ",@" { ell_parser_push_special(ELL_SYM(core_unsyntax_splicing)); }
   expr  { ell_parser_pop(); }
-
-doc = 
-  "$" { ell_parser_push(); }
-  sym? ("[" exprs "]")? ("{" contents* "}")? { ell_parser_pop(); }
-contents = 
-    < [^$}]+ > { ell_parser_add_str(yytext); }
-  | doc
 
 spc-char   = [ \t] | eol
 spc        = spc-char+

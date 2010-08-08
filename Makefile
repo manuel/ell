@@ -27,6 +27,9 @@ ell-compile: $(OBJECTS) ell-compile.o
 grammar:
 	leg -o grammar.c grammar.leg
 
+debug-grammar:
+	make grammar && touch ellrt.c && make ell-repl && ./ell
+
 .PHONY: clean
 clean:
 	@rm -f *.o *.fasl gmon.out ell-repl ell-compile
