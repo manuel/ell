@@ -32,6 +32,8 @@ ELL_DEFSYM(core_mdef, "ell-mdef")
 /* (ell-snip &rest exprs) ;; Inline C; contains C strings (emitted as-is) and Lisp exprs */
 ELL_DEFSYM(core_snip, "ell-snip")
 
+ELL_DEFSYM(core_stmt, "ell-stmt")
+
 /* Data and syntax quotation: */
 ELL_DEFSYM(core_quote, "quote")
 ELL_DEFSYM(core_syntax, "syntax")

@@ -695,6 +695,14 @@ ellc_norm_snip(struct ellc_st *st, struct ell_obj *stx_lst)
     return ast;
 }
 
+static struct ellc_ast *
+ellc_norm_stmt(struct ellc_st *st, struct ell_obj *stx_lst)
+{
+    struct ellc_ast *ast = ellc_make_ast(ELLC_AST_STMT);
+    ast->stmt.body = ellc_norm_seq(st, stx_lst);
+    return ast;
+}
+
 /* (Putting it All Together) */
 
 // This belongs somewhere else
@@ -737,6 +745,7 @@ ellc_init()
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_syntax), &ellc_norm_quasisyntax);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_mdef), &ellc_norm_mdef);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_snip), &ellc_norm_snip);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_stmt), &ellc_norm_stmt);
     // Compiler state
     dict_init(&ellc_mac_tab, DICTCOUNT_T_MAX, (dict_comp_t) &ell_sym_cmp);
     __ell_g_compilerDputDexpander_2_ =
@@ -1030,6 +1039,13 @@ ellc_conv_snip(struct ellc_st *st, struct ellc_ast *ast)
 }
 
 static void
+ellc_conv_stmt(struct ellc_st *st, struct ellc_ast *ast)
+{
+    ellc_conv_ast(st, ast->stmt.body);
+    ell_util_list_add(st->stmts, ast);
+}
+
+static void
 ellc_conv_ast(struct ellc_st *st, struct ellc_ast *ast)
 {
     switch(ast->type) {
@@ -1044,6 +1060,7 @@ ellc_conv_ast(struct ellc_st *st, struct ellc_ast *ast)
     case ELLC_AST_LOOP: ellc_conv_loop(st, ast); break;
     case ELLC_AST_CX: ellc_conv_cx(st, ast); break;
     case ELLC_AST_SNIP: ellc_conv_snip(st, ast); break;
+    case ELLC_AST_STMT: ellc_conv_stmt(st, ast); break;
     case ELLC_AST_LIT_SYM: break;
     case ELLC_AST_LIT_STR: break;
     case ELLC_AST_LIT_NUM: break;
@@ -1443,12 +1460,14 @@ ellc_emit_cx(struct ellc_st *st, struct ellc_ast *ast)
     }
 }
 
+/* Emits a body sequence containing literal strings and other
+   expressions by emitting the literal strings at the top-level of the
+   sequence as-is to the C output. */
 static void
-ellc_emit_snip(struct ellc_st *st, struct ellc_ast *ast)
+ellc_direct_emit_c_sequence(struct ellc_st *st, struct ellc_ast *body_seq)
 {
-    struct ellc_ast *body_seq = ast->snip.body;
     if(body_seq->type != ELLC_AST_SEQ) {
-        ell_fail("snip error\n");
+        ell_fail("C output error\n");
     }
     list_t *exprs = body_seq->seq.exprs;
     for (lnode_t *n = list_first(exprs); n; n = list_next(exprs, n)) {
@@ -1459,6 +1478,21 @@ ellc_emit_snip(struct ellc_st *st, struct ellc_ast *ast)
             ellc_emit_ast(st, expr);
         }
     }
+}
+
+static void
+ellc_emit_snip(struct ellc_st *st, struct ellc_ast *ast)
+{
+    struct ellc_ast *body_seq = ast->snip.body;
+    ellc_direct_emit_c_sequence(st, body_seq);
+}
+
+static void
+ellc_emit_stmt(struct ellc_st *st, struct ellc_ast *ast)
+{
+    /* Do nothing, statements get emitted specially before everything
+       else.  However return something so that REPL etc is happy. */
+    fprintf(st->f, "ell_unspecified");
 }
 
 static void
@@ -1480,6 +1514,7 @@ ellc_emit_ast(struct ellc_st *st, struct ellc_ast *ast)
     case ELLC_AST_LOOP: ellc_emit_loop(st, ast); break;
     case ELLC_AST_CX: ellc_emit_cx(st, ast); break;
     case ELLC_AST_SNIP: ellc_emit_snip(st, ast); break;
+    case ELLC_AST_STMT: ellc_emit_stmt(st, ast); break;
     case ELLC_AST_LIT_SYM: ellc_emit_lit_sym(st, ast); break;
     case ELLC_AST_LIT_STR: ellc_emit_lit_str(st, ast); break;
     case ELLC_AST_LIT_NUM: ellc_emit_lit_num(st, ast); break;
@@ -1492,7 +1527,7 @@ ellc_emit_ast(struct ellc_st *st, struct ellc_ast *ast)
 static void
 ellc_emit_globals_declarations(struct ellc_st *st)
 {
-    fprintf(st->f, "// GLOBALS\n");
+    fprintf(st->f, "\n// GLOBALS\n"); // err...
     for (lnode_t *n = list_first(st->globals); n; n = list_next(st->globals, n)) {
         struct ellc_id *id = (struct ellc_id *) lnode_get(n);
         fprintf(st->f, "__attribute__((weak)) struct ell_obj *%s;\n", ellc_mangle_glo_id(id));
@@ -1506,7 +1541,7 @@ ellc_emit_globals_initializations(struct ellc_st *st)
     for (lnode_t *n = list_first(st->globals); n; n = list_next(st->globals, n)) {
         struct ellc_id *id = (struct ellc_id *) lnode_get(n);
         char *mid = ellc_mangle_glo_id(id);
-        fprintf(st->f, "if (%s == NULL) %s = ell_unbound;\n", mid, mid);
+        fprintf(st->f, "\tif (%s == NULL) %s = ell_unbound;\n", mid, mid);
     }
     fprintf(st->f, "\n");
 }
@@ -1648,9 +1683,24 @@ ellc_emit_codes(struct ellc_st *st)
 }
 
 static void
+ellc_emit_stmts(struct ellc_st *st)
+{
+    for (lnode_t *n = list_first(st->stmts); n; n = list_next(st->stmts, n)) {
+        struct ellc_ast *ast = (struct ellc_ast *) lnode_get(n);
+        if (ast->type != ELLC_AST_STMT) {
+            ell_fail("statement error\n");
+        }
+        struct ellc_ast *body_seq = ast->stmt.body;
+        ellc_direct_emit_c_sequence(st, body_seq);
+        printf("\n");
+    }
+}
+
+static void
 ellc_emit(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
 {
     fprintf(st->f, "#include \"ellrt.h\"\n");
+    ellc_emit_stmts(st);
     ellc_emit_globals_declarations(st);
     ellc_emit_codes(st);
     fprintf(st->f, "// INIT\n");
@@ -1671,6 +1721,7 @@ ellc_make_st(FILE *f)
 {
     struct ellc_st *st = (struct ellc_st *) ell_alloc(sizeof(*st));
     st->f = f;
+    st->stmts = ell_util_make_list();
     st->defined_globals = ell_util_make_list();
     st->defined_macros = ell_util_make_dict((dict_comp_t) &ell_sym_cmp);
     st->globals = ell_util_make_list();
@@ -1713,8 +1764,8 @@ ellc_compile(struct ell_obj *stx_lst, struct ellc_st **st_out)
     
     char cmdline[256];
     sprintf(cmdline,
-            "gcc -pipe -std=c99 -shared -g -pg -fPIC -I. -o %s -x c %s",
-            onam, cnam);
+            "cat %s && gcc -pipe -std=c99 -shared -g -pg -fPIC -I. -o %s -x c %s",
+            cnam, onam, cnam);
 
     if (system(cmdline) == -1) {
         ell_fail("error compiling file\n");

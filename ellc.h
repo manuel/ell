@@ -113,6 +113,11 @@ struct ellc_ast_snip {
     struct ellc_ast *body; // seq of strings and other expressions
 };
 
+/* Inline C statement. */
+struct ellc_ast_stmt {
+    struct ellc_ast *body; // seq of strings and other expressions
+};
+
 /**** Explicit Form ****/
 
 /* During closure conversion, the normal form AST gets destructively
@@ -162,6 +167,7 @@ enum ellc_ast_type {
     ELLC_AST_LOOP = 9,
     ELLC_AST_CX   = 10,
     ELLC_AST_SNIP = 11,
+    ELLC_AST_STMT = 12,
 
     ELLC_AST_GLO_REF = 101,
     ELLC_AST_GLO_SET = 102,
@@ -190,6 +196,7 @@ struct ellc_ast {
         struct ellc_ast_loop loop;
         struct ellc_ast_cx cx;
         struct ellc_ast_snip snip;
+        struct ellc_ast_stmt stmt;
 
         struct ellc_ast_glo_ref glo_ref;
         struct ellc_ast_glo_set glo_set;
@@ -292,6 +299,7 @@ struct ellc_contour {
 
 /* Compilation state, maintained during the compilation of a unit. */
 struct ellc_st {
+    list_t *stmts; // ast
     /* Keeps track of all global variables defined in the compilation
        unit.  Populated during normalization. */
     list_t *defined_globals; // id
