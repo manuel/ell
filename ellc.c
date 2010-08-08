@@ -811,7 +811,6 @@ ellc_norm_stx(struct ellc_st *st, struct ell_obj *stx)
     } else if (stx->wrapper == ELL_WRAPPER(stx_num)) {
         return ellc_norm_lit_num(st, stx);
     } else {
-        ELL_SEND(ell_obj_class(stx), printDobject);
         ell_fail("syntax normalization failure\n");
     }
 }
