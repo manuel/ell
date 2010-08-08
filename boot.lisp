@@ -100,7 +100,7 @@
 
 (defmacro defclass (name &optional (superclasses #'()) &rest slot-specs)
   #`(progn
-      (defvar ,name (make-class))
+      (defvar ,name (make-class ',name))
       (add-superclass ,name <object>)
       ,@(map-list (lambda (superclass)
                     #`(add-superclass ,name ,superclass))

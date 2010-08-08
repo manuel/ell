@@ -1568,7 +1568,7 @@ ell_map_list_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
     return res;
 }
 
-/* (make-class) -> class */
+/* (make-class name) -> class */
 
 struct ell_obj *__ell_g_makeDclass_2_;
 
@@ -1576,8 +1576,8 @@ struct ell_obj *
 ell_make_class_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
                     struct ell_obj **args, struct ell_obj *dongle)
 {
-    ell_check_npos(npos, 0);
-    return ell_make_class(ell_intern(ell_make_str("anonymous class")));
+    ell_check_npos(npos, 1);
+    return ell_make_class(args[0]);
 }
 
 /* (add-superclass class superclass) -> unspecified */
