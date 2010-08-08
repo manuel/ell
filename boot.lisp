@@ -107,6 +107,28 @@
                   superclasses)
       ',name))
 
+(defmacro defgeneric (name &optional params)
+  #`(defun/f ,name (if (fdefinedp ,name)
+                       ,name
+                       (make-generic-function ',name))))
+
+(defmacro defmethod (name params &rest body)
+  #`(progn
+      (defgeneric ,name)
+      (put-method ,name (lambda ,params ,@body) ,@(dissect-generic-function-params params))
+      ',name))
+
+(defun print (object) (print-object object))
+
+(defmacro c (&rest snippets)
+  #`(c-expression ,snippets))
+
+(defmacro fluid-let (name value &rest body)
+  #`(let ((tmp ,name))
+      (setq ,name ,value)
+      (unwind-protect (progn ,@body)
+        (setq ,name tmp))))
+
 (defclass <string>)
 (defclass <symbol>)
 (defclass <number>)
@@ -119,28 +141,3 @@
 (defclass <syntax-symbol>)
 (defclass <syntax-string>)
 (defclass <syntax-number>)
-
-(defmacro defgeneric (name &optional params)
-  #`(defun ,name (&rest args)
-      (let ((receiver (send (send args 'all) 'front)))
-        (apply (find-method receiver ',name) args))))
-
-(defmacro defmethod (name params &rest body)
-  #`(progn
-      (defgeneric ,name)
-      (put-method ,(send (send params 'first) 'second) 
-                  ',name
-                  (lambda ,params ,@body))
-      ',name))
-
-(defgeneric print-object (object))
-(defun print (object) (print-object object))
-
-(defmacro c (&rest snippets)
-  #`(c-expression ,snippets))
-
-(defmacro fluid-let (name value &rest body)
-  #`(let ((tmp ,name))
-      (setq ,name ,value)
-      (unwind-protect (progn ,@body)
-        (setq ,name tmp))))

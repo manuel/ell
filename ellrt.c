@@ -7,20 +7,6 @@
 
 #include "ellrt.h"
 
-struct ell_obj *
-ell_stacktrace_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-                    struct ell_obj **args, struct ell_obj *dongle);
-
-struct ell_obj *
-ell_fail(char *msg, ...)
-{
-    /* Hack, but calling into Lisp condition system is troublesome. */
-    printf("Unhandled Lisp condition: %s\nStack trace:\n", msg);
-    ell_stacktrace_code(NULL, 0, 0, NULL, ell_dongle);
-    exit(EXIT_FAILURE);
-    return ell_unspecified;
-}
-
 /**** Parsing ****/
 
 #include "grammar.c"
@@ -244,6 +230,13 @@ ell_clo_name(struct ell_obj *clo)
     return ((struct ell_clo_data *) clo->data)->name;
 }
 
+void *
+ell_clo_env(struct ell_obj *clo) 
+{
+    ell_assert_wrapper(clo, ELL_WRAPPER(clo));
+    return ((struct ell_clo_data *) clo->data)->env;
+}
+
 struct ell_obj *
 ell_call_unchecked(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
                    struct ell_obj **args)
@@ -269,6 +262,25 @@ ell_check_npos(ell_arg_ct formal_npos, ell_arg_ct actual_npos)
 }
 
 /**** Generic Functions ****/
+
+static struct ell_obj *
+ell_generic_function_code(struct ell_obj *gf, ell_arg_ct npos, ell_arg_ct nkey,
+                          struct ell_obj **args, struct ell_obj *dongle)
+{
+    struct ell_obj *generic = (struct ell_obj *) ell_clo_env(gf);
+    list_t *specialized_args = ell_util_make_list();
+    for (int i = 0; i < npos; i++)
+        ell_util_list_add(specialized_args, args[i]);
+    return ell_call(ell_generic_find_method(generic, specialized_args),
+                    npos, nkey, args);
+}
+
+struct ell_obj *
+ell_make_generic_function()
+{
+    return ell_make_clo(&ell_generic_function_code,
+                        ell_make_named_generic(ELL_SYM(anonymous_gf)));
+}
 
 struct ell_obj *
 ell_make_named_generic(struct ell_obj *name)
@@ -426,29 +438,41 @@ ell_generic_find_method(struct ell_obj *generic, list_t *specialized_args)
 /**** Methods ****/
 
 void
-ell_put_method(struct ell_obj *class, struct ell_obj *generic,
-               struct ell_obj *clo)
+ell_put_method(struct ell_obj *gf, struct ell_obj *clo, list_t *specializers)
 {
-    ell_assert_wrapper(class, ELL_WRAPPER(class));
-    ell_assert_wrapper(generic, ELL_WRAPPER(generic));
+    ell_assert_wrapper(gf, ELL_WRAPPER(clo)); // gf, not generic!
     ell_assert_wrapper(clo, ELL_WRAPPER(clo));
-    list_t *specializers = ell_util_make_list();
-    ell_util_list_add(specializers, class);
+
+    /* Bug: unsafe */
+    struct ell_obj *generic = (struct ell_obj *) ell_clo_env(gf); // generic, stored inside gf!
+    ell_assert_wrapper(generic, ELL_WRAPPER(generic)); // still unsafe
+
     ell_generic_add_method(generic, clo, specializers);
 }
 
-struct ell_obj *
-ell_find_method(struct ell_obj *rcv, struct ell_obj *generic)
+void
+ell_put_method_legacy(struct ell_obj *class, struct ell_obj *gf, struct ell_obj *clo)
 {
-    ell_assert_wrapper(generic, ELL_WRAPPER(generic));
+    list_t *specializers = ell_util_make_list();
+    ell_util_list_add(specializers, class);
+    ell_put_method(gf, clo, specializers);
+}
+
+struct ell_obj *
+ell_find_method(struct ell_obj *rcv, struct ell_obj *gf) // legacy
+{
+    ell_assert_wrapper(gf, ELL_WRAPPER(clo));  // !
     list_t *specialized_args = ell_util_make_list();
     ell_util_list_add(specialized_args, rcv);
+    /* Bug: unsafe */
+    struct ell_obj *generic = (struct ell_obj *) ell_clo_env(gf);
+    ell_assert_wrapper(generic, ELL_WRAPPER(generic)); // still unsafe
     return ell_generic_find_method(generic, specialized_args);
 }
 
 struct ell_obj *
 ell_send(struct ell_obj *rcv, struct ell_obj *generic,
-         ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args)
+         ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args) // legacy
 {
     struct ell_obj *clo = ell_find_method(rcv, generic);
     if (clo) {
@@ -1015,13 +1039,15 @@ ell_unbound_arg()
 struct ell_obj *
 ell_unbound_var(char *name)
 {
-    return ell_fail("unbound variable: %s\n", name);
+    ell_fail("unbound variable: %s\n", name);
+    return ell_unspecified;
 }
 
 struct ell_obj *
 ell_unbound_fun(char *name)
 {
-    return ell_fail("unbound function: %s\n", name);
+    ell_fail("unbound function: %s\n", name);
+    return ell_unspecified;
 }
 
 struct ell_obj **
@@ -1189,16 +1215,42 @@ ell_ptr_cmp(void *a, void *b)
 
 /**** Misc ****/
 
-__attribute__((noinline)) // always have own stack frame
 void
-ell_print_backtrace()
+ell_print_stacktrace()
 {
-    void* bt[100];
-    int ct = backtrace(bt, 100);
-    char** syms = backtrace_symbols(bt, ct);
-    for(int i = 1; i < ct; i++) // skip own stack frame
-        printf("%s\n", syms[i]);
-    free(syms);
+    int size = 100;
+    void *buffer[size];
+    int ct = backtrace(buffer, size);
+    char **names = backtrace_symbols(buffer, ct);
+    int i = 0;
+    struct ell_obj **frame = __builtin_frame_address(0);
+    while (frame) {
+        struct ell_obj *the_dongle = *(frame + 6);
+        if (the_dongle == ell_dongle) {
+            struct ell_obj *the_clo = *(frame + 2);
+            ell_arg_ct the_npos = (ell_arg_ct) *(frame + 3);
+            ell_arg_ct the_nkey = (ell_arg_ct) *(frame + 4);
+            struct ell_obj **args = (struct ell_obj **) *(frame + 5);
+            printf("* LISP %s\n", names[i]);
+            printf("  (%s%s",
+                   ell_str_chars(ell_sym_name(ell_clo_name(the_clo))),
+                   the_npos ? " " : "");
+            for (int i = 0; i < the_npos; i++) {
+                ELL_SEND(args[i], printDobject);
+                if ((i + 1) < the_npos)
+                    printf(" ");
+            }
+            printf(")\n");
+        } else {
+            printf("* C %s\n", names[i]);
+        }
+        frame = (struct ell_obj **) *(frame);
+        i++;
+        if (i > 15) {
+            printf("...\n");
+            break;
+        }
+    }
 }
 
 /**** Built-in Functions ****/
@@ -1408,7 +1460,50 @@ ell_add_superclass_code(struct ell_obj *clo, ell_arg_ct npos,
     return ell_unspecified;
 }
 
-/* (put-method class msg-sym clo) -> unspecified */
+/* (make-generic-function) -> function */
+
+struct ell_obj *__ell_g_makeDgenericDfunction_2_;
+
+struct ell_obj *
+ell_make_generic_function_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
+                               struct ell_obj **args, struct ell_obj *dongle)
+{
+    return ell_make_generic_function();
+}
+
+/* (dissect-generic-function-params params) -> specializers syntax list */
+
+struct ell_obj *__ell_g_dissectDgenericDfunctionDparams_2_;
+
+struct ell_obj *
+ell_dissect_generic_function_params_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
+                                         struct ell_obj **args, struct ell_obj *dongle)
+{
+    ell_check_npos(npos, 1);
+    struct ell_obj *stx_lst = args[0];
+    ell_assert_wrapper(stx_lst, ELL_WRAPPER(stx_lst));
+    struct ell_obj *res_stx_lst = ell_make_stx_lst();
+    struct ell_obj *range = ELL_SEND(stx_lst, all);
+    while(!ell_is_true(ELL_SEND(range, emptyp))) {
+        struct ell_obj *param = ELL_SEND(range, front);
+        if (param->wrapper == ELL_WRAPPER(stx_sym)) {
+            struct ell_obj *sym = ell_stx_sym_sym(param);
+            if ((sym == ELL_SYM(param_optional)) ||
+                (sym == ELL_SYM(param_key)) ||
+                (sym == ELL_SYM(param_rest)) ||
+                (sym == ELL_SYM(param_all_keys))) {
+                break;
+            }
+        } else if (param->wrapper == ELL_WRAPPER(stx_lst)) {
+            struct ell_obj *class_stx = ELL_SEND(stx_lst, second);
+            ELL_SEND(res_stx_lst, add, class_stx);
+        }
+        ELL_SEND(range, popDfront);
+    }
+    return res_stx_lst;
+}
+
+/* (put-method generic-function clo &rest specializers) -> unspecified */
 
 struct ell_obj *__ell_g_putDmethod_2_;
 
@@ -1416,20 +1511,12 @@ struct ell_obj *
 ell_put_method_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
                     struct ell_obj **args, struct ell_obj *dongle)
 {
-    ell_check_npos(npos, 3);
-    ell_put_method(args[0], args[1], args[2]);
+    list_t *specializers = ell_util_make_list();
+    for (int i = 2; i < npos; i++) {
+        ell_util_list_add(specializers, args[i]);
+    }
+    ell_put_method(args[0], args[1], specializers);
     return ell_unspecified;
-}
-
-/* (find-method receiver msg-sym) -> clo */
-
-struct ell_obj *__ell_g_findDmethod_2_;
-
-struct ell_obj *
-ell_find_method_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args, struct ell_obj *dongle)
-{
-    ell_check_npos(npos, 2);
-    return ell_find_method(args[0], args[1]);
 }
 
 /* (make class) -> instance */
@@ -1490,46 +1577,7 @@ struct ell_obj *
 ell_stacktrace_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
                     struct ell_obj **args, struct ell_obj *dongle)
 {
-    int size = 100;
-    void *buffer[size];
-    int ct = backtrace(buffer, size);
-    char **names = backtrace_symbols(buffer, ct);
-    int i = 0;
-
-    int skip_frames = 3; // own frame, ell_call_unchecked, ell_call
-    struct ell_obj **frame = __builtin_frame_address(0);
-    for (int j = 0; i < skip_frames; j++) {
-        frame = (struct ell_obj **) *(frame);
-        i++;
-    }
-
-    while (frame) {
-        struct ell_obj *the_dongle = *(frame + 6);
-        if (the_dongle == ell_dongle) {
-            struct ell_obj *the_clo = *(frame + 2);
-            ell_arg_ct the_npos = (ell_arg_ct) *(frame + 3);
-            ell_arg_ct the_nkey = (ell_arg_ct) *(frame + 4);
-            struct ell_obj **args = (struct ell_obj **) *(frame + 5);
-            printf("* LISP %s\n", names[i]);
-            printf("  (%s%s",
-                   ell_str_chars(ell_sym_name(ell_clo_name(the_clo))),
-                   the_npos ? " " : "");
-            for (int i = 0; i < the_npos; i++) {
-                ELL_SEND(args[i], printDobject);
-                if ((i + 1) < the_npos)
-                    printf(" ");
-            }
-            printf(")\n");
-        } else {
-            printf("* C %s\n", names[i]);
-        }
-        frame = (struct ell_obj **) *(frame);
-        i++;
-        if (i > 15) {
-            printf("...\n");
-            break;
-        }
-    }
+    ell_print_stacktrace();
     return ell_unspecified;
 }
 
@@ -1639,7 +1687,7 @@ ell_init()
 #undef ELL_DEFSYM
 
 #define ELL_DEFGENERIC(name, lisp_name)                                 \
-    ELL_GENERIC(name) = ell_make_named_generic(ell_intern(ell_make_str(lisp_name)));
+    ELL_GENERIC(name) = ell_make_generic_function();
 #include "defgeneric.h"
 #undef ELL_DEFGENERIC
 
@@ -1671,8 +1719,10 @@ ell_init()
 
     __ell_g_makeDclass_2_ = ell_make_clo(&ell_make_class_code, NULL);
     __ell_g_addDsuperclass_2_ = ell_make_clo(&ell_add_superclass_code, NULL);
+    __ell_g_makeDgenericDfunction_2_ = ell_make_clo(&ell_make_generic_function_code, NULL);
+    __ell_g_dissectDgenericDfunctionDparams_2_ =
+        ell_make_clo(&ell_dissect_generic_function_params_code, NULL);
     __ell_g_putDmethod_2_ = ell_make_clo(&ell_put_method_code, NULL);
-    __ell_g_findDmethod_2_ = ell_make_clo(&ell_find_method_code, NULL);
     __ell_g_make_2_ = ell_make_clo(&ell_make_code, NULL);
     __ell_g_slotDvalue_2_ = ell_make_clo(&ell_slot_value_code, NULL);
     __ell_g_setDslotDvalue_2_ = ell_make_clo(&ell_set_slot_value_code, NULL);

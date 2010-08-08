@@ -146,6 +146,8 @@ struct ell_obj *
 ell_make_named_clo(ell_code *code, void *env, struct ell_obj *name_sym);
 struct ell_obj *
 ell_clo_name(struct ell_obj *clo);
+void *
+ell_clo_env(struct ell_obj *clo);
 struct ell_obj *
 ell_call_unchecked(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args);
 struct ell_obj *
@@ -180,7 +182,7 @@ ell_generic_add_method(struct ell_obj *generic, struct ell_obj *clo,
 struct ell_obj *
 ell_generic_find_method(struct ell_obj *generic, list_t *specialized_args);
 
-#define ELL_GENERIC(name) __ell_g_ellDgenericD##name##_1_
+#define ELL_GENERIC(name) __ell_g_##name##_2_
 
 #define ELL_DEFGENERIC(name, lisp_name) struct ell_obj *ELL_GENERIC(name);
 #include "defgeneric.h"
@@ -188,12 +190,13 @@ ell_generic_find_method(struct ell_obj *generic, list_t *specialized_args);
 
 /**** Methods ****/
 
+void
+ell_put_method(struct ell_obj *gf, struct ell_obj *clo, list_t *specializers);
+
 /* This basically simulates a Smalltalk-like OO system on top of the
    built-in generic functions, for bootstrap simplicity. */
-
 void
-ell_put_method(struct ell_obj *class, struct ell_obj *generic,
-               struct ell_obj *clo);
+ell_put_method_legacy(struct ell_obj *class, struct ell_obj *gf, struct ell_obj *clo);
 struct ell_obj *
 ell_find_method(struct ell_obj *rcv, struct ell_obj *generic);
 struct ell_obj *
@@ -218,7 +221,7 @@ ell_send(struct ell_obj *rcv, struct ell_obj *generic,
     {                                                                   \
         struct ell_obj *clo =                                           \
             ell_make_clo(&ELL_METHOD_CODE(class, msg), NULL);           \
-        ell_put_method(ELL_CLASS(class), ELL_GENERIC(msg), clo);        \
+        ell_put_method_legacy(ELL_CLASS(class), ELL_GENERIC(msg), clo); \
     }                                                                   \
                                                                         \
     struct ell_obj *                                                    \
@@ -476,9 +479,9 @@ ell_lookup_key(struct ell_obj *key_sym, ell_arg_ct npos, ell_arg_ct nkey, struct
 /**** Misc ****/
 
 void
-ell_print_backtrace();
+ell_print_stacktrace();
 
-struct ell_obj *
-ell_fail(char *msg, ...);
+#define ell_fail(...)                \
+    ({ printf(__VA_ARGS__); ell_print_stacktrace(); exit(EXIT_FAILURE); })
 
 #endif
