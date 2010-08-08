@@ -1702,10 +1702,10 @@ ellc_emit(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
     fprintf(st->f, "#include \"ellrt.h\"\n");
     fprintf(st->f, "// GLOBALS\n");
     ellc_emit_globals_declarations(st);
-    fprintf(st->f, "// CODES\n");
-    ellc_emit_codes(st);
     fprintf(st->f, "// STATEMENTS\n");
     ellc_emit_stmts(st);
+    fprintf(st->f, "// CODES\n");
+    ellc_emit_codes(st);
     fprintf(st->f, "// CONSTRUCTOR\n");
     fprintf(st->f, "__attribute__((constructor(500))) static void ell_init() {\n");
     fprintf(st->f, "\t// INITIALIZATIONS\n");
@@ -1769,8 +1769,8 @@ ellc_compile(struct ell_obj *stx_lst, struct ellc_st **st_out)
     
     char cmdline[256];
     sprintf(cmdline,
-            "cat %s && gcc -pipe -std=c99 -shared -g -pg -fPIC -I. -o %s -x c %s",
-            cnam, onam, cnam);
+            "gcc -pipe -std=c99 -shared -g -pg -fPIC -I. -o %s -x c %s",
+            onam, cnam);
 
     if (system(cmdline) == -1) {
         ell_fail("error compiling file\n");
