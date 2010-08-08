@@ -29,6 +29,8 @@ ELL_DEFSYM(core_app,  "ell-app")
 ELL_DEFSYM(core_loop, "ell-loop")
 /* (ell-mdef name expander) ;; define macro expander function, that takes and returns syntax */
 ELL_DEFSYM(core_mdef, "ell-mdef")
+/* (ell-snip &rest exprs) ;; Inline C; contains C strings (emitted as-is) and Lisp exprs */
+ELL_DEFSYM(core_snip, "ell-snip")
 
 /* Data and syntax quotation: */
 ELL_DEFSYM(core_quote, "quote")
@@ -36,11 +38,6 @@ ELL_DEFSYM(core_syntax, "syntax")
 ELL_DEFSYM(core_quasisyntax, "quasisyntax")
 ELL_DEFSYM(core_unsyntax, "unsyntax")
 ELL_DEFSYM(core_unsyntax_splicing, "unsyntax-splicing")
-
-/* Inline C: */
-ELL_DEFSYM(core_c_statement, "c-statement")
-ELL_DEFSYM(core_c_expression, "c-expression")
-ELL_DEFSYM(core_c_snip, "c-snip")
 
 /**** Built-in symbols: ****/
 

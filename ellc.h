@@ -108,9 +108,9 @@ struct ellc_ast_cx {
     struct ellc_ast *body;
 };
 
-/* Inline C snippet */
+/* Inline C expressions. */
 struct ellc_ast_snip {
-    char *chars;
+    struct ellc_ast *body; // seq of strings and other expressions
 };
 
 /**** Explicit Form ****/
@@ -292,7 +292,6 @@ struct ellc_contour {
 
 /* Compilation state, maintained during the compilation of a unit. */
 struct ellc_st {
-    list_t *c_statements; // snip
     /* Keeps track of all global variables defined in the compilation
        unit.  Populated during normalization. */
     list_t *defined_globals; // id

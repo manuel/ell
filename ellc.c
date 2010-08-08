@@ -688,51 +688,16 @@ ellc_norm_mdef(struct ellc_st *st, struct ell_obj *mdef_stx)
 /* (Inline C) */
 
 static struct ellc_ast *
-ellc_make_snips(struct ellc_st *st, struct ell_obj *stx_lst)
-{
-    struct ell_obj *seq_stx = ell_make_stx_lst();
-    ELL_SEND(seq_stx, add, ELL_SYM(core_seq));
-    struct ell_obj *range = ELL_SEND(stx_lst, all);
-    while(!(ell_is_true(ELL_SEND(range, emptyp)))) {
-        struct ell_obj *stx = ELL_SEND(range, front);
-        if (stx->wrapper == ELL_WRAPPER(stx_str)) {
-            struct ell_obj *snip_stx = ell_make_stx_lst();
-            ELL_SEND(snip_stx, add, ell_make_stx_sym(ELL_SYM(core_c_snip)));
-            ELL_SEND(snip_stx, add, stx);
-            ELL_SEND(seq_stx, add, snip_stx);
-        } else {
-            ELL_SEND(seq_stx, add, stx);
-        }
-        ELL_SEND(range, popDfront);
-    }
-    return ellc_norm_seq(st, seq_stx);
-}
-
-static struct ellc_ast *
-ellc_norm_c_statement(struct ellc_st *st, struct ell_obj *stx_lst)
-{
-    ell_util_list_add(st->c_statements,
-                      ellc_make_snips(st, ELL_SEND(stx_lst, second)));
-    return NULL; // runtime noop
-}
-
-static struct ellc_ast *
-ellc_norm_c_expression(struct ellc_st *st, struct ell_obj *stx_lst)
-{
-    return ellc_make_snips(st, ELL_SEND(stx_lst, second));
-}
-
-static struct ellc_ast *
-ellc_norm_c_snip(struct ellc_st *st, struct ell_obj *stx_lst)
+ellc_norm_snip(struct ellc_st *st, struct ell_obj *stx_lst)
 {
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_SNIP);
-    ast->snip.chars =
-        ell_str_chars(ell_stx_str_str(ELL_SEND(stx_lst, second)));
+    ast->snip.body = ellc_norm_seq(st, stx_lst);
     return ast;
 }
 
 /* (Putting it All Together) */
 
+// This belongs somewhere else
 /* (compiler-put-expander symbol function) -> unspecified */
 
 struct ell_obj *__ell_g_compilerDputDexpander_2_;
@@ -771,12 +736,7 @@ ellc_init()
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_quasisyntax), &ellc_norm_quasisyntax);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_syntax), &ellc_norm_quasisyntax);
     ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_mdef), &ellc_norm_mdef);
-    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_c_statement),
-                      &ellc_norm_c_statement);
-    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_c_expression),
-                      &ellc_norm_c_expression);
-    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_c_snip),
-                      &ellc_norm_c_snip);
+    ell_util_dict_put(&ellc_norm_tab, ELL_SYM(core_snip), &ellc_norm_snip);
     // Compiler state
     dict_init(&ellc_mac_tab, DICTCOUNT_T_MAX, (dict_comp_t) &ell_sym_cmp);
     __ell_g_compilerDputDexpander_2_ =
@@ -851,6 +811,7 @@ ellc_norm_stx(struct ellc_st *st, struct ell_obj *stx)
     } else if (stx->wrapper == ELL_WRAPPER(stx_num)) {
         return ellc_norm_lit_num(st, stx);
     } else {
+        ELL_SEND(ell_obj_class(stx), printDobject);
         ell_fail("syntax normalization failure\n");
     }
 }
@@ -1064,6 +1025,12 @@ ellc_conv_cx(struct ellc_st *st, struct ellc_ast *ast)
 }
 
 static void
+ellc_conv_snip(struct ellc_st *st, struct ellc_ast *ast)
+{
+    ellc_conv_ast(st, ast->snip.body);
+}
+
+static void
 ellc_conv_ast(struct ellc_st *st, struct ellc_ast *ast)
 {
     switch(ast->type) {
@@ -1077,7 +1044,7 @@ ellc_conv_ast(struct ellc_st *st, struct ellc_ast *ast)
     case ELLC_AST_LAM: ellc_conv_lam(st, ast); break;
     case ELLC_AST_LOOP: ellc_conv_loop(st, ast); break;
     case ELLC_AST_CX: ellc_conv_cx(st, ast); break;
-    case ELLC_AST_SNIP: break;
+    case ELLC_AST_SNIP: ellc_conv_snip(st, ast); break;
     case ELLC_AST_LIT_SYM: break;
     case ELLC_AST_LIT_STR: break;
     case ELLC_AST_LIT_NUM: break;
@@ -1480,7 +1447,19 @@ ellc_emit_cx(struct ellc_st *st, struct ellc_ast *ast)
 static void
 ellc_emit_snip(struct ellc_st *st, struct ellc_ast *ast)
 {
-    fprintf(st->f, "%s", ast->snip.chars);
+    struct ellc_ast *body_seq = ast->snip.body;
+    if(body_seq->type != ELLC_AST_SEQ) {
+        ell_fail("snip error\n");
+    }
+    list_t *exprs = body_seq->seq.exprs;
+    for (lnode_t *n = list_first(exprs); n; n = list_next(exprs, n)) {
+        struct ellc_ast *expr = (struct ellc_ast *) lnode_get(n);
+        if (expr->type == ELLC_AST_LIT_STR) {
+            fprintf(st->f, "%s", ell_str_chars(expr->lit_str.str));
+        } else {
+            ellc_emit_ast(st, expr);
+        }
+    }
 }
 
 static void
@@ -1531,17 +1510,6 @@ ellc_emit_globals_initializations(struct ellc_st *st)
         fprintf(st->f, "if (%s == NULL) %s = ell_unbound;\n", mid, mid);
     }
     fprintf(st->f, "\n");
-}
-
-static void
-ellc_emit_statements(struct ellc_st *st)
-{
-    for (lnode_t *n = list_first(st->c_statements); n; 
-         n = list_next(st->c_statements, n)) {
-        struct ellc_ast *ast = (struct ellc_ast *) lnode_get(n);
-        ellc_emit_ast(st, ast);
-        fprintf(st->f, "\n");
-    }
 }
 
 static void
@@ -1686,8 +1654,6 @@ ellc_emit(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
     fprintf(st->f, "#include \"ellrt.h\"\n");
     ellc_emit_globals_declarations(st);
     ellc_emit_codes(st);
-    fprintf(st->f, "// STATEMENTS\n");
-    ellc_emit_statements(st);
     fprintf(st->f, "// INIT\n");
     fprintf(st->f, "__attribute__((constructor(500))) static void ell_init() {\n");
     ellc_emit_globals_initializations(st);
@@ -1706,7 +1672,6 @@ ellc_make_st(FILE *f)
 {
     struct ellc_st *st = (struct ellc_st *) ell_alloc(sizeof(*st));
     st->f = f;
-    st->c_statements = ell_util_make_list();
     st->defined_globals = ell_util_make_list();
     st->defined_macros = ell_util_make_dict((dict_comp_t) &ell_sym_cmp);
     st->globals = ell_util_make_list();
