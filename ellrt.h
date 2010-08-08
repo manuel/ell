@@ -444,8 +444,6 @@ void
 ell_util_assert_list_len_min(list_t *list, listcount_t len);
 bool
 ell_util_lists_equal(list_t *l1, list_t *l2, dict_comp_t compare);
-bool
-ell_util_lists_less_than(list_t *l1, list_t *l2, dict_comp_t compare);
 dict_t *
 ell_util_make_dict(dict_comp_t comp);
 void *
