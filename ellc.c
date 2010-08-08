@@ -703,7 +703,7 @@ ellc_make_snips(struct ellc_st *st, struct ell_obj *stx_lst)
         } else {
             ELL_SEND(seq_stx, add, stx);
         }
-        ELL_SEND(range, pop_front);
+        ELL_SEND(range, popDfront);
     }
     return ellc_norm_seq(st, seq_stx);
 }

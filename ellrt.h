@@ -160,7 +160,7 @@ ell_check_npos(ell_arg_ct formal_npos, ell_arg_ct actual_npos);
         ell_call(clo, npos, 0, __ell_args);                             \
     })
 
-/**** Generic Functions and Methods ****/
+/**** Generic Functions ****/
 
 struct ell_method_entry {
     struct ell_obj *method; // clo
@@ -177,13 +177,27 @@ ell_make_named_generic(struct ell_obj *name);
 void
 ell_generic_add_method(struct ell_obj *generic, struct ell_obj *clo,
                        list_t *specializers);
+struct ell_obj *
+ell_generic_find_method(struct ell_obj *generic, list_t *specialized_args);
+
+#define ELL_GENERIC(name) __ell_g_ellDgenericD##name##_1_
+
+#define ELL_DEFGENERIC(name, lisp_name) struct ell_obj *ELL_GENERIC(name);
+#include "defgeneric.h"
+#undef ELL_DEFGENERIC
+
+/**** Methods ****/
+
+/* This basically simulates a Smalltalk-like OO system on top of the
+   built-in generic functions, for bootstrap simplicity. */
 
 void
-ell_put_method(struct ell_obj *class, struct ell_obj *msg_sym, struct ell_obj *clo);
+ell_put_method(struct ell_obj *class, struct ell_obj *generic,
+               struct ell_obj *clo);
 struct ell_obj *
-ell_find_method(struct ell_obj *rcv, struct ell_obj *msg_sym);
+ell_find_method(struct ell_obj *rcv, struct ell_obj *generic);
 struct ell_obj *
-ell_send(struct ell_obj *rcv, struct ell_obj *msg_sym,
+ell_send(struct ell_obj *rcv, struct ell_obj *generic,
          ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args);
 
 #define ELL_SEND(rcv, msg, ...)                                         \
@@ -191,7 +205,7 @@ ell_send(struct ell_obj *rcv, struct ell_obj *msg_sym,
         struct ell_obj *__ell_rcv = rcv;                                \
         struct ell_obj *__ell_send_args[] = { __ell_rcv, __VA_ARGS__ }; \
         ell_arg_ct npos = sizeof(__ell_send_args) / sizeof(struct ell_obj *); \
-        ell_send(__ell_rcv, ELL_SYM(msg), npos, 0, __ell_send_args);    \
+        ell_send(__ell_rcv, ELL_GENERIC(msg), npos, 0, __ell_send_args); \
     })
 
 #define ELL_METHOD_CODE(class, msg) __ell_method_code_##class##_##msg
@@ -204,7 +218,7 @@ ell_send(struct ell_obj *rcv, struct ell_obj *msg_sym,
     {                                                                   \
         struct ell_obj *clo =                                           \
             ell_make_clo(&ELL_METHOD_CODE(class, msg), NULL);           \
-        ell_put_method(ELL_CLASS(class), ELL_SYM(msg), clo);            \
+        ell_put_method(ELL_CLASS(class), ELL_GENERIC(msg), clo);        \
     }                                                                   \
                                                                         \
     struct ell_obj *                                                    \
@@ -427,6 +441,8 @@ void
 ell_util_assert_list_len_min(list_t *list, listcount_t len);
 bool
 ell_util_lists_equal(list_t *l1, list_t *l2, dict_comp_t compare);
+bool
+ell_util_lists_less_than(list_t *l1, list_t *l2, dict_comp_t compare);
 dict_t *
 ell_util_make_dict(dict_comp_t comp);
 void *

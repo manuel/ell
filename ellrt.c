@@ -14,6 +14,7 @@ ell_stacktrace_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
 struct ell_obj *
 ell_fail(char *msg, ...)
 {
+    /* Hack, but calling into Lisp condition system is troublesome. */
     printf("Unhandled Lisp condition: %s\nStack trace:\n", msg);
     ell_stacktrace_code(NULL, 0, 0, NULL, ell_dongle);
     exit(EXIT_FAILURE);
@@ -267,7 +268,7 @@ ell_check_npos(ell_arg_ct formal_npos, ell_arg_ct actual_npos)
     }
 }
 
-/**** Generic Functions and Methods ****/
+/**** Generic Functions ****/
 
 struct ell_obj *
 ell_make_named_generic(struct ell_obj *name)
@@ -322,64 +323,138 @@ ell_generic_add_method(struct ell_obj *generic, struct ell_obj *clo,
     ell_util_list_add(mes, ell_make_method_entry(clo, specializers));
 }
 
+static bool
+ell_specializers_agree(list_t *actual_specializers,
+                       list_t *formal_specializers)
+{
+    if (list_count(actual_specializers) != list_count(formal_specializers))
+        return false;
+    lnode_t *an, *fn;
+    for (an = list_first(actual_specializers),
+         fn = list_first(formal_specializers);
+         an && fn;
+         an = list_next(actual_specializers, an),
+         fn = list_next(formal_specializers, fn)) {
+        struct ell_obj *actual_class = (struct ell_obj *) lnode_get(an);
+        struct ell_obj *formal_class = (struct ell_obj *) lnode_get(fn);
+        if (!ell_is_subclass(actual_class, formal_class))
+            return false;
+    }
+    return true;
+}
+
+static list_t *
+ell_find_applicable_method_entries(struct ell_obj *generic,
+                                   list_t *specialized_args)
+{
+    list_t *actual_specializers = ell_util_make_list();
+    for (lnode_t *n = list_first(specialized_args); n; 
+         n = list_next(specialized_args, n)) {
+        struct ell_obj *obj =
+            (struct ell_obj *) lnode_get(n);
+        ell_util_list_add(actual_specializers, ell_obj_class(obj));
+    }
+    list_t *applicable_mes = ell_util_make_list();
+    list_t *mes = ell_generic_method_entries(generic);
+    for (lnode_t *n = list_first(mes); n; n = list_next(mes, n)) {
+        struct ell_method_entry *me = 
+            (struct ell_method_entry *) lnode_get(n);
+        if (ell_specializers_agree(actual_specializers, me->specializers))
+            ell_util_list_add(applicable_mes, me);
+    }
+    return applicable_mes;
+}
+
+static int
+ell_compare_classes(struct ell_obj *c1, struct ell_obj *c2)
+{
+    if (ell_is_subclass(c1, c2)) return -1;
+    else if (ell_is_subclass(c2, c1)) return 1;
+    else return 0;
+}
+
+static bool
+ell_smaller_method_entry(struct ell_method_entry *me1,
+                         struct ell_method_entry *me2)
+{
+    return ell_util_lists_less_than(me1->specializers,
+                                    me2->specializers,
+                                    (dict_comp_t) &ell_compare_classes);
+}
+
+static bool
+ell_least_method_entry(struct ell_method_entry *me, list_t *mes)
+{
+    for (lnode_t *n = list_first(mes); n; n = list_next(mes, n)) {
+        struct ell_method_entry *me2 = 
+            (struct ell_method_entry *) lnode_get(n);
+        if (!ell_smaller_method_entry(me, me2))
+            return false;
+    }
+    return true;
+}
+
+static struct ell_method_entry *
+ell_most_specific_method_entry(struct ell_obj *generic,
+                               list_t *applicable_method_entries)
+{
+    for (lnode_t *n = list_first(applicable_method_entries); n;
+         n = list_next(applicable_method_entries, n)) {
+        struct ell_method_entry *me = 
+            (struct ell_method_entry *) lnode_get(n);
+        if (ell_least_method_entry(me, applicable_method_entries))
+            return me;
+    }
+    return NULL;
+}
+
 struct ell_obj *
-ell_find_method_in_class(struct ell_obj *class, struct ell_obj *msg_sym);
-struct ell_obj *
-ell_find_method_in_superclasses(struct ell_obj *class, struct ell_obj *msg_sym);
+ell_generic_find_method(struct ell_obj *generic, list_t *specialized_args)
+{
+    list_t *applicable_mes =
+        ell_find_applicable_method_entries(generic, specialized_args);
+    if (list_count(applicable_mes) == 0)
+        ell_fail("no applicable method");
+    struct ell_method_entry *me =
+        ell_most_specific_method_entry(generic, applicable_mes);
+    if (me)
+        return me->method;
+    else
+        ell_fail("no most specific method");
+}
+
+/**** Methods ****/
 
 void
-ell_put_method(struct ell_obj *class, struct ell_obj *msg_sym, struct ell_obj *clo)
+ell_put_method(struct ell_obj *class, struct ell_obj *generic,
+               struct ell_obj *clo)
 {
     ell_assert_wrapper(class, ELL_WRAPPER(class));
-    ell_assert_wrapper(msg_sym, ELL_WRAPPER(sym));
+    ell_assert_wrapper(generic, ELL_WRAPPER(generic));
     ell_assert_wrapper(clo, ELL_WRAPPER(clo));
-    ell_fail("put method");
+    list_t *specializers = ell_util_make_list();
+    ell_util_list_add(specializers, class);
+    ell_generic_add_method(generic, clo, specializers);
 }
 
 struct ell_obj *
-ell_find_method_in_class(struct ell_obj *class, struct ell_obj *msg_sym)
+ell_find_method(struct ell_obj *rcv, struct ell_obj *generic)
 {
-    ell_fail("find method");
+    ell_assert_wrapper(generic, ELL_WRAPPER(generic));
+    list_t *specialized_args = ell_util_make_list();
+    ell_util_list_add(specialized_args, rcv);
+    return ell_generic_find_method(generic, specialized_args);
 }
 
 struct ell_obj *
-ell_find_method_in_superclasses(struct ell_obj *class, struct ell_obj *msg_sym)
-{
-    struct ell_obj *found_clo = NULL;
-    list_t *superclasses = ell_class_superclasses(class);
-    for (lnode_t *n = list_first(superclasses); n; n = list_next(superclasses, n)) {
-        struct ell_obj *superclass = (struct ell_obj *) lnode_get(n);
-        struct ell_obj *clo = ell_find_method_in_class(superclass, msg_sym);
-        if (clo) {
-            if (found_clo != NULL) {
-                ell_fail("ambiguous method error: %s\n", ell_str_chars(ell_sym_name(msg_sym)));
-            } else {
-                found_clo = clo;
-            }
-        }
-    }
-    return found_clo;
-}
-
-struct ell_obj *
-ell_find_method(struct ell_obj *rcv, struct ell_obj *msg_sym)
-{
-    struct ell_obj *clo = ell_find_method_in_class(ell_wrapper_class(rcv->wrapper), msg_sym);
-    if (!clo) {
-        ell_fail("method not found: %s\n", ell_str_chars(ell_sym_name(msg_sym)));
-    }
-    return clo;
-}
-
-struct ell_obj *
-ell_send(struct ell_obj *rcv, struct ell_obj *msg_sym, 
+ell_send(struct ell_obj *rcv, struct ell_obj *generic,
          ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args)
 {
-    struct ell_obj *clo = ell_find_method(rcv, msg_sym);
+    struct ell_obj *clo = ell_find_method(rcv, generic);
     if (clo) {
         return ell_call_unchecked(clo, npos, nkey, args);
     } else {
-        ell_fail("message not understood: %s\n", ell_str_chars(ell_sym_name(msg_sym)));
+        ell_fail("message not understood");
     }
 }
 
@@ -754,7 +829,7 @@ if (ell_list_range_cur(range) == NULL) {
 return (struct ell_obj *) lnode_get(ell_list_range_cur(range));
 ELL_END
 
-ELL_DEFMETHOD(list_range, pop_front, 1)
+ELL_DEFMETHOD(list_range, popDfront, 1)
 ELL_PARAM(range, 0)
 if (ell_list_range_cur(range) == NULL) {
     ell_fail("range empty\n");
@@ -787,14 +862,14 @@ ell_util_list_add(ell_lst_elts(lst), elt);
 return lst;
 ELL_END
 
-ELL_DEFMETHOD(lst, print_object, 1)
+ELL_DEFMETHOD(lst, printDobject, 1)
 ELL_PARAM(lst, 0)
 printf("(");
 struct ell_obj *range = ELL_SEND(lst, all);
 while(!ell_is_true(ELL_SEND(range, emptyp))) {
     struct ell_obj *elt = ELL_SEND(range, front);
-    ELL_SEND(elt, print_object);
-    ELL_SEND(range, pop_front);
+    ELL_SEND(elt, printDobject);
+    ELL_SEND(range, popDfront);
     if (!ell_is_true(ELL_SEND(range, emptyp)))
         printf(" ");
 }
@@ -809,12 +884,12 @@ ELL_END
 
 /**** Library ****/
 
-ELL_DEFMETHOD(class, print_object, 1)
+ELL_DEFMETHOD(class, printDobject, 1)
 printf("#<class>");
 return ell_unspecified;
 ELL_END
 
-ELL_DEFMETHOD(boolean, print_object, 1)
+ELL_DEFMETHOD(boolean, printDobject, 1)
 ELL_PARAM(boolean, 0)
 if (ell_is_true(boolean)) {
     printf("#t");
@@ -824,29 +899,29 @@ if (ell_is_true(boolean)) {
 return ell_unspecified;
 ELL_END
 
-ELL_DEFMETHOD(unspecified, print_object, 1)
+ELL_DEFMETHOD(unspecified, printDobject, 1)
 return ell_unspecified;
 ELL_END
 
-ELL_DEFMETHOD(sym, print_object, 1)
+ELL_DEFMETHOD(sym, printDobject, 1)
 ELL_PARAM(sym, 0)
 printf("%s", ell_str_chars(ell_sym_name(sym)));
 return ell_unspecified;
 ELL_END
 
-ELL_DEFMETHOD(str, print_object, 1)
+ELL_DEFMETHOD(str, printDobject, 1)
 ELL_PARAM(str, 0)
 printf("\"%s\"", ell_str_chars(str));
 return ell_unspecified;
 ELL_END
 
-ELL_DEFMETHOD(num_int, print_object, 1)
+ELL_DEFMETHOD(num_int, printDobject, 1)
 ELL_PARAM(num, 0)
 printf("%d", ell_num_int(num));
 return ell_unspecified;
 ELL_END
 
-ELL_DEFMETHOD(clo, print_object, 1)
+ELL_DEFMETHOD(clo, printDobject, 1)
 ELL_PARAM(self, 0)
 printf("%s", ell_str_chars(ell_sym_name(ell_clo_name(self))));
 return ell_unspecified;
@@ -859,14 +934,14 @@ ell_util_list_add(ell_stx_lst_elts(stx_lst), elt);
 return stx_lst;
 ELL_END
 
-ELL_DEFMETHOD(stx_lst, print_object, 1)
+ELL_DEFMETHOD(stx_lst, printDobject, 1)
 ELL_PARAM(stx_lst, 0)
 printf("(");
 struct ell_obj *range = ELL_SEND(stx_lst, all);
 while(!ell_is_true(ELL_SEND(range, emptyp))) {
     struct ell_obj *stx = ELL_SEND(range, front);
-    ELL_SEND(stx, print_object);
-    ELL_SEND(range, pop_front);
+    ELL_SEND(stx, printDobject);
+    ELL_SEND(range, popDfront);
     if (!ell_is_true(ELL_SEND(range, emptyp)))
         printf(" ");
 }
@@ -874,13 +949,13 @@ printf(")");
 return ell_unspecified;
 ELL_END
 
-ELL_DEFMETHOD(stx_sym, print_object, 1)
+ELL_DEFMETHOD(stx_sym, printDobject, 1)
 ELL_PARAM(stx_sym, 0)
 printf("%s", ell_str_chars(ell_sym_name(ell_stx_sym_sym(stx_sym))));
 return ell_unspecified;
 ELL_END
 
-ELL_DEFMETHOD(stx_str, print_object, 1)
+ELL_DEFMETHOD(stx_str, printDobject, 1)
 ELL_PARAM(stx_str, 0)
 printf("\"%s\"", ell_str_chars(ell_stx_str_str(stx_str)));
 return ell_unspecified;
@@ -1045,6 +1120,21 @@ ell_util_assert_list_len_min(list_t *list, listcount_t len)
 }
 
 bool
+ell_util_lists_less_than(list_t *l1, list_t *l2, dict_comp_t compare)
+{
+    if (list_count(l1) != list_count(l2))
+        return false;
+    lnode_t *n1, *n2;
+    for (n1 = list_first(l1), n2 = list_first(l2);
+         n1 && n2;
+         n1 = list_next(l1, n1), n2 = list_next(l2, n2)) {
+        if (compare(lnode_get(n1), lnode_get(n2)) >= 0)
+            return false;
+    }
+    return true;
+}
+
+bool
 ell_util_lists_equal(list_t *l1, list_t *l2, dict_comp_t compare)
 {
     if (list_count(l1) != list_count(l2))
@@ -1205,7 +1295,7 @@ ell_append_syntax_lists_code(struct ell_obj *clo, ell_arg_ct npos,
         while (!ell_is_true(ELL_SEND(range, emptyp))) {
             struct ell_obj *elt = ELL_SEND(range, front);
             ELL_SEND(res, add, elt);
-            ELL_SEND(range, pop_front);
+            ELL_SEND(range, popDfront);
         }
     }
     return res;
@@ -1287,7 +1377,7 @@ ell_map_list_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
     while (!ell_is_true(ELL_SEND(range, emptyp))) {
         struct ell_obj *elt = ELL_SEND(range, front);
         ELL_SEND(res, add, ELL_CALL(fun, elt));
-        ELL_SEND(range, pop_front);
+        ELL_SEND(range, popDfront);
     }
     return res;
 }
@@ -1425,7 +1515,7 @@ ell_stacktrace_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
                    ell_str_chars(ell_sym_name(ell_clo_name(the_clo))),
                    the_npos ? " " : "");
             for (int i = 0; i < the_npos; i++) {
-                ELL_SEND(args[i], print_object);
+                ELL_SEND(args[i], printDobject);
                 if ((i + 1) < the_npos)
                     printf(" ");
             }
@@ -1547,6 +1637,11 @@ ell_init()
     if (!ELL_SYM(name)) ELL_SYM(name) = ell_intern(ell_make_str(lisp_name));
 #include "defsym.h"
 #undef ELL_DEFSYM
+
+#define ELL_DEFGENERIC(name, lisp_name)                                 \
+    ELL_GENERIC(name) = ell_make_named_generic(ell_intern(ell_make_str(lisp_name)));
+#include "defgeneric.h"
+#undef ELL_DEFGENERIC
 
     ell_dongle = ell_make_str("dongle");
 

@@ -60,7 +60,7 @@ ell_repl(struct ellcm *cm)
         char *line = readline("> ");
         struct ell_obj *result = ellcm_eval(cm, line);
         if (result != ell_unspecified) {
-            ELL_SEND(result, print_object);
+            ELL_SEND(result, printDobject);
             printf("\n");
         }
         free(line);
