@@ -31,12 +31,12 @@
 
 (defgeneric handle-condition (handler condition))
 
-(defmethod handle-condition ((h <default-handler>) condition)
+(defmethod handle-condition ((h <default-handler>) (c <condition>))
   (print condition)
   (stacktrace)
   (exit))
 
-(defmethod handle-condition ((h <user-handler>) condition)
+(defmethod handle-condition ((h <user-handler>) (c <condition>))
   (if (handler-matches? h condition)
       (funcall (slot-value h 'handler-function)
                condition
@@ -46,7 +46,7 @@
 
 (defgeneric handler-matches? (user-handler condition))
 
-(defmethod handler-matches? ((h <user-handler>) condition)
+(defmethod handler-matches? ((h <user-handler>) (c <condition>))
   (type? condition (slot-value h 'condition-class)))
 
 (defun handler-bind/f (condition-class user-handler-function body-thunk)

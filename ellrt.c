@@ -543,14 +543,23 @@ ell_generic_find_method(struct ell_obj *generic, list_t *specialized_args)
 {
     list_t *applicable_mes =
         ell_find_applicable_method_entries(generic, specialized_args);
-    if (list_count(applicable_mes) == 0)
+    if (list_count(applicable_mes) == 0) {
         ell_no_applicable_method(generic, specialized_args);
+        return ell_unspecified;
+    }
     struct ell_method_entry *me =
         ell_most_specific_method_entry(generic, applicable_mes);
     if (me) {
+/*         printf("For "); */
+/*         ell_print_generic_and_specialized_args(generic, specialized_args); */
+/*         printf("Applicable methods:\n"); */
+/*         ell_print_method_entries(applicable_mes); */
+/*         printf("Most specific method:\n"); */
+/*         ell_print_method_entry(me); */
         return me->method;
     } else {
         ell_no_most_specific_method(generic, specialized_args, applicable_mes);
+        return ell_unspecified;
     }
 }
 
@@ -589,24 +598,21 @@ ell_put_method_legacy(struct ell_obj *class, struct ell_obj *gf, struct ell_obj 
     ell_put_method(gf, clo, specializers);
 }
 
-struct ell_obj *
-ell_find_method(struct ell_obj *rcv, struct ell_obj *gf)
-{
-}
-
+/*
+  `args' contains receiver and other arguments.
+*/
 struct ell_obj *
 ell_send(struct ell_obj *rcv, struct ell_obj *gf,
          ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args)
 {
+    /* Bug: unsafe */
+    struct ell_obj *generic = (struct ell_obj *) ell_clo_env(gf);
+    ell_assert_wrapper(generic, ELL_WRAPPER(generic)); // still unsafe
     list_t *specialized_args = ell_util_make_list();
     for (int i = 0; i < npos; i++) {
         ell_util_list_add(specialized_args, args[i]);
     }
-    /* Bug: unsafe */
-    struct ell_obj *generic = (struct ell_obj *) ell_clo_env(gf);
-    ell_assert_wrapper(generic, ELL_WRAPPER(generic)); // still unsafe
-    return ell_generic_find_method(generic, specialized_args);
-    struct ell_obj *clo = ell_find_method(rcv, generic);
+    struct ell_obj *clo = ell_generic_find_method(generic, specialized_args);
     return ell_call(clo, npos, nkey, args);
 }
 
@@ -1406,7 +1412,7 @@ ell_apply_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
     return ell_call(fun, len, 0, the_args);
 }
 
-/* (send rcv msg &rest args) -> result */
+/* (send rcv generic &rest args) -> result */
 
 struct ell_obj *__ell_g_send_2_;
 
@@ -1416,12 +1422,12 @@ ell_send_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
 {
     ell_check_npos(2, npos);
     struct ell_obj *rcv = args[0];
-    struct ell_obj *msg = args[1];
-    ell_assert_wrapper(msg, ELL_WRAPPER(sym));
+    struct ell_obj *gf = args[1];
+    ell_assert_wrapper(gf, ELL_WRAPPER(clo));
     /* Klever: */
     args++;
     args[0] = rcv;
-    return ell_send(rcv, msg, npos - 1, 0, args);
+    return ell_send(rcv, gf, npos - 1, 0, args);
 }
 
 /* (syntax-list &rest syntax-objects) -> syntax-list */
@@ -1597,7 +1603,7 @@ ell_make_generic_function_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct 
                                struct ell_obj **args, struct ell_obj *dongle)
 {
     ell_check_npos(npos, 1);
-    return ell_make_generic_function(args[1]);
+    return ell_make_generic_function(args[0]);
 }
 
 /* (dissect-generic-function-params params) -> specializers syntax list */
@@ -1624,7 +1630,7 @@ ell_dissect_generic_function_params_code(struct ell_obj *clo, ell_arg_ct npos, e
                 break;
             }
         } else if (param->wrapper == ELL_WRAPPER(stx_lst)) {
-            struct ell_obj *class_stx = ELL_SEND(stx_lst, second);
+            struct ell_obj *class_stx = ELL_SEND(param, second);
             ELL_SEND(res_stx_lst, add, class_stx);
         }
         ELL_SEND(range, popDfront);
@@ -1832,7 +1838,7 @@ ELL_DEFCLASS(obj, "<object>")
     __ell_g_unwindDprotectFf_2_ = ell_make_clo(&ell_unwind_protectFf_code, NULL);
 
     __ell_g_apply_2_ = ell_make_named_clo(&ell_apply_code, NULL, ELL_SYM(apply));
-    __ell_g_send_2_ = ell_make_clo(&ell_send_code, NULL);
+    __ell_g_send_2_ = ell_make_named_clo(&ell_send_code, NULL, ELL_SYM(core_send));
     __ell_g_syntaxDlist_2_ = ell_make_clo(&ell_syntax_list_code, NULL);
     __ell_g_syntaxDlistDrest_2_ = ell_make_clo(&ell_syntax_list_rest_code, NULL);
     __ell_g_appendDsyntaxDlists_2_ = ell_make_clo(&ell_append_syntax_lists_code, NULL);

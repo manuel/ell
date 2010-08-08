@@ -168,7 +168,10 @@ ellcm_eval(struct ellcm *cm, char *s)
     tmpnam(cfaslfile);
     ellcm_compile_str(cm, s, faslfile, cfaslfile);
     ell_result = ell_unspecified;
-    dlopen(faslfile, RTLD_NOW | RTLD_GLOBAL);
+    dlerror();
+    if (dlopen(faslfile, RTLD_NOW | RTLD_GLOBAL) == NULL) {
+        printf("dlopen: %s\n", dlerror());
+    }
     return ell_result;
 }
 

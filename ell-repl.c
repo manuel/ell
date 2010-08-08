@@ -59,7 +59,9 @@ ell_repl(struct ellcm *cm)
     for(;;) {
         char *line = readline("> ");
         struct ell_obj *result = ellcm_eval(cm, line);
-        if (result != ell_unspecified) {
+        if (result == ell_unspecified) {
+            printf("; no value\n");
+        } else {
             ELL_SEND(result, printDobject);
             printf("\n");
         }

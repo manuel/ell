@@ -1,10 +1,10 @@
 (ell-mdef defmacro
   (ell-lam (defmacro-form)
-    #`(ell-mdef ,(send defmacro-form 'second)
+    #`(ell-mdef ,(send defmacro-form (ell-fref second))
         (ell-lam (macro-call-form)
           (apply-syntax-list
-            (ell-lam ,(send defmacro-form 'third)
-              ,(send defmacro-form 'fourth) #<function>)
+            (ell-lam ,(send defmacro-form (ell-fref third))
+              ,(send defmacro-form (ell-fref fourth)) #<function>)
             (syntax-list-rest macro-call-form)) #<function>)) #<function>))
 
 (defmacro defsyntax (name expander)
@@ -82,20 +82,20 @@
   #`(while (not ,test) ,@body))
 
 (defmacro let (bindings &rest body)
-  #`(funcall (lambda (,@(map-list (lambda (binding) (send binding 'first)) bindings))
+  #`(funcall (lambda (,@(map-list (lambda (binding) (send binding (function first))) bindings))
                ,@body)
-             ,@(map-list (lambda (binding) (send binding 'second)) bindings)))
+             ,@(map-list (lambda (binding) (send binding (function second))) bindings)))
 
 (defmacro do (vars test &rest body)
   #`(let ,(map-list (lambda (var)
-                      #`(,(send var 'first)
-                         ,(send var 'second)))
+                      #`(,(send var (function first))
+                         ,(send var (function second))))
                     vars)
       (while ,test
         ,@body
         ,@(map-list (lambda (var)
-                      #`(setq ,(send var 'first) 
-                              ,(send var 'third)))
+                      #`(setq ,(send var (function first))
+                              ,(send var (function third))))
                     vars))))
 
 (defmacro defclass (name &optional (superclasses #'()) &rest slot-specs)
@@ -109,14 +109,18 @@
 
 (defmacro defgeneric (name &optional params)
   #`(defun/f ,name (if (fdefinedp ,name)
-                       ,name
+                       (function ,name)
                        (make-generic-function ',name))))
 
 (defmacro defmethod (name params &rest body)
   #`(progn
       (defgeneric ,name)
-      (put-method ,name (lambda ,params ,@body) ,@(dissect-generic-function-params params))
+      (put-method (function ,name)
+                  (lambda ,params ,@body)
+                  ,@(dissect-generic-function-params params))
       ',name))
+
+(defgeneric print-object)
 
 (defun print (object) (print-object object))
 
@@ -131,7 +135,7 @@
 
 (defclass <string>)
 (defclass <symbol>)
-(defclass <number>)
+(defclass <integer>)
 (defclass <boolean>)
 (defclass <function>)
 (defclass <unspecified>)
