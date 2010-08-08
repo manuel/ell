@@ -100,6 +100,8 @@ ell_make_wrapper(struct ell_obj *class)
     return wrapper;
 }
 
+/* During bootstrap, we can't give classes names, because symbols
+   don't exist yet. */
 struct ell_obj *
 ell_make_class_bootstrap()
 {

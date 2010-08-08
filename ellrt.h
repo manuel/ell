@@ -199,8 +199,6 @@ ell_put_method(struct ell_obj *gf, struct ell_obj *clo, list_t *specializers);
 void
 ell_put_method_legacy(struct ell_obj *class, struct ell_obj *gf, struct ell_obj *clo);
 struct ell_obj *
-ell_find_method(struct ell_obj *rcv, struct ell_obj *generic);
-struct ell_obj *
 ell_send(struct ell_obj *rcv, struct ell_obj *generic,
          ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args);
 
@@ -231,26 +229,6 @@ ell_send(struct ell_obj *rcv, struct ell_obj *generic,
                                 ell_arg_ct nkey, struct ell_obj **args, \
                                 struct ell_obj *dongle)                 \
     {
-
-/*
-#define ELL_DEFMETHOD(class, msg, formal_npos)                          \
-    ell_code ELL_METHOD_CODE(class, msg);                               \
-                                                                        \
-    __attribute__((constructor(201))) static void                       \
-    __ell_init_method_##class##_##msg()                                 \
-    {                                                                   \
-        struct ell_obj *clo =                                           \
-            ell_make_clo(&ELL_METHOD_CODE(class, msg), NULL);           \
-        ell_put_method_legacy(ELL_CLASS(class), ELL_GENERIC(msg), clo); \
-    }                                                                   \
-                                                                        \
-    struct ell_obj *                                                    \
-    ELL_METHOD_CODE(class, msg)(struct ell_obj *clo, ell_arg_ct npos,   \
-                                ell_arg_ct nkey, struct ell_obj **args, \
-                                struct ell_obj *dongle)                 \
-    {                                                                   \
-        ell_check_npos(formal_npos, npos);
-*/
 
 #define ELL_PARAM(name, i)                      \
     struct ell_obj *name = args[i];
