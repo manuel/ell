@@ -213,6 +213,24 @@ ell_send(struct ell_obj *rcv, struct ell_obj *generic,
 
 #define ELL_METHOD_CODE(class, msg) __ell_method_code_##class##_##msg
 
+#define ELL_DEFMETHOD_NEW(class, msg, formal_npos)                      \
+    ell_code ELL_METHOD_CODE(class, msg);                               \
+                                                                        \
+    __attribute__((constructor(201))) static void                       \
+    __ell_init_method_##class##_##msg()                                 \
+    {                                                                   \
+        struct ell_obj *clo =                                           \
+            ell_make_clo(&ELL_METHOD_CODE(class, msg), NULL);           \
+        ell_put_method_fake(ELL_CLASS(class), ELL_GENERIC(msg), clo,    \
+                            formal_npos);                               \
+    }                                                                   \
+                                                                        \
+    struct ell_obj *                                                    \
+    ELL_METHOD_CODE(class, msg)(struct ell_obj *clo, ell_arg_ct npos,   \
+                                ell_arg_ct nkey, struct ell_obj **args, \
+                                struct ell_obj *dongle)                 \
+    {
+
 #define ELL_DEFMETHOD(class, msg, formal_npos)                          \
     ell_code ELL_METHOD_CODE(class, msg);                               \
                                                                         \

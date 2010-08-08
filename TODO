@@ -6,6 +6,7 @@ Prohibit subclassing of built-in classes and slot accesses to
 instances of classes whose metaclass is built-in-class.
 ** Revisit access to unbound parameters inside parameter init forms
 This happens if a parameter's init form accesses a parameter to the right of it.
+** Class names should be symbols, not strings
 * Language Issues
 ** Code created by quasisyntax doesn't use current hygiene context
 This means that append-syntax-lists and such cannot be shadowed.  Not

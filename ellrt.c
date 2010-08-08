@@ -101,8 +101,20 @@ ell_make_wrapper(struct ell_obj *class)
 }
 
 struct ell_obj *
+ell_make_class_bootstrap()
+{
+    struct ell_class_data *data =
+        (struct ell_class_data *) ell_alloc(sizeof(*data));
+    struct ell_obj *class = ell_make_obj(ELL_WRAPPER(class), data);
+    data->superclasses = ell_util_make_list();
+    data->wrapper = ell_make_wrapper(class);
+    return class;
+}
+
+struct ell_obj *
 ell_make_class(struct ell_obj *name)
 {
+    ell_assert_wrapper(name, ELL_WRAPPER(sym));
     struct ell_class_data *data =
         (struct ell_class_data *) ell_alloc(sizeof(*data));
     struct ell_obj *class = ell_make_obj(ELL_WRAPPER(class), data);
@@ -139,6 +151,14 @@ ell_class_name(struct ell_obj *class)
     return ((struct ell_class_data *) class->data)->name;
 }
 
+void
+ell_set_class_name(struct ell_obj *class, struct ell_obj *name)
+{
+    ell_assert_wrapper(class, ELL_WRAPPER(class));
+    ell_assert_wrapper(name, ELL_WRAPPER(sym));
+    ((struct ell_class_data *) class->data)->name = name;
+}
+
 list_t *
 ell_class_superclasses(struct ell_obj *class)
 {
@@ -158,8 +178,8 @@ ell_assert_wrapper(struct ell_obj *obj, struct ell_wrapper *wrapper)
 {
     if (obj->wrapper != wrapper) {
         ell_fail("expected %s got %s\n", 
-                 ell_str_chars(ell_class_name(ell_wrapper_class(wrapper))),
-                 ell_str_chars(ell_class_name(ell_obj_class(obj))));
+                 ell_str_chars(ell_sym_name(ell_class_name(ell_wrapper_class(wrapper)))),
+                 ell_str_chars(ell_sym_name(ell_class_name(ell_obj_class(obj)))));
     }
 }
 
@@ -276,10 +296,10 @@ ell_generic_function_code(struct ell_obj *gf, ell_arg_ct npos, ell_arg_ct nkey,
 }
 
 struct ell_obj *
-ell_make_generic_function()
+ell_make_generic_function(struct ell_obj *name)
 {
     return ell_make_clo(&ell_generic_function_code,
-                        ell_make_named_generic(ELL_SYM(anonymous_gf)));
+                        ell_make_named_generic(name));
 }
 
 struct ell_obj *
@@ -311,6 +331,9 @@ struct ell_method_entry *
 ell_make_method_entry(struct ell_obj *method, list_t *specializers)
 {
     ell_assert_wrapper(method, ELL_WRAPPER(clo));
+    for (lnode_t *n = list_first(specializers); n; n = list_next(specializers, n)) {
+        ell_assert_wrapper((struct ell_obj *) lnode_get(n), ELL_WRAPPER(class));
+    }
     struct ell_method_entry *me = 
         (struct ell_method_entry *) ell_alloc(sizeof(*me));
     me->method = method;
@@ -420,13 +443,45 @@ ell_most_specific_method_entry(struct ell_obj *generic,
     return NULL;
 }
 
+void
+ell_no_applicable_method(struct ell_obj *generic, list_t *specialized_args)
+{
+    printf("No applicable method for generic function %s called with %lu "
+           "argument(s) with the class(es): \n",
+           ell_str_chars(ell_sym_name(ell_generic_name(generic))),
+           list_count(specialized_args));
+    for (lnode_t *n = list_first(specialized_args); n; n = list_next(specialized_args, n)) {
+        struct ell_obj *arg = (struct ell_obj *) lnode_get(n);
+        printf("%s (%p) ", ell_str_chars(ell_sym_name(ell_class_name(ell_obj_class(arg)))),
+               ell_obj_class(arg));
+    }
+    list_t *mes = ell_generic_method_entries(generic);
+    if (list_count(mes) > 0) {
+        printf("\nThe generic function has methods for the following specializers:\n");
+        for (lnode_t *n = list_first(mes); n; n = list_next(mes, n)) {
+            struct ell_method_entry *me =
+                (struct ell_method_entry *) lnode_get(n);
+            for (lnode_t *mn = list_first(me->specializers); mn;
+                 mn = list_next(me->specializers, mn)) {
+                struct ell_obj *class = (struct ell_obj *) lnode_get(mn);
+                printf("%s (%p) ", ell_str_chars(ell_sym_name(ell_class_name(class))),
+                       class);
+            }
+            printf("\n");
+        }
+    } else {
+        printf("\nThe generic function has no methods.\n");
+    }
+    ell_fail("No applicable method.\n");
+}
+
 struct ell_obj *
 ell_generic_find_method(struct ell_obj *generic, list_t *specialized_args)
 {
     list_t *applicable_mes =
         ell_find_applicable_method_entries(generic, specialized_args);
     if (list_count(applicable_mes) == 0)
-        ell_fail("no applicable method");
+        ell_no_applicable_method(generic, specialized_args);
     struct ell_method_entry *me =
         ell_most_specific_method_entry(generic, applicable_mes);
     if (me)
@@ -451,6 +506,18 @@ ell_put_method(struct ell_obj *gf, struct ell_obj *clo, list_t *specializers)
 }
 
 void
+ell_put_method_fake(struct ell_obj *class, struct ell_obj *gf, struct ell_obj *clo,
+                    int args_ct)
+{
+    list_t *specializers = ell_util_make_list();
+    ell_util_list_add(specializers, class);
+    for (int i = 1; i < args_ct; i++) {
+        ell_util_list_add(specializers, ELL_CLASS(obj));
+    }
+    ell_put_method(gf, clo, specializers);    
+}
+
+void
 ell_put_method_legacy(struct ell_obj *class, struct ell_obj *gf, struct ell_obj *clo)
 {
     list_t *specializers = ell_util_make_list();
@@ -459,27 +526,24 @@ ell_put_method_legacy(struct ell_obj *class, struct ell_obj *gf, struct ell_obj 
 }
 
 struct ell_obj *
-ell_find_method(struct ell_obj *rcv, struct ell_obj *gf) // legacy
+ell_find_method(struct ell_obj *rcv, struct ell_obj *gf)
 {
-    ell_assert_wrapper(gf, ELL_WRAPPER(clo));  // !
+}
+
+struct ell_obj *
+ell_send(struct ell_obj *rcv, struct ell_obj *gf,
+         ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args)
+{
     list_t *specialized_args = ell_util_make_list();
-    ell_util_list_add(specialized_args, rcv);
+    for (int i = 0; i < npos; i++) {
+        ell_util_list_add(specialized_args, args[i]);
+    }
     /* Bug: unsafe */
     struct ell_obj *generic = (struct ell_obj *) ell_clo_env(gf);
     ell_assert_wrapper(generic, ELL_WRAPPER(generic)); // still unsafe
     return ell_generic_find_method(generic, specialized_args);
-}
-
-struct ell_obj *
-ell_send(struct ell_obj *rcv, struct ell_obj *generic,
-         ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args) // legacy
-{
     struct ell_obj *clo = ell_find_method(rcv, generic);
-    if (clo) {
-        return ell_call_unchecked(clo, npos, nkey, args);
-    } else {
-        ell_fail("message not understood");
-    }
+    return ell_call(clo, npos, nkey, args);
 }
 
 /**** Control Flow ****/
@@ -879,7 +943,7 @@ ell_lst_elts(struct ell_obj *lst)
     return &((struct ell_lst_data *) lst->data)->elts;
 }
 
-ELL_DEFMETHOD(lst, add, 2)
+ELL_DEFMETHOD_NEW(lst, add, 2)
 ELL_PARAM(lst, 0)
 ELL_PARAM(elt, 1)
 ell_util_list_add(ell_lst_elts(lst), elt);
@@ -951,7 +1015,7 @@ printf("%s", ell_str_chars(ell_sym_name(ell_clo_name(self))));
 return ell_unspecified;
 ELL_END
 
-ELL_DEFMETHOD(stx_lst, add, 2)
+ELL_DEFMETHOD_NEW(stx_lst, add, 2)
 ELL_PARAM(stx_lst, 0)
 ELL_PARAM(elt, 1)
 ell_util_list_add(ell_stx_lst_elts(stx_lst), elt);
@@ -1443,7 +1507,7 @@ ell_make_class_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
                     struct ell_obj **args, struct ell_obj *dongle)
 {
     ell_check_npos(npos, 0);
-    return ell_make_class(ell_unspecified);
+    return ell_make_class(ell_intern(ell_make_str("anonymous class")));
 }
 
 /* (add-superclass class superclass) -> unspecified */
@@ -1460,7 +1524,7 @@ ell_add_superclass_code(struct ell_obj *clo, ell_arg_ct npos,
     return ell_unspecified;
 }
 
-/* (make-generic-function) -> function */
+/* (make-generic-function name) -> function */
 
 struct ell_obj *__ell_g_makeDgenericDfunction_2_;
 
@@ -1468,7 +1532,8 @@ struct ell_obj *
 ell_make_generic_function_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
                                struct ell_obj **args, struct ell_obj *dongle)
 {
-    return ell_make_generic_function();
+    ell_check_npos(npos, 1);
+    return ell_make_generic_function(args[1]);
 }
 
 /* (dissect-generic-function-params params) -> specializers syntax list */
@@ -1649,17 +1714,19 @@ ell_plus_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
 __attribute__((constructor(200))) static void
 ell_init()
 {
+    dict_init(&ell_sym_tab, DICTCOUNT_T_MAX, (dict_comp_t) &strcmp);
+
     /* Boostrap class class.  Because 'ell_make_class' sets the new
        class's wrapper to 'ELL_WRAPPER(class)', which can't be defined
        without a class, we need to fix up class class's wrapper
        afterwards. */
     ELL_WRAPPER(class) = NULL;
-    ELL_CLASS(class) = ell_make_class(ell_make_str("<class>"));
+    ELL_CLASS(class) = ell_make_class_bootstrap();
     ELL_WRAPPER(class) = ell_class_wrapper(ELL_CLASS(class));
     ELL_CLASS(class)->wrapper = ELL_WRAPPER(class);
 
 #define ELL_DEFCLASS(name, lisp_name)                                   \
-    ELL_CLASS(name) = ell_make_class(ell_make_str(lisp_name));          \
+    ELL_CLASS(name) = ell_make_class_bootstrap();                       \
     ELL_WRAPPER(name) = ell_class_wrapper(ELL_CLASS(name));
 #include "defclass.h"
 #undef ELL_DEFCLASS
@@ -1679,17 +1746,10 @@ ell_init()
     __ell_g_LsyntaxDsymbolG_1_ = ELL_CLASS(stx_sym);
     __ell_g_LunspecifiedG_1_ = ELL_CLASS(unspecified);
 
-    dict_init(&ell_sym_tab, DICTCOUNT_T_MAX, (dict_comp_t) &strcmp);
-
 #define ELL_DEFSYM(name, lisp_name) \
     if (!ELL_SYM(name)) ELL_SYM(name) = ell_intern(ell_make_str(lisp_name));
 #include "defsym.h"
 #undef ELL_DEFSYM
-
-#define ELL_DEFGENERIC(name, lisp_name)                                 \
-    ELL_GENERIC(name) = ell_make_generic_function();
-#include "defgeneric.h"
-#undef ELL_DEFGENERIC
 
     ell_dongle = ell_make_str("dongle");
 
@@ -1737,4 +1797,19 @@ ell_init()
     __ell_g_readDline_2_ = ell_make_clo(&ell_read_line_code, NULL);
 
     __ell_g_signal_2_ = ell_unbound;
+
+
+    ell_set_class_name(ELL_CLASS(class), ell_intern(ell_make_str("<class>")));
+
+#define ELL_DEFCLASS(name, lisp_name)                                   \
+    ell_set_class_name(ELL_CLASS(name), ell_intern(ell_make_str(lisp_name)));
+#include "defclass.h"
+#undef ELL_DEFCLASS
+
+
+#define ELL_DEFGENERIC(name, lisp_name)                                 \
+    ELL_GENERIC(name) = ell_make_generic_function(ell_intern(ell_make_str(lisp_name)));
+#include "defgeneric.h"
+#undef ELL_DEFGENERIC
+
 }
