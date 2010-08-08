@@ -1525,28 +1525,6 @@ ellc_emit_ast(struct ellc_st *st, struct ellc_ast *ast)
 }
 
 static void
-ellc_emit_globals_declarations(struct ellc_st *st)
-{
-    fprintf(st->f, "\n// GLOBALS\n"); // err...
-    for (lnode_t *n = list_first(st->globals); n; n = list_next(st->globals, n)) {
-        struct ellc_id *id = (struct ellc_id *) lnode_get(n);
-        fprintf(st->f, "__attribute__((weak)) struct ell_obj *%s;\n", ellc_mangle_glo_id(id));
-    }
-    fprintf(st->f, "\n");
-}
-
-static void
-ellc_emit_globals_initializations(struct ellc_st *st)
-{
-    for (lnode_t *n = list_first(st->globals); n; n = list_next(st->globals, n)) {
-        struct ellc_id *id = (struct ellc_id *) lnode_get(n);
-        char *mid = ellc_mangle_glo_id(id);
-        fprintf(st->f, "\tif (%s == NULL) %s = ell_unbound;\n", mid, mid);
-    }
-    fprintf(st->f, "\n");
-}
-
-static void
 ellc_emit_req_param_val(struct ellc_st *st, struct ellc_param *p, unsigned i)
 {
     if (ellc_param_boxed(p))
@@ -1656,7 +1634,7 @@ ellc_emit_codes(struct ellc_st *st)
     unsigned code_id = 0;
     for (lnode_t *n = list_first(st->lambdas); n; n = list_next(st->lambdas, n)) {
         struct ellc_ast_lam *lam = (struct ellc_ast_lam *) lnode_get(n);
-        fprintf(st->f, "// CLOSURE %u\n", code_id);
+        fprintf(st->f, "// CODE %u\n", code_id);
         // env
         if (dict_count(lam->env) > 0) {
             fprintf(st->f, "struct __ell_env_%u {\n", code_id);
@@ -1671,14 +1649,36 @@ ellc_emit_codes(struct ellc_st *st)
         fprintf(st->f, "__ell_code_%u(struct ell_obj *__ell_clo, ell_arg_ct __ell_npos, "
                "ell_arg_ct __ell_nkey, struct ell_obj **__ell_args, struct ell_obj *__ell_dongle) {\n", code_id);
         ellc_emit_params(st, lam);
-        fprintf(st->f, "\tstruct __ell_env_%u *__ell_env = (struct __ell_env_%u *)"
-               "((struct ell_clo_data *) __ell_clo->data)->env;\n", code_id, code_id);
+        if (dict_count(lam->env) > 0) {
+            fprintf(st->f, "\tstruct __ell_env_%u *__ell_env = (struct __ell_env_%u *)"
+                    "((struct ell_clo_data *) __ell_clo->data)->env;\n", code_id, code_id);
+        }
         fprintf(st->f, "\treturn ");
         ellc_emit_ast(st, lam->body);
         fprintf(st->f, ";");
-        fprintf(st->f, "\n}\n\n");
+        fprintf(st->f, "\n}\n");
 
         code_id++;
+    }
+    printf("\n");
+}
+
+static void
+ellc_emit_globals_declarations(struct ellc_st *st)
+{
+    for (lnode_t *n = list_first(st->globals); n; n = list_next(st->globals, n)) {
+        struct ellc_id *id = (struct ellc_id *) lnode_get(n);
+        fprintf(st->f, "__attribute__((weak)) struct ell_obj *%s;\n", ellc_mangle_glo_id(id));
+    }
+}
+
+static void
+ellc_emit_globals_initializations(struct ellc_st *st)
+{
+    for (lnode_t *n = list_first(st->globals); n; n = list_next(st->globals, n)) {
+        struct ellc_id *id = (struct ellc_id *) lnode_get(n);
+        char *mid = ellc_mangle_glo_id(id);
+        fprintf(st->f, "\tif (%s == NULL) %s = ell_unbound;\n", mid, mid);
     }
 }
 
@@ -1700,12 +1700,17 @@ static void
 ellc_emit(struct ellc_st *st, struct ellc_ast_seq *ast_seq)
 {
     fprintf(st->f, "#include \"ellrt.h\"\n");
-    ellc_emit_stmts(st);
+    fprintf(st->f, "// GLOBALS\n");
     ellc_emit_globals_declarations(st);
+    fprintf(st->f, "// CODES\n");
     ellc_emit_codes(st);
-    fprintf(st->f, "// INIT\n");
+    fprintf(st->f, "// STATEMENTS\n");
+    ellc_emit_stmts(st);
+    fprintf(st->f, "// CONSTRUCTOR\n");
     fprintf(st->f, "__attribute__((constructor(500))) static void ell_init() {\n");
+    fprintf(st->f, "\t// INITIALIZATIONS\n");
     ellc_emit_globals_initializations(st);
+    fprintf(st->f, "\t// LOAD\n");
     for (lnode_t *n = list_first(ast_seq->exprs); n; n = list_next(ast_seq->exprs, n)) {
         fprintf(st->f, "\tell_result = ");
         ellc_emit_ast(st, (struct ellc_ast *) lnode_get(n));
