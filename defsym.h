@@ -31,7 +31,7 @@ ELL_DEFSYM(core_loop, "ell-loop")
 ELL_DEFSYM(core_mdef, "ell-mdef")
 /* (ell-snip &rest exprs) ;; Inline C; contains C strings (emitted as-is) and Lisp exprs */
 ELL_DEFSYM(core_snip, "ell-snip")
-
+/* (ell-stmt &rest exprs) ;; Like ell-snip, but code is emitted as C top-level declarations  */
 ELL_DEFSYM(core_stmt, "ell-stmt")
 
 /* Data and syntax quotation: */
