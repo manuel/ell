@@ -9,7 +9,7 @@
 
   -l file---A Lisp source file to compile and load, or a FASL to load.
   -x compile-time.fasl---A file to load at compile-time.
-  -e expression--A Lisp expression to evaluate.
+  -e expression---A Lisp expression to evaluate.
   -q---Whether to quit after processing instead of entering the REPL.
 */
 
