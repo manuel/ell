@@ -48,13 +48,6 @@ ell_parser_add_str(char *chars)
 }
 
 void
-ell_parser_add_inline_c(char *chars)
-{
-    struct ell_obj *stx_str = ell_make_stx_str(ell_make_str(chars));
-    ELL_SEND(ell_parser_stack_top->parser_data, add, stx_str);
-}
-
-void
 ell_parser_add_num(char *chars)
 {
     struct ell_obj *stx_num = ell_make_stx_num(ell_make_num(chars));

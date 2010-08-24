@@ -1,10 +1,10 @@
+# After changing this file `make grammar' is required to update `grammar.c'.
+
 %{
 void
 ell_parser_add_sym(char *chars);
 void
 ell_parser_add_str(char *chars);
-void
-ell_parser_add_inline_c(char *chars);
 void
 ell_parser_add_num(char *chars);
 void
@@ -30,7 +30,7 @@ str        = "\"" < str-char* > "\""
              { ell_parser_add_str(yytext); }
 
 inline-c   = "$" < [^$]* > "$"
-             { ell_parser_add_inline_c(yytext); }
+             { ell_parser_add_str(yytext); }
 
 # Needs to be kept in sync with ellc_mangle_char in 'ellc.c'.
 sym-char   = [a-z0-9&_#/] | "-" | "<" | ">" | "*" | "+" | "?"

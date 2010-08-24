@@ -10,8 +10,6 @@ ell_parser_add_sym(char *chars);
 void
 ell_parser_add_str(char *chars);
 void
-ell_parser_add_inline_c(char *chars);
-void
 ell_parser_add_num(char *chars);
 void
 ell_parser_push();
@@ -321,7 +319,7 @@ YY_ACTION(void) yy_1_sym(char *yytext, int yyleng)
 YY_ACTION(void) yy_1_inline_c(char *yytext, int yyleng)
 {
   yyprintf((stderr, "do yy_1_inline_c\n"));
-   ell_parser_add_inline_c(yytext); ;
+   ell_parser_add_str(yytext); ;
 }
 YY_ACTION(void) yy_1_str(char *yytext, int yyleng)
 {
