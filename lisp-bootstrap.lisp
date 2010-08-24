@@ -134,7 +134,7 @@
 (defun print (object) (print-object object))
 
 (defmacro c (&rest snippets)
-  #`(c-expression ,snippets))
+  #`(c-expression ,@snippets))
 
 (defmacro fluid-let (name value &rest body)
   #`(let ((tmp ,name))
