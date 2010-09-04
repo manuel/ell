@@ -230,26 +230,11 @@ ell_is_instance(struct ell_obj *obj, struct ell_obj *class)
 struct ell_obj *
 ell_make_clo(ell_code *code, void *env)
 {
-    return ell_make_named_clo(code, env, ELL_SYM(anonymous));
-}
-
-struct ell_obj *
-ell_make_named_clo(ell_code *code, void *env, struct ell_obj *name_sym)
-{
-    ell_assert_wrapper(name_sym, ELL_WRAPPER(sym));
     struct ell_clo_data *data =
         (struct ell_clo_data *) ell_alloc(sizeof(*data));
     data->code = code;
     data->env = env;
-    data->name = name_sym;
     return ell_make_obj(ELL_WRAPPER(clo), data);    
-}
-
-struct ell_obj *
-ell_clo_name(struct ell_obj *clo)
-{
-    ell_assert_wrapper(clo, ELL_WRAPPER(clo));
-    return ((struct ell_clo_data *) clo->data)->name;
 }
 
 void *
@@ -297,28 +282,18 @@ ell_generic_function_code(struct ell_obj *gf, ell_arg_ct npos, ell_arg_ct nkey,
 }
 
 struct ell_obj *
-ell_make_generic_function(struct ell_obj *name)
+ell_make_generic_function()
 {
-    return ell_make_clo(&ell_generic_function_code,
-                        ell_make_named_generic(name));
+    return ell_make_clo(&ell_generic_function_code, ell_make_generic());
 }
 
 struct ell_obj *
-ell_make_named_generic(struct ell_obj *name)
+ell_make_generic()
 {
-    ell_assert_wrapper(name, ELL_WRAPPER(sym));
     struct ell_generic_data *data =
         (struct ell_generic_data *) ell_alloc(sizeof(*data));
-    data->generic_name = name;
     data->method_entries = ell_util_make_list();
     return ell_make_obj(ELL_WRAPPER(generic), data);
-}
-
-struct ell_obj *
-ell_generic_name(struct ell_obj *generic)
-{
-    ell_assert_wrapper(generic, ELL_WRAPPER(generic));
-    return ((struct ell_generic_data *) generic->data)->generic_name;
 }
 
 list_t *
@@ -480,8 +455,7 @@ ell_most_specific_method_entry(struct ell_obj *generic,
 static void
 ell_print_generic_and_specialized_args(struct ell_obj *generic, list_t *specialized_args)
 {
-    printf("generic %s [%p] called with %lu argument(s) with the class(es): \n",
-           ell_str_chars(ell_sym_name(ell_generic_name(generic))),
+    printf("generic [%p] called with %lu argument(s) with the class(es): \n",
            generic,
            list_count(specialized_args));
     for (lnode_t *n = list_first(specialized_args); n; n = list_next(specialized_args, n)) {
@@ -1071,7 +1045,7 @@ ELL_END
 
 ELL_DEFMETHOD(clo, printDobject, 1)
 ELL_PARAM(self, 0)
-printf("%s", ell_str_chars(ell_sym_name(ell_clo_name(self))));
+printf("#<function>");
 return ell_unspecified;
 ELL_END
 
@@ -1542,7 +1516,7 @@ ell_add_superclass_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
     return ell_unspecified;
 }
 
-/* (make-generic-function name) -> function */
+/* (make-generic-function) -> function */
 
 struct ell_obj *__ell_g_makeDgenericDfunction_2_;
 
@@ -1551,7 +1525,7 @@ ell_make_generic_function_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct 
                                struct ell_obj **args)
 {
     ell_check_npos(npos, 1);
-    return ell_make_generic_function(args[0]);
+    return ell_make_generic_function();
 }
 
 /* (dissect-generic-function-params params) -> specializers syntax list */
@@ -1781,8 +1755,8 @@ ELL_DEFCLASS(obj, "<object>")
     __ell_g_blockFf_2_ = ell_make_clo(&ell_blockFf_code, NULL);
     __ell_g_unwindDprotectFf_2_ = ell_make_clo(&ell_unwind_protectFf_code, NULL);
 
-    __ell_g_apply_2_ = ell_make_named_clo(&ell_apply_code, NULL, ELL_SYM(apply));
-    __ell_g_send_2_ = ell_make_named_clo(&ell_send_code, NULL, ELL_SYM(core_send));
+    __ell_g_apply_2_ = ell_make_clo(&ell_apply_code, NULL);
+    __ell_g_send_2_ = ell_make_clo(&ell_send_code, NULL);
     __ell_g_syntaxDlist_2_ = ell_make_clo(&ell_syntax_list_code, NULL);
     __ell_g_syntaxDlistDrest_2_ = ell_make_clo(&ell_syntax_list_rest_code, NULL);
     __ell_g_appendDsyntaxDlists_2_ = ell_make_clo(&ell_append_syntax_lists_code, NULL);
@@ -1822,8 +1796,8 @@ ELL_DEFCLASS(obj, "<object>")
 #undef ELL_DEFCLASS
 
     /* Define built-in generics. */
-#define ELL_DEFGENERIC(name, lisp_name)                                 \
-    ELL_GENERIC(name) = ell_make_generic_function(ell_intern(ell_make_str(lisp_name)));
+#define ELL_DEFGENERIC(name, lisp_name)                 \
+    ELL_GENERIC(name) = ell_make_generic_function();
 #include "defgeneric.h"
 #undef ELL_DEFGENERIC
 

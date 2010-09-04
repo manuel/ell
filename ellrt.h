@@ -30,6 +30,7 @@ struct ell_obj;
 
 struct ell_wrapper {
     struct ell_obj *class;
+    list_t *type_args; // class object
 };
 
 struct ell_obj {
@@ -41,6 +42,7 @@ struct ell_class_data {
     struct ell_obj *name;
     list_t *superclasses;
     struct ell_wrapper *wrapper;
+    unsigned *type_params_ct;
 };
 
 struct ell_obj *
@@ -141,10 +143,6 @@ struct ell_clo_data {
 
 struct ell_obj *
 ell_make_clo(ell_code *code, void *env);
-struct ell_obj *
-ell_make_named_clo(ell_code *code, void *env, struct ell_obj *name_sym);
-struct ell_obj *
-ell_clo_name(struct ell_obj *clo);
 void *
 ell_clo_env(struct ell_obj *clo);
 struct ell_obj *
@@ -174,7 +172,7 @@ struct ell_generic_data {
 };
 
 struct ell_obj *
-ell_make_named_generic(struct ell_obj *name);
+ell_make_generic();
 void
 ell_generic_add_method(struct ell_obj *generic, struct ell_obj *clo,
                        list_t *specializers);
