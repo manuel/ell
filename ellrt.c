@@ -263,8 +263,7 @@ struct ell_obj *
 ell_call_unchecked(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
                    struct ell_obj **args)
 {
-    return ((struct ell_clo_data *) clo->data)->code(clo, npos, nkey,
-                                                     args, ell_dongle);
+    return ((struct ell_clo_data *) clo->data)->code(clo, npos, nkey, args);
 }
 
 struct ell_obj *
@@ -287,7 +286,7 @@ ell_check_npos(ell_arg_ct formal_npos, ell_arg_ct actual_npos)
 
 static struct ell_obj *
 ell_generic_function_code(struct ell_obj *gf, ell_arg_ct npos, ell_arg_ct nkey,
-                          struct ell_obj **args, struct ell_obj *dongle)
+                          struct ell_obj **args)
 {
     struct ell_obj *generic = (struct ell_obj *) ell_clo_env(gf);
     list_t *specialized_args = ell_util_make_list();
@@ -607,7 +606,8 @@ ell_send(struct ell_obj *rcv, struct ell_obj *gf,
 /**** Control Flow ****/
 
 struct ell_obj *
-ell_return_from_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args, struct ell_obj *dongle)
+ell_return_from_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
+                     struct ell_obj **args)
 {
     struct ell_clo_data *clo_data = (struct ell_clo_data *) clo->data;
     struct ell_block *block = (struct ell_block *) clo_data->env; // See comment in ell_block
@@ -652,13 +652,15 @@ ell_unwind_protect(struct ell_obj *protected, struct ell_obj *cleanup)
 }
 
 struct ell_obj *
-ell_blockFf_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args, struct ell_obj *dongle)
+ell_blockFf_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
+                 struct ell_obj **args)
 {
     return ell_block(args[0]);
 }
 
 struct ell_obj *
-ell_unwind_protectFf_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args, struct ell_obj *dongle)
+ell_unwind_protectFf_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
+                          struct ell_obj **args)
 {
     return ell_unwind_protect(args[0], args[1]);
 }
@@ -1337,44 +1339,6 @@ ell_ptr_cmp(void *a, void *b)
 
 /**** Misc ****/
 
-void
-ell_print_stacktrace()
-{
-    int size = 100;
-    void *buffer[size];
-    int ct = backtrace(buffer, size);
-    char **names = backtrace_symbols(buffer, ct);
-    int i = 0;
-    struct ell_obj **frame = __builtin_frame_address(0);
-    while (frame) {
-        struct ell_obj *the_dongle = *(frame + 6);
-        if (the_dongle == ell_dongle) {
-            struct ell_obj *the_clo = *(frame + 2);
-            ell_arg_ct the_npos = (ell_arg_ct) *(frame + 3);
-            ell_arg_ct the_nkey = (ell_arg_ct) *(frame + 4);
-            struct ell_obj **args = (struct ell_obj **) *(frame + 5);
-            printf("* LISP %s\n", names[i]);
-            printf("  (%s%s",
-                   ell_str_chars(ell_sym_name(ell_clo_name(the_clo))),
-                   the_npos ? " " : "");
-            for (int i = 0; i < the_npos; i++) {
-                ELL_SEND(args[i], printDobject);
-                if ((i + 1) < the_npos)
-                    printf(" ");
-            }
-            printf(")\n");
-        } else {
-            printf("* C %s\n", names[i]);
-        }
-        frame = (struct ell_obj **) *(frame);
-        i++;
-        if (i > 15) {
-            printf("...\n");
-            break;
-        }
-    }
-}
-
 /**** Built-in Functions ****/
 
 /* (apply function list) -> result */
@@ -1383,7 +1347,7 @@ struct ell_obj *__ell_g_apply_2_;
 
 struct ell_obj *
 ell_apply_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-               struct ell_obj **args, struct ell_obj *dongle)
+               struct ell_obj **args)
 {
     ell_check_npos(2, npos);
     struct ell_obj *fun = args[0];
@@ -1406,7 +1370,7 @@ struct ell_obj *__ell_g_send_2_;
 
 struct ell_obj *
 ell_send_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-              struct ell_obj **args, struct ell_obj *dongle)
+              struct ell_obj **args)
 {
     ell_check_npos(2, npos);
     struct ell_obj *rcv = args[0];
@@ -1424,7 +1388,7 @@ struct ell_obj *__ell_g_syntaxDlist_2_;
 
 struct ell_obj *
 ell_syntax_list_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-                     struct ell_obj **args, struct ell_obj *dongle)
+                     struct ell_obj **args)
 {
     struct ell_obj *res = ell_make_stx_lst();
     for (int i = 0; i < npos; i++) {
@@ -1438,9 +1402,8 @@ ell_syntax_list_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
 struct ell_obj *__ell_g_syntaxDlistDrest_2_;
 
 struct ell_obj *
-ell_syntax_list_rest_code(struct ell_obj *clo, ell_arg_ct npos,
-                          ell_arg_ct nkey, struct ell_obj **args,
-                          struct ell_obj *dongle)
+ell_syntax_list_rest_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
+                          struct ell_obj **args)
 {
     ell_check_npos(1, npos);
     struct ell_obj *stx_lst = args[0];
@@ -1458,9 +1421,8 @@ ell_syntax_list_rest_code(struct ell_obj *clo, ell_arg_ct npos,
 struct ell_obj *__ell_g_appendDsyntaxDlists_2_;
 
 struct ell_obj *
-ell_append_syntax_lists_code(struct ell_obj *clo, ell_arg_ct npos,
-                             ell_arg_ct nkey, struct ell_obj **args,
-                             struct ell_obj *dongle)
+ell_append_syntax_lists_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
+                             struct ell_obj **args)
 {
     struct ell_obj *res = ell_make_stx_lst();
     for (int i = 0; i < npos; i++) {
@@ -1480,9 +1442,8 @@ ell_append_syntax_lists_code(struct ell_obj *clo, ell_arg_ct npos,
 struct ell_obj *__ell_g_applyDsyntaxDlist_2_;
 
 struct ell_obj *
-ell_apply_syntax_list_code(struct ell_obj *clo, ell_arg_ct npos,
-                           ell_arg_ct nkey, struct ell_obj **args,
-                           struct ell_obj *dongle)
+ell_apply_syntax_list_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
+                           struct ell_obj **args)
 {
     ell_check_npos(2, npos);
     struct ell_obj *fun = args[0];
@@ -1509,7 +1470,7 @@ struct ell_obj *__ell_g_datumDGsyntax_2_;
 
 struct ell_obj *
 ell_datum_syntax_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-                      struct ell_obj **args, struct ell_obj *dongle)
+                      struct ell_obj **args)
 {
     ell_check_npos(2, npos);
     struct ell_obj *stx = args[0];
@@ -1528,7 +1489,7 @@ struct ell_obj *__ell_g_syntaxDGdatum_2_;
 
 struct ell_obj *
 ell_syntax_datum_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-                      struct ell_obj **args, struct ell_obj *dongle)
+                      struct ell_obj **args)
 {
     ell_check_npos(1, npos);
     return ell_stx_sym_sym(args[0]);
@@ -1540,7 +1501,7 @@ struct ell_obj *__ell_g_mapDlist_2_;
 
 struct ell_obj *
 ell_map_list_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-                  struct ell_obj **args, struct ell_obj *dongle)
+                  struct ell_obj **args)
 {
     ell_check_npos(2, npos);
     struct ell_obj *res = ell_make_lst();
@@ -1562,7 +1523,7 @@ struct ell_obj *__ell_g_makeDclass_2_;
 
 struct ell_obj *
 ell_make_class_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-                    struct ell_obj **args, struct ell_obj *dongle)
+                    struct ell_obj **args)
 {
     ell_check_npos(npos, 1);
     return ell_make_class(args[0]);
@@ -1573,9 +1534,8 @@ ell_make_class_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
 struct ell_obj *__ell_g_addDsuperclass_2_;
 
 struct ell_obj *
-ell_add_superclass_code(struct ell_obj *clo, ell_arg_ct npos, 
-                        ell_arg_ct nkey, struct ell_obj **args,
-                        struct ell_obj *dongle)
+ell_add_superclass_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
+                        struct ell_obj **args)
 {
     ell_check_npos(npos, 2);
     ell_add_superclass(args[0], args[1]);
@@ -1588,7 +1548,7 @@ struct ell_obj *__ell_g_makeDgenericDfunction_2_;
 
 struct ell_obj *
 ell_make_generic_function_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-                               struct ell_obj **args, struct ell_obj *dongle)
+                               struct ell_obj **args)
 {
     ell_check_npos(npos, 1);
     return ell_make_generic_function(args[0]);
@@ -1599,8 +1559,9 @@ ell_make_generic_function_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct 
 struct ell_obj *__ell_g_dissectDgenericDfunctionDparams_2_;
 
 struct ell_obj *
-ell_dissect_generic_function_params_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-                                         struct ell_obj **args, struct ell_obj *dongle)
+ell_dissect_generic_function_params_code(struct ell_obj *clo, ell_arg_ct npos,
+                                         ell_arg_ct nkey,
+                                         struct ell_obj **args)
 {
     ell_check_npos(npos, 1);
     struct ell_obj *stx_lst = args[0];
@@ -1632,7 +1593,7 @@ struct ell_obj *__ell_g_putDmethod_2_;
 
 struct ell_obj *
 ell_put_method_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-                    struct ell_obj **args, struct ell_obj *dongle)
+                    struct ell_obj **args)
 {
     list_t *specializers = ell_util_make_list();
     for (int i = 2; i < npos; i++) {
@@ -1648,7 +1609,7 @@ struct ell_obj *__ell_g_make_2_;
 
 struct ell_obj *
 ell_make_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-              struct ell_obj **args, struct ell_obj *dongle)
+              struct ell_obj **args)
 {
     ell_check_npos(npos, 1);
     return ell_make_obj(ell_class_wrapper(args[0]),
@@ -1661,7 +1622,7 @@ struct ell_obj *__ell_g_slotDvalue_2_;
 
 struct ell_obj *
 ell_slot_value_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-                    struct ell_obj **args, struct ell_obj *dongle)
+                    struct ell_obj **args)
 {
     ell_check_npos(npos, 2);
     return ell_slot_value(args[0], args[1]);
@@ -1672,9 +1633,8 @@ ell_slot_value_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
 struct ell_obj *__ell_g_setDslotDvalue_2_;
 
 struct ell_obj *
-ell_set_slot_value_code(struct ell_obj *clo, ell_arg_ct npos,
-                        ell_arg_ct nkey, struct ell_obj **args,
-                        struct ell_obj *dongle)
+ell_set_slot_value_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
+                        struct ell_obj **args)
 {
     ell_check_npos(npos, 3);
     return ell_set_slot_value(args[0], args[1], args[2]);
@@ -1686,22 +1646,10 @@ struct ell_obj *__ell_g_typeQ_2_;
 
 struct ell_obj *
 ell_typeQ_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-               struct ell_obj **args, struct ell_obj *dongle)
+               struct ell_obj **args)
 {
     ell_check_npos(npos, 2);
     return ell_truth(ell_is_instance(args[0], args[1]));
-}
-
-/* (stacktrace) */
-
-struct ell_obj *__ell_g_stacktrace_2_;
-
-struct ell_obj *
-ell_stacktrace_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-                    struct ell_obj **args, struct ell_obj *dongle)
-{
-    ell_print_stacktrace();
-    return ell_unspecified;
 }
 
 /* (exit) */
@@ -1710,7 +1658,7 @@ struct ell_obj *__ell_g_exit_2_;
 
 struct ell_obj *
 ell_exit_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-              struct ell_obj **args, struct ell_obj *dongle)
+              struct ell_obj **args)
 {
     exit(EXIT_SUCCESS);
     return NULL;
@@ -1722,7 +1670,7 @@ struct ell_obj *__ell_g_readDline_2_;
 
 struct ell_obj *
 ell_read_line_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-                   struct ell_obj **args, struct ell_obj *dongle)
+                   struct ell_obj **args)
 {
     ell_check_npos(0, npos);
     char *s = readline("");
@@ -1741,7 +1689,7 @@ struct ell_obj *__ell_g_L_2_;
 
 struct ell_obj *
 ell_less_than_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-                   struct ell_obj **args, struct ell_obj *dongle)
+                   struct ell_obj **args)
 {
     ell_check_npos(2, npos);
     struct ell_obj *num1 = args[0];
@@ -1757,7 +1705,7 @@ struct ell_obj *__ell_g_P_2_;
 
 struct ell_obj *
 ell_plus_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-              struct ell_obj **args, struct ell_obj *dongle)
+              struct ell_obj **args)
 {
     ell_check_npos(2, npos);
     struct ell_obj *num1 = args[0];
@@ -1819,8 +1767,6 @@ ELL_DEFCLASS(obj, "<object>")
 #undef ELL_DEFSYM
 
     /* Prepare low-level constants. */
-    ell_dongle = ell_make_str("dongle");
-
     __ell_g_Ot_1_ = ell_make_obj(ELL_WRAPPER(boolean), NULL);
     ell_t = __ell_g_Ot_1_;
     __ell_g_Of_1_ = ell_make_obj(ELL_WRAPPER(boolean), NULL);
@@ -1860,7 +1806,6 @@ ELL_DEFCLASS(obj, "<object>")
     __ell_g_L_2_ = ell_make_clo(&ell_less_than_code, NULL);
     __ell_g_P_2_ = ell_make_clo(&ell_plus_code, NULL);
     
-    __ell_g_stacktrace_2_ = ell_make_clo(&ell_stacktrace_code, NULL);
     __ell_g_exit_2_ = ell_make_clo(&ell_exit_code, NULL);
 
     __ell_g_readDline_2_ = ell_make_clo(&ell_read_line_code, NULL);

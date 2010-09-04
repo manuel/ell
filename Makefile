@@ -15,7 +15,7 @@ lisp-conditions.lisp.load.fasl lisp-conditions.lisp.syntax.fasl: lisp-conditions
 lisp-library-helpers.lisp.load.fasl lisp-library-helpers.lisp.syntax.fasl: lisp-library-helpers.lisp lisp-bootstrap.lisp.syntax.fasl lisp-conditions.lisp.syntax.fasl $(OBJECTS)
 	./ell-compile -x ./lisp-bootstrap.lisp.syntax.fasl -x ./lisp-conditions.lisp.syntax.fasl -c ./lisp-library-helpers.lisp
 
-lisp-library.lisp.load.fasl  lisp-library.lisp.syntax.fasl: lisp-library-helpers.lisp.load.fasl lisp-bootstrap.lisp.syntax.fasl lisp-conditions.lisp.syntax.fasl $(OBJECTS)
+lisp-library.lisp.load.fasl lisp-library.lisp.syntax.fasl: lisp-library-helpers.lisp.load.fasl lisp-bootstrap.lisp.syntax.fasl lisp-conditions.lisp.syntax.fasl $(OBJECTS)
 	./ell-compile -x ./lisp-bootstrap.lisp.syntax.fasl -x ./lisp-conditions.lisp.syntax.fasl -x ./lisp-library-helpers.lisp.load.fasl -c ./lisp-library.lisp
 
 ell-repl: $(OBJECTS) ell-repl.o

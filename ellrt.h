@@ -123,9 +123,7 @@ typedef unsigned int ell_arg_ct;
 
 typedef struct ell_obj *
 ell_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-         struct ell_obj **args, struct ell_obj *dongle);
-
-struct ell_obj *ell_dongle;
+         struct ell_obj **args);
 
 /* A closure consists of a code pointer and an environment pointer.
    Usually, the environment contains the free variables of the
@@ -227,8 +225,7 @@ ell_send(struct ell_obj *rcv, struct ell_obj *generic,
                                                                         \
     struct ell_obj *                                                    \
     ELL_METHOD_CODE(class, msg)(struct ell_obj *clo, ell_arg_ct npos,   \
-                                ell_arg_ct nkey, struct ell_obj **args, \
-                                struct ell_obj *dongle)                 \
+                                ell_arg_ct nkey, struct ell_obj **args) \
     {
 
 #define ELL_PARAM(name, i)                      \
@@ -472,14 +469,12 @@ ell_box_read(struct ell_obj **box);
 struct ell_obj *
 ell_box_write(struct ell_obj **box, struct ell_obj *value);
 struct ell_obj *
-ell_lookup_key(struct ell_obj *key_sym, ell_arg_ct npos, ell_arg_ct nkey, struct ell_obj **args);
+ell_lookup_key(struct ell_obj *key_sym, ell_arg_ct npos, ell_arg_ct nkey,
+               struct ell_obj **args);
 
 /**** Misc ****/
 
-void
-ell_print_stacktrace();
-
-#define ell_fail(...)                \
-    ({ printf(__VA_ARGS__); ell_print_stacktrace(); exit(EXIT_FAILURE); })
+#define ell_fail(...)                                   \
+    ({ printf(__VA_ARGS__); exit(EXIT_FAILURE); })
 
 #endif

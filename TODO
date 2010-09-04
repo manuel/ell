@@ -20,7 +20,6 @@ IOW, are macro names symbols or (hygiene-contextual) identifiers?
 * Language Enhancements
 ** Provide boundp that evaluates argument
 Via dlsym(3).
-** Remove stacktrace functionality in favor of gdb integration
 * Code Enhancements
 ** Keep track of all used symbols in unit and intern them only once at load-time
 Also for keyword arguments.

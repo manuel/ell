@@ -33,7 +33,6 @@
 
 (defmethod handle-condition ((h <default-handler>) (c <condition>))
   (print condition)
-  (stacktrace)
   (exit))
 
 (defmethod handle-condition ((h <user-handler>) (c <condition>))
@@ -79,6 +78,6 @@
 (defun cerror (condition)
   (block use-value
     (handler-bind <use-value> (lambda (restart resume)
-                                (return-from (slot-value restart 'value)))
+                                (return-from use-value (slot-value restart 'value)))
       (error condition))))
 
