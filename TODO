@@ -21,6 +21,7 @@ IOW, are macro names symbols or (hygiene-contextual) identifiers?
 ** Provide boundp that evaluates argument
 Via dlsym(3).
 * Code Enhancements
+** Add a separate boxing pass for mutable closed-over vars
 ** Keep track of all used symbols in unit and intern them only once at load-time
 Also for keyword arguments.
 ** Allocate string data using GC_alloc_atomic
