@@ -626,15 +626,15 @@ ell_unwind_protect(struct ell_obj *protected, struct ell_obj *cleanup)
 }
 
 struct ell_obj *
-ell_blockFf_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-                 struct ell_obj **args)
+ell_block_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
+               struct ell_obj **args)
 {
     return ell_block(args[0]);
 }
 
 struct ell_obj *
-ell_unwind_protectFf_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
-                          struct ell_obj **args)
+ell_unwind_protect_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
+                        struct ell_obj **args)
 {
     return ell_unwind_protect(args[0], args[1]);
 }
@@ -1752,8 +1752,8 @@ ELL_DEFCLASS(obj, "<object>")
     ell_unbound = ell_make_obj(ELL_WRAPPER(unbound), NULL);
 
     /* Built-in functions. */
-    __ell_g_blockFf_2_ = ell_make_clo(&ell_blockFf_code, NULL);
-    __ell_g_unwindDprotectFf_2_ = ell_make_clo(&ell_unwind_protectFf_code, NULL);
+    __ell_g_blockFf_2_ = ell_make_clo(&ell_block_code, NULL);
+    __ell_g_unwindDprotectFf_2_ = ell_make_clo(&ell_unwind_protect_code, NULL);
 
     __ell_g_apply_2_ = ell_make_clo(&ell_apply_code, NULL);
     __ell_g_send_2_ = ell_make_clo(&ell_send_code, NULL);
