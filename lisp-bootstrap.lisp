@@ -1,11 +1,11 @@
 (ell-mdef defmacro
   (ell-lam (defmacro-form)
-    #`(ell-mdef ,(send defmacro-form (ell-fref second))
+    #`(ell-mdef ,(second defmacro-form)
         (ell-lam (macro-call-form)
           (apply-syntax-list
-            (ell-lam ,(send defmacro-form (ell-fref third))
-              ,(send defmacro-form (ell-fref fourth)) #<function>)
-            (syntax-list-rest macro-call-form)) #<function>)) #<function>))
+            (ell-lam ,(third defmacro-form)
+              ,(fourth defmacro-form))
+            (syntax-list-rest macro-call-form))))))
 
 (defmacro defsyntax (name expander)
   #`(ell-mdef ,name ,expander))
@@ -14,7 +14,7 @@
   #`(ell-seq ,@exprs))
 
 (defmacro lambda (sig &rest body)
-  #`(ell-lam ,sig (progn ,@body) #<function>))
+  #`(ell-lam ,sig (progn ,@body)))
 
 (defmacro if (test then &optional (else #'unspecified))
   #`(ell-cond ,test ,then ,else))
@@ -44,7 +44,7 @@
   #`(progn (ell-fdef ,name ,function) ',name))
 
 (defmacro defun (name sig &rest body)
-  #`(defun/f ,name (ell-lam ,sig (progn ,@body) ,name)))
+  #`(defun/f ,name (ell-lam ,sig (progn ,@body))))
 
 (defmacro funcall (fun &rest args)
   #`(ell-app ,fun ,@args))

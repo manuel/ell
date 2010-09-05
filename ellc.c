@@ -417,7 +417,7 @@ ellc_dissect_params(struct ellc_st *st, list_t *params_stx, dict_t *deferred_ini
 static struct ellc_ast *
 ellc_norm_lam(struct ellc_st *st, struct ell_obj *stx_lst)
 {
-    ell_assert_stx_lst_len(stx_lst, 4);
+    ell_assert_stx_lst_len(stx_lst, 3);
     struct ell_obj *params_stx = ELL_SEND(stx_lst, second);
     ell_assert_wrapper(params_stx, ELL_WRAPPER(stx_lst));
     struct ellc_ast *ast = ellc_make_ast(ELLC_AST_LAM);
