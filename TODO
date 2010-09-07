@@ -5,7 +5,7 @@ Prohibit subclassing of built-in classes and slot accesses to
 instances of classes whose metaclass is built-in-class.
 ** Revisit access to unbound parameters inside parameter init forms
 This happens if a parameter's init form accesses a parameter to the right of it.
-** ell-repl doesn't care about nonexistent .lisp files for -l
+** ell-load doesn't care about nonexistent .lisp files for -l
 ** Slot handling doesn't consider that built-in classes don't have slots
 * Language Issues
 ** Code created by quasisyntax doesn't use current hygiene context
