@@ -137,6 +137,7 @@ ellcm_compiletime_load_file(struct ellcm *cm, char *file)
         buf += bytes;
     }
     struct ellcm_rx rx;
+    buf = (char *) &rx;
     total = 0;
     while(total < sizeof(rx)) {
         bytes = read(cm->sd, buf, sizeof(rx) - total);
