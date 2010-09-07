@@ -137,8 +137,6 @@ ell_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
 struct ell_clo_data {
     ell_code *code;
     void *env;
-    // Reflective info:
-    struct ell_obj *name; // sym
 };
 
 struct ell_obj *

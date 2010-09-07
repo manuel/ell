@@ -1,7 +1,7 @@
 *~
 *.o
 *.fasl
-ell-repl
+ell-load
 ell-compile
 gmon.out
 .work
