@@ -2,7 +2,7 @@
 
 #define _GNU_SOURCE
 #include <dlfcn.h>
-#include <execinfo.h> // backtrace
+#include <stdio.h>
 #include <readline/readline.h>
 
 #include "ellrt.h"
