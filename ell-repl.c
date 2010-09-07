@@ -58,6 +58,8 @@ ell_repl(struct ellcm *cm)
     printf("Welcome to ell!\nExit with (exit).\n");
     for(;;) {
         char *line = readline("> ");
+        if (line == NULL)
+            break;
         struct ell_obj *result = ellcm_eval(cm, line);
         if (result == ell_unspecified) {
             printf("; no value\n");
