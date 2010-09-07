@@ -35,7 +35,7 @@ ellcm_server_process(int sd, struct ellcm_tx *tx)
     size_t total = 0;
     while(total < sizeof(rx)) {
         bytes = write(sd, buf, sizeof(rx) - total);
-        if (bytes == -1) {
+        if (bytes <= 0) {
             ell_fail("write error\n");
         }
         total += bytes;
@@ -52,7 +52,7 @@ ellcm_server(int sd)
     size_t total = 0;
     for (;;) {
         bytes = read(sd, buf, sizeof(tx) - total);
-        if (bytes == -1) {
+        if (bytes <= 0) {
             ell_fail("read error\n");
         }
         total += bytes;
@@ -99,7 +99,7 @@ ellcm_compile_file(struct ellcm *cm, char *infile, char *faslfile, char *cfaslfi
     size_t total = 0;
     while(total < sizeof(tx)) {
         bytes = write(cm->sd, buf, sizeof(tx) - total);
-        if (bytes == -1) {
+        if (bytes <= 0) {
             ell_fail("write error\n");
         }
         total += bytes;
@@ -109,7 +109,7 @@ ellcm_compile_file(struct ellcm *cm, char *infile, char *faslfile, char *cfaslfi
     total = 0;
     while(total < sizeof(rx)) {
         bytes = read(cm->sd, buf, sizeof(rx) - total);
-        if (bytes == -1) {
+        if (bytes <= 0) {
             ell_fail("read error\n");
         }
         total += bytes;
@@ -129,7 +129,7 @@ ellcm_compiletime_load_file(struct ellcm *cm, char *file)
     size_t total = 0;
     while(total < sizeof(tx)) {
         bytes = write(cm->sd, buf, sizeof(tx) - total);
-        if (bytes == -1) {
+        if (bytes <= 0) {
             ell_fail("write error\n");
         }
         total += bytes;
@@ -139,7 +139,7 @@ ellcm_compiletime_load_file(struct ellcm *cm, char *file)
     total = 0;
     while(total < sizeof(rx)) {
         bytes = read(cm->sd, buf, sizeof(rx) - total);
-        if (bytes == -1) {
+        if (bytes <= 0) {
             ell_fail("read error\n");
         }
         total += bytes;
