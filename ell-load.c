@@ -1,7 +1,7 @@
 /***** Executable and Linkable Lisp Load Tool *****/
 
 /*
-  ell-repl [-x compile-time.fasl]* [-l file]* [-e expression]* [-q]
+  ell-load [-x compile-time.fasl]* [-l file]* [-e expression]* [-q]
   
   Compiles and loads Lisp source files, and provides a read-eval-print loop.
 
