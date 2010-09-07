@@ -165,7 +165,6 @@ struct ell_method_entry {
 };
 
 struct ell_generic_data {
-    struct ell_obj *generic_name; // sym
     list_t *method_entries;
 };
 
