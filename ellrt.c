@@ -23,7 +23,7 @@ static struct ell_parser_stack *ell_parser_stack_top;
 struct ell_obj *
 ell_parse()
 {
-    ell_parser_stack_top = 
+    ell_parser_stack_top =
         (struct ell_parser_stack *) ell_alloc(sizeof(*ell_parser_stack_top));
     ell_parser_stack_top->down = NULL;
     ell_parser_stack_top->parser_data = ell_make_stx_lst();
@@ -57,7 +57,7 @@ ell_parser_add_num(char *chars)
 void
 ell_parser_push_special(struct ell_obj *sym)
 {
-    struct ell_parser_stack *new = 
+    struct ell_parser_stack *new =
         (struct ell_parser_stack *) ell_alloc(sizeof(*new));
     struct ell_obj *new_stx_lst = ell_make_stx_lst();
     if (sym) {
@@ -179,7 +179,7 @@ void
 ell_assert_wrapper(struct ell_obj *obj, struct ell_wrapper *wrapper)
 {
     if (obj->wrapper != wrapper) {
-        ell_fail("expected %s got %s\n", 
+        ell_fail("expected %s got %s\n",
                  ell_str_chars(ell_sym_name(ell_class_name(ell_wrapper_class(wrapper)))),
                  ell_str_chars(ell_sym_name(ell_class_name(ell_obj_class(obj)))));
     }
@@ -234,11 +234,11 @@ ell_make_clo(ell_code *code, void *env)
         (struct ell_clo_data *) ell_alloc(sizeof(*data));
     data->code = code;
     data->env = env;
-    return ell_make_obj(ELL_WRAPPER(clo), data);    
+    return ell_make_obj(ELL_WRAPPER(clo), data);
 }
 
 void *
-ell_clo_env(struct ell_obj *clo) 
+ell_clo_env(struct ell_obj *clo)
 {
     ell_assert_wrapper(clo, ELL_WRAPPER(clo));
     return ((struct ell_clo_data *) clo->data)->env;
@@ -310,7 +310,7 @@ ell_make_method_entry(struct ell_obj *method, list_t *specializers)
     for (lnode_t *n = list_first(specializers); n; n = list_next(specializers, n)) {
         ell_assert_wrapper((struct ell_obj *) lnode_get(n), ELL_WRAPPER(class));
     }
-    struct ell_method_entry *me = 
+    struct ell_method_entry *me =
         (struct ell_method_entry *) ell_alloc(sizeof(*me));
     me->method = method;
     me->specializers = specializers;
@@ -323,7 +323,7 @@ ell_generic_add_method(struct ell_obj *generic, struct ell_obj *clo,
 {
     list_t *mes = ell_generic_method_entries(generic);
     for (lnode_t *n = list_first(mes); n; n = list_next(mes, n)) {
-        struct ell_method_entry *me = 
+        struct ell_method_entry *me =
             (struct ell_method_entry *) lnode_get(n);
         if (ell_util_lists_equal(me->specializers, specializers,
                                  (dict_comp_t) &ell_ptr_cmp)) {
@@ -367,7 +367,7 @@ ell_find_applicable_method_entries(struct ell_obj *generic,
                                    list_t *specialized_args)
 {
     list_t *actual_specializers = ell_util_make_list();
-    for (lnode_t *n = list_first(specialized_args); n; 
+    for (lnode_t *n = list_first(specialized_args); n;
          n = list_next(specialized_args, n)) {
         struct ell_obj *obj =
             (struct ell_obj *) lnode_get(n);
@@ -376,7 +376,7 @@ ell_find_applicable_method_entries(struct ell_obj *generic,
     list_t *applicable_mes = ell_util_make_list();
     list_t *mes = ell_generic_method_entries(generic);
     for (lnode_t *n = list_first(mes); n; n = list_next(mes, n)) {
-        struct ell_method_entry *me = 
+        struct ell_method_entry *me =
             (struct ell_method_entry *) lnode_get(n);
         if (ell_specializer_lists_agree(actual_specializers, me->specializers))
             ell_util_list_add(applicable_mes, me);
@@ -424,7 +424,7 @@ static bool
 ell_least_method_entry(struct ell_method_entry *me, list_t *mes)
 {
     for (lnode_t *n = list_first(mes); n; n = list_next(mes, n)) {
-        struct ell_method_entry *me2 = 
+        struct ell_method_entry *me2 =
             (struct ell_method_entry *) lnode_get(n);
         if (me == me2)
             continue;
@@ -444,7 +444,7 @@ ell_most_specific_method_entry(struct ell_obj *generic,
     }
     for (lnode_t *n = list_first(applicable_method_entries); n;
          n = list_next(applicable_method_entries, n)) {
-        struct ell_method_entry *me = 
+        struct ell_method_entry *me =
             (struct ell_method_entry *) lnode_get(n);
         if (ell_least_method_entry(me, applicable_method_entries))
             return me;
@@ -468,7 +468,7 @@ ell_print_generic_and_specialized_args(struct ell_obj *generic, list_t *speciali
 
 static void
 ell_print_method_entry(struct ell_method_entry *me)
-{ 
+{
     for (lnode_t *mn = list_first(me->specializers); mn;
          mn = list_next(me->specializers, mn)) {
         struct ell_obj *class = (struct ell_obj *) lnode_get(mn);
@@ -556,7 +556,7 @@ ell_put_method_legacy(struct ell_obj *class, struct ell_obj *gf,
     for (int i = 1; i < args_ct; i++) {
         ell_util_list_add(specializers, ELL_CLASS(obj));
     }
-    ell_put_method(gf, clo, specializers);    
+    ell_put_method(gf, clo, specializers);
 }
 
 /*
@@ -616,11 +616,11 @@ ell_unwind_protect(struct ell_obj *protected, struct ell_obj *cleanup)
     struct ell_unwind_protect unwind_protect;
     unwind_protect.parent = ell_current_unwind_protect;
     unwind_protect.cleanup = cleanup;
-    
+
     ell_current_unwind_protect = &unwind_protect;
     struct ell_obj *val = ELL_CALL(protected);
     ell_current_unwind_protect = ell_current_unwind_protect->parent;
-    
+
     ELL_CALL(cleanup);
     return val;
 }
@@ -692,7 +692,7 @@ ell_str_poplast(struct ell_obj *str)
     size_t len = strlen(chars);
     if (len <= 1)
         return ell_make_str("");
-    else 
+    else
         return ell_make_strn(chars, len - 1);
 }
 
@@ -816,7 +816,7 @@ struct ell_cx *
 ell_stx_sym_cx(struct ell_obj *stx_sym)
 {
     ell_assert_wrapper(stx_sym, ELL_WRAPPER(stx_sym));
-    return ((struct ell_stx_sym_data *) stx_sym->data)->cx;    
+    return ((struct ell_stx_sym_data *) stx_sym->data)->cx;
 }
 
 struct ell_obj *
@@ -1779,7 +1779,7 @@ ELL_DEFCLASS(obj, "<object>")
 
     __ell_g_L_2_ = ell_make_clo(&ell_less_than_code, NULL);
     __ell_g_P_2_ = ell_make_clo(&ell_plus_code, NULL);
-    
+
     __ell_g_exit_2_ = ell_make_clo(&ell_exit_code, NULL);
 
     __ell_g_readDline_2_ = ell_make_clo(&ell_read_line_code, NULL);
