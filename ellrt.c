@@ -1689,6 +1689,38 @@ ell_plus_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
     return ell_make_num_from_int(ell_num_int(num1) + ell_num_int(num2));
 }
 
+/* (- num1 num2) -> num */
+
+struct ell_obj *__ell_g_D_2_;
+
+struct ell_obj *
+ell_minus_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
+               struct ell_obj **args)
+{
+    ell_check_npos(2, npos);
+    struct ell_obj *num1 = args[0];
+    struct ell_obj *num2 = args[1];
+    ell_assert_wrapper(num1, ELL_WRAPPER(num_int));
+    ell_assert_wrapper(num2, ELL_WRAPPER(num_int));
+    return ell_make_num_from_int(ell_num_int(num1) - ell_num_int(num2));
+}
+
+/* (* num1 num2) -> num */
+
+struct ell_obj *__ell_g_Z_2_;
+
+struct ell_obj *
+ell_mult_code(struct ell_obj *clo, ell_arg_ct npos, ell_arg_ct nkey,
+              struct ell_obj **args)
+{
+    ell_check_npos(2, npos);
+    struct ell_obj *num1 = args[0];
+    struct ell_obj *num2 = args[1];
+    ell_assert_wrapper(num1, ELL_WRAPPER(num_int));
+    ell_assert_wrapper(num2, ELL_WRAPPER(num_int));
+    return ell_make_num_from_int(ell_num_int(num1) * ell_num_int(num2));
+}
+
 /**** Initialization ****/
 
 /* The bootstrap process is complicated by two factors: (1)
@@ -1779,6 +1811,8 @@ ELL_DEFCLASS(obj, "<object>")
 
     __ell_g_L_2_ = ell_make_clo(&ell_less_than_code, NULL);
     __ell_g_P_2_ = ell_make_clo(&ell_plus_code, NULL);
+    __ell_g_D_2_ = ell_make_clo(&ell_minus_code, NULL);
+    __ell_g_Z_2_ = ell_make_clo(&ell_mult_code, NULL);
 
     __ell_g_exit_2_ = ell_make_clo(&ell_exit_code, NULL);
 
