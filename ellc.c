@@ -1817,8 +1817,10 @@ ellc_compile_file(char *infile, char *faslfile, char *cfaslfile)
     
     char *tmp_cfasl_name = ellc_compile(macros_stx_lst, NULL);
     
-    rename(tmp_fasl_name, faslfile);
-    rename(tmp_cfasl_name, cfaslfile);
+    if (rename(tmp_fasl_name, faslfile) != 0)
+        ell_fail("rename\n");
+    if (rename(tmp_cfasl_name, cfaslfile) != 0)
+        ell_fail("rename\n");
 
     return 0;
 }
