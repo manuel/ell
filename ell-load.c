@@ -1,4 +1,4 @@
-/***** Executable and Linkable Lisp REPL *****/
+/***** Executable and Linkable Lisp Load Tool *****/
 
 /*
   ell-repl [-x compile-time.fasl]* [-l file]* [-e expression]* [-q]
