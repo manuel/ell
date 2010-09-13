@@ -1,5 +1,9 @@
 -*-org-*-
 * Bugs
+** Generic functions are implemented unsafely
+Their data is put into the closure environment, but they aren't
+distinguishable from ordinary closures.  To fix, give them a type
+different from closure.
 ** Create built-in-class as metaclass for built-in classes
 Prohibit subclassing of built-in classes and slot accesses to
 instances of classes whose metaclass is built-in-class.
