@@ -1,5 +1,30 @@
 /***** Executable and Linkable Lisp Compiler *****/
 
+/* Passes:
+
+Lisp text
+    |
+    | Parsing
+    V
+Syntax object (including macro calls)
+    |
+    | Macroexpansion
+    V
+Syntax object (only core forms)
+    |
+    | Normalization (`ellc_norm_stx()')
+    V
+Normal form AST
+    |
+    | (Closure) Conversion (`ellc_conv_ast()')
+    V
+Explicit form AST
+    |
+    | Emission (`ellc_emit_ast')
+    V
+C text
+*/
+
 #ifndef ELLC_H
 #define ELLC_H
 
@@ -51,15 +76,13 @@ struct ellc_ast_app {
     struct ellc_args *args;
 };
 
-/* Abstraction.
-
+/* Lambda.
    .env: Free variables, populated during closure conversion.
    Initially consists of ast_refs, which then get converted to
    argument or environment references.
-
    .code_id: Sequence number of lambda in compilation unit, for
    linking the closure to its generated C function.  Corresponds to
-   offset of lambda in compiler state's list of lambdas from the
+   offset of lambda in compilation state's list of lambdas from the
    current compilation unit. */
 struct ellc_ast_lam {
     struct ellc_params *params;
@@ -96,7 +119,7 @@ struct ellc_ast_lit_num {
 
 /* Literal syntax object, produced by QUASISYNTAX. */
 struct ellc_ast_lit_stx {
-    struct ell_obj *stx; // ast?
+    struct ell_obj *stx;
 };
 
 /* Context node for maintenance of SRFI 72's improved hygiene
@@ -223,7 +246,7 @@ struct ellc_ast {
    position in the syntax.  For example, the first element of a
    compound form is always put into the function namespace (Nr. 2).
 
-   Symbols are converted to identifiers during normalization. */
+   Syntax symbols are converted to identifiers during normalization. */
 enum ellc_ns {
     ELLC_NS_VAR = 1,
     ELLC_NS_FUN = 2,
@@ -298,23 +321,26 @@ struct ellc_contour {
 
 /* Compilation state, maintained during the compilation of a unit. */
 struct ellc_st {
-    list_t *stmts; // ast
-    /* Keeps track of all global variables defined in the compilation
-       unit.  Populated during normalization. */
+    /*** Static data extracted from unit by passes. ***/
+    /* Global variables defined in the compilation unit.  Populated
+       during normalization. */
     list_t *defined_globals; // id
-    /* Keeps track of all macro definitions in the compilation unit.
-       Populated during normalization. */
-    dict_t *defined_macros; // sym -> stx
-    /* Keeps track of lexical contours during normalization and
-       closure conversion. */
-    struct ellc_contour *bottom_contour; // maybe NULL
-    /* Keeps track of all globals used in the compilation unit.
-       Populated during closure conversion. */
+    /* Globals variables referenced or updated in the compilation
+       unit.  Populated during closure conversion. */
     list_t *globals; // id
-    /* Keeps track of all lambdas created in the compilation unit.
-       Populated during closure conversion. */
+    /* Macro definitions in the compilation unit.  Populated during
+       normalization. */
+    dict_t *defined_macros; // sym -> stx
+    /* Lambdas in the compilation unit.  Populated during closure
+       conversion. */
     list_t *lambdas; // lam
-    /* Whether we are inside a quasisyntax, for hygiene condition. */
+    /* Top-level C statements. */
+    list_t *stmts; // ast
+    /*** Dynamic data used during passes. ***/
+    /* Lexical contour during normalization and closure conversion. */
+    struct ellc_contour *bottom_contour; // maybe NULL
+    /* Whether we are inside a quasisyntax (during emission), for
+       hygiene condition. */
     bool in_quasisyntax;
     /* The output file for C code during emission. */
     FILE *f;

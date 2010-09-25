@@ -1,8 +1,8 @@
 /***** Executable and Linkable Lisp File Compilation Tool *****/
 
 /*
-  ell-compile [-x compile-time.fasl]* [-c file.lisp]*
-  
+  ell-compile [(-x compile-time.fasl) | (-c file.lisp)]*
+
   Produces FASL and CFASL files for input files.
 
   Arguments:

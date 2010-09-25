@@ -345,7 +345,7 @@ ellc_norm_ordinary_app(struct ellc_st *st, struct ell_obj *stx_lst)
                          ell_util_sublist(ell_stx_lst_elts(stx_lst), 1));
 }
 
-/* (Abstraction and Parameters Dissection) */
+/* (Lambda and Parameters Dissection) */
 
 static struct ellc_param *
 ellc_dissect_param(struct ellc_st *st, struct ell_obj *p_stx, dict_t *deferred_inits)

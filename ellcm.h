@@ -1,5 +1,7 @@
 /***** Executable and Linkable Lisp Compilation Manager *****/
 
+/* Manages a separate compilation process. */
+
 #ifndef ELLCM_H
 #define ELLCM_H
 

@@ -1,7 +1,7 @@
 /***** Executable and Linkable Lisp Load Tool *****/
 
 /*
-  ell-load [-x compile-time.fasl]* [-l file]* [-e expression]* [-q]
+  ell-load [(-x compile-time.fasl) | (-l file) | (-e expression) | -q]*
   
   Compiles and loads Lisp source files, and provides a read-eval-print loop.
 
@@ -10,7 +10,7 @@
   -l file---A Lisp source file to compile and load, or a FASL to load.
   -x compile-time.fasl---A file to load at compile-time.
   -e expression---A Lisp expression to evaluate.
-  -q---Whether to quit after processing instead of entering the REPL.
+  -q---Quit right now.  Without -q, enters REPL after options processing.
 */
 
 #include <getopt.h>
