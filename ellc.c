@@ -1172,10 +1172,10 @@ ellc_emit_glo_ref(struct ellc_st *st, struct ellc_ast *ast)
     char *mid = ellc_mangle_glo_id(id);
     switch(id->ns) {
     case ELLC_NS_VAR:
-        fprintf(st->f, "(%s != ell_unbound ? %s : ell_unbound_var(\"%s\"))", mid, mid, sid);
+        fprintf(st->f, "ELL_GEN_GLO_REF(%s, \"%s\")", mid, sid);
         break;
     case ELLC_NS_FUN:
-        fprintf(st->f, "(%s != ell_unbound ? %s : ell_unbound_fun(\"%s\"))", mid, mid, sid);
+        fprintf(st->f, "ELL_GEN_GLO_FREF(%s, \"%s\")", mid, sid);
         break;
     default:
         ell_fail("unknown namespace\n");
@@ -1185,20 +1185,20 @@ ellc_emit_glo_ref(struct ellc_st *st, struct ellc_ast *ast)
 static void
 ellc_emit_arg_ref_plain(struct ellc_st *st, struct ellc_ast *ast)
 {
-    fprintf(st->f, "%s", ellc_mangle_param_id(ast->arg_ref.param->id));
+    fprintf(st->f, "ELL_GEN_ARG_REF_PLAIN(%s)", ellc_mangle_param_id(ast->arg_ref.param->id));
 }
 
 static void
 ellc_emit_env_ref_plain(struct ellc_st *st, struct ellc_ast *ast)
 {
-    fprintf(st->f, "(__ell_env->%s)", ellc_mangle_env_id(ast->env_ref.param->id));
+    fprintf(st->f, "ELL_GEN_ENV_REF_PLAIN(%s)", ellc_mangle_env_id(ast->env_ref.param->id));
 }
 
 static void
 ellc_emit_arg_ref(struct ellc_st *st, struct ellc_ast *ast)
 {
     if (ellc_param_boxed(ast->arg_ref.param)) {
-        fprintf(st->f, "ell_box_read(%s)", ellc_mangle_param_id(ast->arg_ref.param->id));
+        fprintf(st->f, "ELL_GEN_ARG_REF_BOXED(%s)", ellc_mangle_param_id(ast->arg_ref.param->id));
     } else {
         ellc_emit_arg_ref_plain(st, ast);
     }
@@ -1208,7 +1208,7 @@ static void
 ellc_emit_env_ref(struct ellc_st *st, struct ellc_ast *ast)
 {
     if (ellc_param_boxed(ast->env_ref.param)) {
-        fprintf(st->f, "ell_box_read(__ell_env->%s)", ellc_mangle_env_id(ast->env_ref.param->id));
+        fprintf(st->f, "ELL_GEN_ENV_REF_BOXED(%s)", ellc_mangle_env_id(ast->env_ref.param->id));
     } else {
         ellc_emit_env_ref_plain(st, ast);
     }
@@ -1217,7 +1217,7 @@ ellc_emit_env_ref(struct ellc_st *st, struct ellc_ast *ast)
 static void
 ellc_emit_def(struct ellc_st *st, struct ellc_ast *ast)
 {
-    fprintf(st->f, "(%s = ", ellc_mangle_glo_id(ast->def.id));
+    fprintf(st->f, "ELL_GEN_DEF(%s, ", ellc_mangle_glo_id(ast->def.id));
     ellc_emit_ast(st, ast->def.val);
     fprintf(st->f, ")");
 }
@@ -1225,16 +1225,17 @@ ellc_emit_def(struct ellc_st *st, struct ellc_ast *ast)
 static void
 ellc_emit_defp(struct ellc_st *st, struct ellc_ast *ast)
 {
-    fprintf(st->f, "(%s != ell_unbound ? ell_t : ell_f)", ellc_mangle_glo_id(ast->defp.id));
+    fprintf(st->f, "ELL_GEN_DEFP(%s)", ellc_mangle_glo_id(ast->defp.id));
 }
 
 static void
 ellc_emit_glo_set(struct ellc_st *st, struct ellc_ast *ast)
 {
+    char *sid = ell_str_chars(ell_sym_name(ast->glo_set.id->sym));
     char *mid = ellc_mangle_glo_id(ast->glo_set.id);
-    fprintf(st->f, "({ if (%s == ell_unbound) ell_unbound_var(\"%s\"); %s = ", mid, mid, mid);
+    fprintf(st->f, "ELL_GEN_GLO_SET(%s, \"%s\", ", mid, sid);
     ellc_emit_ast(st, ast->glo_set.val);
-    fprintf(st->f, "; })");
+    fprintf(st->f, ")");
 }
 
 static void
@@ -1242,11 +1243,11 @@ ellc_emit_arg_set(struct ellc_st *st, struct ellc_ast *ast)
 {
     struct ellc_ast_arg_set *arg_set = &ast->arg_set;
     if (ellc_param_boxed(arg_set->param)) {
-        fprintf(st->f, "(ell_box_write(%s, ", ellc_mangle_param_id(arg_set->param->id));
+        fprintf(st->f, "ELL_GEN_ARG_SET_BOXED(%s, ", ellc_mangle_param_id(arg_set->param->id));
         ellc_emit_ast(st, arg_set->val);
-        fprintf(st->f, "))");
+        fprintf(st->f, ")");
     } else {
-        fprintf(st->f, "(%s = ", ellc_mangle_param_id(arg_set->param->id));
+        fprintf(st->f, "ELL_GEN_ARG_SET_PLAIN(%s, ", ellc_mangle_param_id(arg_set->param->id));
         ellc_emit_ast(st, arg_set->val);
         fprintf(st->f, ")");
     }
@@ -1257,11 +1258,11 @@ ellc_emit_env_set(struct ellc_st *st, struct ellc_ast *ast)
 {
     struct ellc_ast_env_set *env_set = &ast->env_set;
     if (ellc_param_boxed(env_set->param)) {
-        fprintf(st->f, "(ell_box_write(__ell_env->%s, ", ellc_mangle_env_id(env_set->param->id));
+        fprintf(st->f, "ELL_GEN_ENV_SET_BOXED(%s, ", ellc_mangle_env_id(env_set->param->id));
         ellc_emit_ast(st, env_set->val);
-        fprintf(st->f, "))");
+        fprintf(st->f, ")");
     } else {
-        fprintf(st->f, "(__ell_env->%s = ", ellc_mangle_env_id(env_set->param->id));
+        fprintf(st->f, "ELL_GEN_ENV_SET_PLAIN(%s, ", ellc_mangle_env_id(env_set->param->id));
         ellc_emit_ast(st, env_set->val);
         fprintf(st->f, ")");
     }
@@ -1270,11 +1271,11 @@ ellc_emit_env_set(struct ellc_st *st, struct ellc_ast *ast)
 static void
 ellc_emit_cond(struct ellc_st *st, struct ellc_ast *ast)
 {
-    fprintf(st->f, "(ell_is_true(");
+    fprintf(st->f, "ELL_GEN_COND(");
     ellc_emit_ast(st, ast->cond.test);
-    fprintf(st->f, ")) ? (");
+    fprintf(st->f, ", ");
     ellc_emit_ast(st, ast->cond.consequent);
-    fprintf(st->f, ") : (");
+    fprintf(st->f, ", ");
     ellc_emit_ast(st, ast->cond.alternative);
     fprintf(st->f, ")");
 }
@@ -1282,12 +1283,12 @@ ellc_emit_cond(struct ellc_st *st, struct ellc_ast *ast)
 static void
 ellc_emit_seq(struct ellc_st *st, struct ellc_ast *ast)
 {
-    fprintf(st->f, "({");
+    fprintf(st->f, "({ ");
     for (lnode_t *n = list_first(ast->seq.exprs); n; n = list_next(ast->seq.exprs, n)) {
         ellc_emit_ast(st, (struct ellc_ast *) lnode_get(n));
         fprintf(st->f, "; ");
     }
-    fprintf(st->f, "})");
+    fprintf(st->f, " })");
 }
 
 static void
@@ -1392,9 +1393,9 @@ ellc_emit_lam(struct ellc_st *st, struct ellc_ast *ast)
 static void
 ellc_emit_loop(struct ellc_st *st, struct ellc_ast *ast)
 {
-    fprintf(st->f, "({ for(;;) {");
+    fprintf(st->f, "ELL_GEN_LOOP(");
     ellc_emit_ast(st, ast->loop.body);
-    fprintf(st->f, "; } ell_unspecified; })");
+    fprintf(st->f, ")");
 }
 
 static void

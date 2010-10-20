@@ -467,6 +467,27 @@ struct ell_obj *
 ell_lookup_key(struct ell_obj *key_sym, ell_arg_ct npos, ell_arg_ct nkey,
                struct ell_obj **args);
 
+/**** Emitted Code Macros ****/
+
+// mid = mangled ID
+// sid = original ID literal string
+
+#define ELL_GEN_GLO_REF(mid, sid)  (mid != ell_unbound ? mid : ell_unbound_var(sid))
+#define ELL_GEN_GLO_FREF(mid, sid) (mid != ell_unbound ? mid : ell_unbound_fun(sid))
+#define ELL_GEN_ARG_REF_PLAIN(mid) (mid)
+#define ELL_GEN_ARG_REF_BOXED(mid) (ell_box_read(mid))
+#define ELL_GEN_ENV_REF_PLAIN(mid) (__ell_env->mid)
+#define ELL_GEN_ENV_REF_BOXED(mid) (ell_box_read(__ell_env->mid))
+#define ELL_GEN_DEF(mid, val)      (mid = val)
+#define ELL_GEN_DEFP(mid)          (mid != ell_unbound ? ell_t : ell_f)
+#define ELL_GEN_GLO_SET(mid, sid, val)  ({ if (mid == ell_unbound) ell_unbound_var(sid); mid = val; })
+#define ELL_GEN_ARG_SET_PLAIN(mid, val) (mid = val)
+#define ELL_GEN_ARG_SET_BOXED(mid, val) (ell_box_write(mid, val))
+#define ELL_GEN_ENV_SET_PLAIN(mid, val) (__ell_env->mid = val)
+#define ELL_GEN_ENV_SET_BOXED(mid, val) (ell_box_write(__ell_env->mid, val))
+#define ELL_GEN_COND(test, _then, _else) (ell_is_true(test) ? _then : _else)
+#define ELL_GEN_LOOP(expr)              ({ for(;;) { expr; }; ell_unspecified; })
+
 /**** Misc ****/
 
 #define ell_fail(...)                                   \
