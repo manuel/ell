@@ -1325,6 +1325,8 @@ ellc_emit_app(struct ellc_st *st, struct ellc_ast *ast)
         kpos = 0;
         for (dnode_t *n = dict_first(&app->args->key); n; n = dict_next(&app->args->key, n)) {
             struct ell_obj *arg_key_sym = (struct ell_obj *) dnode_getkey(n);
+            // enh: this can be done more efficiently (intern symbols
+            // used as keyword argument names at load-time)
             fprintf(st->f, "ell_intern(ell_make_str(\"%s\")), ", ell_str_chars(ell_sym_name(arg_key_sym)));
             fprintf(st->f, "__ell_key_arg_%u, ", kpos);
             kpos++;
