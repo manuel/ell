@@ -1,1 +1,1 @@
-./ell-load -x ./lisp-bootstrap.lisp.syntax.fasl -x ./lisp-conditions.lisp.syntax.fasl -l ./lisp-bootstrap.lisp.load.fasl
+./ell-load -x ./lisp-bootstrap.lisp.syntax.fasl -l ./lisp-bootstrap.lisp.load.fasl

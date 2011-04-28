@@ -3,16 +3,12 @@ LD=gcc
 LDFLAGS=-rdynamic -lgc -ldl -lreadline -luuid
 
 OBJECTS = ellrt.o ellc.o ellcm.o dict.o list.o
-FASLS = lisp-bootstrap.lisp.load.fasl lisp-bootstrap.lisp.syntax.fasl lisp-conditions.lisp.load.fasl lisp-conditions.lisp.syntax.fasl
+FASLS = lisp-bootstrap.lisp.load.fasl lisp-bootstrap.lisp.syntax.fasl
 
 all: $(OBJECTS) ell-load ell-compile $(FASLS)
 
 lisp-bootstrap.lisp.load.fasl lisp-bootstrap.lisp.syntax.fasl: lisp-bootstrap.lisp $(OBJECTS)
 	./ell-compile -c ./lisp-bootstrap.lisp
-
-lisp-conditions.lisp.load.fasl lisp-conditions.lisp.syntax.fasl: lisp-conditions.lisp lisp-bootstrap.lisp.syntax.fasl $(OBJECTS)
-	./ell-compile -x ./lisp-bootstrap.lisp.syntax.fasl -c ./lisp-conditions.lisp
-# -x loads bootstrap's syntax part (CFASL) in the compiler
 
 ell-load: $(OBJECTS) ell-load.o
 	$(LD) $(LDFLAGS) $(OBJECTS) ell-load.o -o ell-load
