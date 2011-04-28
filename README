@@ -1,5 +1,7 @@
-To build:
-> make
+Install prerequisites, build, and run ell with:
 
-Then start REPL with:
-> ./ell
+sudo apt-get install libgc-dev libreadline-dev uuid-dev
+make
+./ell
+
+If it doesn't work, check the file BUGS.
