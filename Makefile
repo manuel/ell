@@ -3,11 +3,11 @@ LD=gcc
 LDFLAGS=-rdynamic -lgc -ldl -lreadline -luuid
 
 OBJECTS = ellrt.o ellc.o ellcm.o dict.o list.o
-FASLS = lisp-bootstrap.lisp.load.fasl lisp-bootstrap.lisp.syntax.fasl
+FASLS = lisp-bootstrap-fasls
 
 all: $(OBJECTS) ell-load ell-compile $(FASLS)
 
-lisp-bootstrap.lisp.load.fasl lisp-bootstrap.lisp.syntax.fasl: lisp-bootstrap.lisp $(OBJECTS)
+lisp-bootstrap-fasls: lisp-bootstrap.lisp $(OBJECTS)
 	./ell-compile -c ./lisp-bootstrap.lisp
 
 ell-load: $(OBJECTS) ell-load.o
